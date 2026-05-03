@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"log/slog"
@@ -12,6 +13,7 @@ import (
 	charmlog "github.com/charmbracelet/log"
 	"github.com/jamestelfer/relic/internal/highlight"
 	"github.com/jamestelfer/relic/internal/parser"
+	"github.com/jamestelfer/relic/internal/picker"
 	"github.com/jamestelfer/relic/internal/renderer"
 	"github.com/urfave/cli/v3"
 )
@@ -141,7 +143,19 @@ func buildCLI(run func(opts options, errOut io.Writer) error) *cli.Command {
 		Action: func(ctx context.Context, cmd *cli.Command) error {
 			inputPath := cmd.Args().First()
 			if inputPath == "" {
-				return cli.Exit("usage: relic [--output PATH] [--theme THEME] [--name NAME] <session.jsonl>", 1)
+				homeDir, err := os.UserHomeDir()
+				if err != nil {
+					return cli.Exit(fmt.Sprintf("cannot determine home directory: %v", err), 1)
+				}
+				chosen, err := picker.Pick(homeDir)
+				if err != nil {
+					if errors.Is(err, picker.ErrAborted) {
+						// User cancelled — exit cleanly.
+						return nil
+					}
+					return cli.Exit(err.Error(), 1)
+				}
+				inputPath = chosen
 			}
 
 			outputPath := cmd.String("output")
