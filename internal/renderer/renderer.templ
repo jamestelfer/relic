@@ -40,6 +40,7 @@ templ page(name, filePath string, start *time.Time, turns []Turn, theme string) 
 				.turn-nav { display: flex; gap: 1rem; font-size: 0.85em; margin-bottom: 0.5rem; }
 				.jk-nav a { display: none; }
 				section:target .jk-nav a { display: inline; }
+				.tool-arg, .tool-result-preview { font-family: monospace; font-size: 0.9em; }
 			</style>
 			<script>
 				document.addEventListener('DOMContentLoaded', function() {
