@@ -219,7 +219,7 @@ templ toolResultBlock(b *parser.ToolResultBlock) {
 			}
 		</summary>
 		<div class="preview-content">
-			@templ.Raw(string(ansi.Convert(b.Content)))
+			<pre class="raw-block">@templ.Raw(string(ansi.Convert(b.Content)))</pre>
 		</div>
 	</details>
 }
