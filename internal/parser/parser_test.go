@@ -165,6 +165,45 @@ func TestParseMalformedLine(t *testing.T) {
 	snaps.MatchSnapshot(t, parseErrs[0].Line)
 }
 
+// TestParseToolUseBlock verifies that tool_use content blocks are decoded as ToolUseBlock.
+func TestParseToolUseBlock(t *testing.T) {
+	f, err := os.Open("testdata/tool_thinking.jsonl")
+	if err != nil {
+		t.Fatalf("open fixture: %v", err)
+	}
+	defer func() { _ = f.Close() }()
+
+	msgs, _, err := parser.Parse(f)
+	if err != nil {
+		t.Fatalf("Parse: %v", err)
+	}
+
+	if len(msgs) != 1 {
+		t.Fatalf("expected 1 message, got %d", len(msgs))
+	}
+	if len(msgs[0].Content) != 2 {
+		t.Fatalf("expected 2 content blocks, got %d", len(msgs[0].Content))
+	}
+
+	tub, ok := msgs[0].Content[0].(*parser.ToolUseBlock)
+	if !ok {
+		t.Fatalf("Content[0] = %T, want *parser.ToolUseBlock", msgs[0].Content[0])
+	}
+	if tub.Name != "Bash" {
+		t.Errorf("ToolUseBlock.Name = %q, want %q", tub.Name, "Bash")
+	}
+
+	tb, ok := msgs[0].Content[1].(*parser.ThinkingBlock)
+	if !ok {
+		t.Fatalf("Content[1] = %T, want *parser.ThinkingBlock", msgs[0].Content[1])
+	}
+	if tb.Thinking == "" {
+		t.Error("ThinkingBlock.Thinking is empty")
+	}
+
+	snaps.MatchSnapshot(t, msgs[0].Content)
+}
+
 // TestParseNoContent verifies that a message with empty content array is handled.
 func TestParseNoContent(t *testing.T) {
 	f, err := os.Open("testdata/empty_content.jsonl")

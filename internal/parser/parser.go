@@ -31,6 +31,22 @@ type TextBlock struct {
 
 func (b *TextBlock) BlockType() string { return "text" }
 
+// ToolUseBlock represents a tool_use content block (a tool invocation).
+type ToolUseBlock struct {
+	ID    string
+	Name  string
+	Input map[string]any
+}
+
+func (b *ToolUseBlock) BlockType() string { return "tool_use" }
+
+// ThinkingBlock represents a thinking content block (internal reasoning).
+type ThinkingBlock struct {
+	Thinking string
+}
+
+func (b *ThinkingBlock) BlockType() string { return "thinking" }
+
 // RawBlock holds an unknown content block type, preserved as raw JSON.
 type RawBlock struct {
 	RawType string
@@ -185,6 +201,22 @@ func decodeBlock(raw jsontext.Value) ContentBlock {
 		}
 		if err := json.Unmarshal([]byte(raw), &tb); err == nil {
 			return &TextBlock{Text: tb.Text}
+		}
+	case "tool_use":
+		var tu struct {
+			ID    string         `json:"id"`
+			Name  string         `json:"name"`
+			Input map[string]any `json:"input"`
+		}
+		if err := json.Unmarshal([]byte(raw), &tu); err == nil {
+			return &ToolUseBlock{ID: tu.ID, Name: tu.Name, Input: tu.Input}
+		}
+	case "thinking":
+		var th struct {
+			Thinking string `json:"thinking"`
+		}
+		if err := json.Unmarshal([]byte(raw), &th); err == nil {
+			return &ThinkingBlock{Thinking: th.Thinking}
 		}
 	}
 

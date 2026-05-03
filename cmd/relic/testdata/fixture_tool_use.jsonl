@@ -1,0 +1,4 @@
+{"type":"user","timestamp":"2025-01-15T10:00:01.000Z","message":{"role":"user","content":"Run a bash command and show me your reasoning."}}
+{"type":"assistant","timestamp":"2025-01-15T10:00:05.000Z","message":{"role":"assistant","model":"claude-opus-4-5","content":[{"type":"thinking","thinking":"The user wants me to run a bash command.\nI should use the Bash tool.\nLet me think about what to run."},{"type":"tool_use","id":"toolu_01","name":"Bash","input":{"command":"echo hello world"}},{"type":"text","text":"I ran the command above."}]}}
+{"type":"user","timestamp":"2025-01-15T10:01:00.000Z","message":{"role":"user","content":"Can you also read a file?"}}
+{"type":"assistant","timestamp":"2025-01-15T10:01:05.000Z","message":{"role":"assistant","model":"claude-opus-4-5","content":[{"type":"tool_use","id":"toolu_02","name":"Read","input":{"path":"/etc/hostname"}},{"type":"text","text":"File read successfully."}]}}

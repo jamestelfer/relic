@@ -110,6 +110,79 @@ func tocLabel(turn Turn) string {
 	return "(non-text message)"
 }
 
+// Tuning targets: adjust to control initial visible line counts in collapsed sections.
+const (
+	ToolUsePreviewLines    = 5
+	ToolResultPreviewLines = 10
+	ThinkingPreviewLines   = 8
+)
+
+// toolIcons maps tool names to display icons (R32).
+var toolIcons = map[string]string{
+	"Bash":      "$",
+	"Read":      "📄",
+	"Write":     "📄",
+	"Edit":      "✏️",
+	"MultiEdit": "✏️",
+	"WebSearch": "🔍",
+	"WebFetch":  "🔍",
+	"TodoWrite": "✓",
+	"TodoRead":  "✓",
+}
+
+// toolIcon returns the display icon for a tool name, falling back to ⚙ (R33).
+func toolIcon(name string) string {
+	if icon, ok := toolIcons[name]; ok {
+		return icon
+	}
+	return "⚙"
+}
+
+// toolPrimaryArg returns the first line of the primary input argument for a
+// tool_use block, used in the collapsed summary.
+func toolPrimaryArg(name string, input map[string]any) string {
+	var val string
+	switch name {
+	case "Bash":
+		val, _ = input["command"].(string)
+	case "Read", "Write", "Edit", "MultiEdit":
+		if v, ok := input["path"].(string); ok {
+			val = v
+		} else if v, ok := input["file_path"].(string); ok {
+			val = v
+		}
+	case "WebSearch", "WebFetch":
+		val, _ = input["query"].(string)
+		if val == "" {
+			val, _ = input["url"].(string)
+		}
+	default:
+		// Use any string value in the input as a best-effort preview.
+		for _, v := range input {
+			if s, ok := v.(string); ok {
+				val = s
+				break
+			}
+		}
+	}
+	if i := strings.IndexByte(val, '\n'); i >= 0 {
+		val = val[:i]
+	}
+	if len(val) > 80 {
+		val = val[:80]
+	}
+	return val
+}
+
+// toolInputText formats the input map of a tool_use block as readable text.
+func toolInputText(input map[string]any) string {
+	var sb strings.Builder
+	for k, v := range input {
+		fmt.Fprintf(&sb, "%s: %v\n", k, v)
+	}
+	return strings.TrimRight(sb.String(), "\n")
+}
+
 // md is the goldmark instance used for all Markdown rendering.
 // Extensions: tables, strikethrough, task list, linkify.
 var md = goldmark.New(

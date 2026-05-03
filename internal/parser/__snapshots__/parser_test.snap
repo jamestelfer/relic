@@ -54,3 +54,16 @@
 [TestParseMalformedLine - 1]
 int(2)
 ---
+
+[TestParseToolUseBlock - 1]
+[]parser.ContentBlock{
+    &parser.ToolUseBlock{
+        ID:    "toolu_01",
+        Name:  "Bash",
+        Input: {
+            "command": "echo hello world",
+        },
+    },
+    &parser.ThinkingBlock{Thinking:"Let me think about this problem carefully.\nFirst, I need to consider the requirements."},
+}
+---

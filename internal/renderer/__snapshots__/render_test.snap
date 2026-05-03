@@ -20,3 +20,13 @@
 <p>Use <code>fmt.Println</code> to print output.</p>
 
 ---
+
+[TestRenderToolUseBlock - 1]
+<details class="collapsible tool-use" style="--preview-lines: 5;"><summary><span class="tool-icon">$</span> <span class="tool-name">Bash</span> <span class="tool-arg">echo hello world</span></summary><div class="preview-content"><pre class="tool-input">command: echo hello world</pre></div></details>
+---
+
+[TestRenderThinkingBlock - 1]
+<details class="collapsible thinking" style="--preview-lines: 8;"><summary>Internal reasoning</summary><div class="preview-content"><pre class="thinking-content">Line one
+Line two
+Line three</pre></div></details>
+---

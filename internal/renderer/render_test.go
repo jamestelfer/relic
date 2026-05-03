@@ -1,10 +1,13 @@
 package renderer
 
 import (
+	"bytes"
+	"context"
 	"os"
 	"testing"
 
 	"github.com/gkampitakis/go-snaps/snaps"
+	"github.com/jamestelfer/relic/internal/parser"
 )
 
 func TestMain(m *testing.M) {
@@ -35,4 +38,70 @@ func TestRenderMarkdown_CodeFence(t *testing.T) {
 func TestRenderMarkdown_InlineCode(t *testing.T) {
 	out := renderMarkdown("Use `fmt.Println` to print output.")
 	snaps.MatchSnapshot(t, string(out))
+}
+
+// renderBlock renders a single ContentBlock to an HTML string via the templ component.
+func renderBlock(t *testing.T, block parser.ContentBlock) string {
+	t.Helper()
+	var buf bytes.Buffer
+	if err := contentBlock(block).Render(context.Background(), &buf); err != nil {
+		t.Fatalf("render: %v", err)
+	}
+	return buf.String()
+}
+
+// TestRenderToolUseBlock verifies that tool_use blocks render as <details> with summary.
+func TestRenderToolUseBlock(t *testing.T) {
+	block := &parser.ToolUseBlock{
+		ID:    "toolu_01",
+		Name:  "Bash",
+		Input: map[string]any{"command": "echo hello world"},
+	}
+	out := renderBlock(t, block)
+	snaps.MatchSnapshot(t, out)
+
+	if !contains(out, "<details") {
+		t.Error("expected <details> element for tool_use block")
+	}
+	if !contains(out, "<summary") {
+		t.Error("expected <summary> element for tool_use block")
+	}
+}
+
+// TestRenderThinkingBlock verifies that thinking blocks render as <details> labelled
+// "Internal reasoning" with a preview height.
+func TestRenderThinkingBlock(t *testing.T) {
+	block := &parser.ThinkingBlock{
+		Thinking: "Line one\nLine two\nLine three",
+	}
+	out := renderBlock(t, block)
+	snaps.MatchSnapshot(t, out)
+
+	if !contains(out, "<details") {
+		t.Error("expected <details> element for thinking block")
+	}
+	if !contains(out, "Internal reasoning") {
+		t.Error("expected 'Internal reasoning' label in thinking block")
+	}
+}
+
+// TestToolIconFallback verifies that unknown tool names return the default icon.
+func TestToolIconFallback(t *testing.T) {
+	icon := toolIcon("UnknownTool")
+	if icon != "⚙" {
+		t.Errorf("toolIcon(%q) = %q, want %q", "UnknownTool", icon, "⚙")
+	}
+}
+
+func contains(s, substr string) bool {
+	return len(s) >= len(substr) && (s == substr || len(substr) == 0 || indexString(s, substr) >= 0)
+}
+
+func indexString(s, substr string) int {
+	for i := range s {
+		if i+len(substr) <= len(s) && s[i:i+len(substr)] == substr {
+			return i
+		}
+	}
+	return -1
 }

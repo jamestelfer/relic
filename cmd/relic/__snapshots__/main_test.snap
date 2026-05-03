@@ -15,6 +15,8 @@
                 .text-block { margin: 0.25rem 0; }
                 .raw-block { background: #f5f5f5; padding: 0.5rem; overflow-x: auto; font-size: 0.85em; }
                 .error-callout { border-left: 4px solid #d93025; background: #fce8e6; padding: 0.5rem 0.75rem; margin: 0.5rem 0; font-size: 0.9em; }
+                details.collapsible > .preview-content { max-height: calc(1.5em * var(--preview-lines, 5)); overflow: hidden; }
+                details.collapsible[open] > .preview-content { max-height: none; }
                 .toc { background: #f9f9f9; border: 1px solid #ddd; padding: 0.75rem 1rem; margin-bottom: 1.5rem; display: inline-block; min-width: 20rem; }
                 .toc h2 { margin: 0 0 0.5rem; font-size: 1rem; }
                 .toc ol { margin: 0; padding-left: 1.25rem; }
@@ -70,6 +72,8 @@
                 .text-block { margin: 0.25rem 0; }
                 .raw-block { background: #f5f5f5; padding: 0.5rem; overflow-x: auto; font-size: 0.85em; }
                 .error-callout { border-left: 4px solid #d93025; background: #fce8e6; padding: 0.5rem 0.75rem; margin: 0.5rem 0; font-size: 0.9em; }
+                details.collapsible > .preview-content { max-height: calc(1.5em * var(--preview-lines, 5)); overflow: hidden; }
+                details.collapsible[open] > .preview-content { max-height: none; }
                 .toc { background: #f9f9f9; border: 1px solid #ddd; padding: 0.75rem 1rem; margin-bottom: 1.5rem; display: inline-block; min-width: 20rem; }
                 .toc h2 { margin: 0 0 0.5rem; font-size: 1rem; }
                 .toc ol { margin: 0; padding-left: 1.25rem; }
@@ -94,5 +98,54 @@
                 });
             </script></head><body><header class="session-banner"><h1>malformed</h1><dl><dt>File</dt><dd>testdata/malformed.jsonl</dd><dt>Date</dt><dd>Wed, 15 Jan 2025 10:00:01 UTC</dd><dt>Turns</dt><dd>1</dd></dl></header><nav class="toc"><h2>Contents</h2><ol><li><a href="#turn-1">Hello, this is a valid message.</a></li></ol></nav><main><section id="turn-1"><nav class="turn-nav"></nav><nav class="jk-nav"></nav><div class="message message-user"><div class="message-header"><span class="message-role">user</span> <time class="message-time">Wed, 15 Jan 2025 10:00:01 UTC</time></div><div class="message-body"><div class="text-block"><p>Hello, this is a valid message.</p>
 </div></div></div><div class="message message-error"><div class="message-header"><span class="message-role">error</span> </div><div class="message-body"><div class="error-callout"><strong>⚠ Parse error on line 2:</strong> jsontext: invalid character &#39;h&#39; in literal true (expecting &#39;r&#39;) after offset 1 <details><summary>Raw line</summary><pre class="raw-block">this line is not valid json {{{broken</pre></details></div></div></div><div class="message message-assistant"><div class="message-header"><span class="message-role">assistant</span> <time class="message-time" title="2025-01-15T10:00:05Z">4s later</time></div><div class="message-body"><div class="text-block"><p>This is a valid reply after the malformed line.</p>
+</div></div></div></section></main></body></html>
+---
+
+[TestToolUseAndThinkingE2E - 1]
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>fixture_tool_use — relic</title><style>
+                body { font-family: sans-serif; max-width: 900px; margin: 0 auto; padding: 1rem; }
+                .session-banner { border-bottom: 2px solid #ccc; margin-bottom: 1.5rem; padding-bottom: 1rem; }
+                .session-banner dl { display: grid; grid-template-columns: max-content 1fr; gap: 0.25rem 1rem; }
+                section[id^="turn-"] { border-left: 3px solid #e0e0e0; margin: 1rem 0; padding-left: 1rem; }
+                .message { margin-bottom: 1rem; }
+                .message-header { display: flex; gap: 1rem; font-size: 0.85em; color: #666; margin-bottom: 0.25rem; }
+                .message-role { font-weight: bold; text-transform: capitalize; }
+                .message-time { font-style: italic; }
+                .message-user .message-role { color: #1a73e8; }
+                .message-assistant .message-role { color: #188038; }
+                .message-body { padding-left: 0.5rem; }
+                .text-block { margin: 0.25rem 0; }
+                .raw-block { background: #f5f5f5; padding: 0.5rem; overflow-x: auto; font-size: 0.85em; }
+                .error-callout { border-left: 4px solid #d93025; background: #fce8e6; padding: 0.5rem 0.75rem; margin: 0.5rem 0; font-size: 0.9em; }
+                details.collapsible > .preview-content { max-height: calc(1.5em * var(--preview-lines, 5)); overflow: hidden; }
+                details.collapsible[open] > .preview-content { max-height: none; }
+                .toc { background: #f9f9f9; border: 1px solid #ddd; padding: 0.75rem 1rem; margin-bottom: 1.5rem; display: inline-block; min-width: 20rem; }
+                .toc h2 { margin: 0 0 0.5rem; font-size: 1rem; }
+                .toc ol { margin: 0; padding-left: 1.25rem; }
+                .toc li { margin: 0.2rem 0; }
+                .turn-nav { display: flex; gap: 1rem; font-size: 0.85em; margin-bottom: 0.5rem; }
+                .jk-nav a { display: none; }
+                section:target .jk-nav a { display: inline; }
+            </style><script>
+                document.addEventListener('DOMContentLoaded', function() {
+                    document.querySelectorAll('pre').forEach(function(pre) {
+                        var btn = document.createElement('button');
+                        btn.textContent = 'Copy';
+                        btn.style.cssText = 'position:absolute;top:0.25rem;right:0.25rem;font-size:0.75em;padding:0.1rem 0.4rem;cursor:pointer;';
+                        pre.style.position = 'relative';
+                        btn.addEventListener('click', function() {
+                            navigator.clipboard.writeText(pre.querySelector('code') ? pre.querySelector('code').innerText : pre.innerText);
+                            btn.textContent = 'Copied!';
+                            setTimeout(function(){ btn.textContent = 'Copy'; }, 1500);
+                        });
+                        pre.appendChild(btn);
+                    });
+                });
+            </script></head><body><header class="session-banner"><h1>fixture_tool_use</h1><dl><dt>File</dt><dd>testdata/fixture_tool_use.jsonl</dd><dt>Date</dt><dd>Wed, 15 Jan 2025 10:00:01 UTC</dd><dt>Turns</dt><dd>2</dd></dl></header><nav class="toc"><h2>Contents</h2><ol><li><a href="#turn-1">Run a bash command and show me your reasoning.</a></li><li><a href="#turn-2">Can you also read a file?</a></li></ol></nav><main><section id="turn-1"><nav class="turn-nav"><a class="turn-next" href="#turn-2">next →</a></nav><nav class="jk-nav"><a accesskey="j" href="#turn-2">[J] next</a></nav><div class="message message-user"><div class="message-header"><span class="message-role">user</span> <time class="message-time">Wed, 15 Jan 2025 10:00:01 UTC</time></div><div class="message-body"><div class="text-block"><p>Run a bash command and show me your reasoning.</p>
+</div></div></div><div class="message message-assistant"><div class="message-header"><span class="message-role">assistant</span> <time class="message-time" title="2025-01-15T10:00:05Z">4s later</time></div><div class="message-body"><details class="collapsible thinking" style="--preview-lines: 8;"><summary>Internal reasoning</summary><div class="preview-content"><pre class="thinking-content">The user wants me to run a bash command.
+I should use the Bash tool.
+Let me think about what to run.</pre></div></details><details class="collapsible tool-use" style="--preview-lines: 5;"><summary><span class="tool-icon">$</span> <span class="tool-name">Bash</span> <span class="tool-arg">echo hello world</span></summary><div class="preview-content"><pre class="tool-input">command: echo hello world</pre></div></details><div class="text-block"><p>I ran the command above.</p>
+</div></div></div></section><section id="turn-2"><nav class="turn-nav"><a class="turn-prev" href="#turn-1">← prev</a> </nav><nav class="jk-nav"><a accesskey="k" href="#turn-1">[K] prev</a> </nav><div class="message message-user"><div class="message-header"><span class="message-role">user</span> <time class="message-time" title="2025-01-15T10:01:00Z">59s later</time></div><div class="message-body"><div class="text-block"><p>Can you also read a file?</p>
+</div></div></div><div class="message message-assistant"><div class="message-header"><span class="message-role">assistant</span> <time class="message-time" title="2025-01-15T10:01:05Z">1m later</time></div><div class="message-body"><details class="collapsible tool-use" style="--preview-lines: 5;"><summary><span class="tool-icon">📄</span> <span class="tool-name">Read</span> <span class="tool-arg">/etc/hostname</span></summary><div class="preview-content"><pre class="tool-input">path: /etc/hostname</pre></div></details><div class="text-block"><p>File read successfully.</p>
 </div></div></div></section></main></body></html>
 ---

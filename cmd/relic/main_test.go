@@ -112,6 +112,45 @@ func TestPrevNext(t *testing.T) {
 // TestJKKeyboardNav verifies that J/K keyboard navigation anchors are present.
 // J links (next turn) and K links (prev turn) are hidden by default and shown
 // via CSS :target when the turn section is targeted. No JavaScript is involved.
+// TestToolUseAndThinkingE2E verifies that tool_use and thinking blocks render
+// as collapsible <details> sections in the HTML output.
+func TestToolUseAndThinkingE2E(t *testing.T) {
+	tmp := t.TempDir()
+	outPath := filepath.Join(tmp, "out.html")
+	var logBuf bytes.Buffer
+	err := execute(options{
+		inputPath:  "testdata/fixture_tool_use.jsonl",
+		outputPath: outPath,
+	}, &logBuf)
+	if err != nil {
+		t.Fatalf("execute: %v", err)
+	}
+
+	html, err := os.ReadFile(outPath)
+	if err != nil {
+		t.Fatalf("read output: %v", err)
+	}
+	htmlStr := string(html)
+
+	// Count <details> elements: fixture has 1 thinking + 2 tool_use = 3.
+	detailsCount := strings.Count(htmlStr, "<details")
+	if detailsCount != 3 {
+		t.Errorf("expected 3 <details> elements (1 thinking + 2 tool_use), got %d", detailsCount)
+	}
+
+	// thinking block must be labelled "Internal reasoning".
+	if !strings.Contains(htmlStr, "Internal reasoning") {
+		t.Error("expected 'Internal reasoning' label in thinking block")
+	}
+
+	// tool_use block for Bash must show the $ icon and command.
+	if !strings.Contains(htmlStr, "echo hello world") {
+		t.Error("expected Bash command 'echo hello world' in tool_use summary")
+	}
+
+	snaps.MatchSnapshot(t, htmlStr)
+}
+
 // TestMalformedLineE2E verifies that a session with a malformed line renders an
 // error callout in the HTML and exits 0. The slog warning goes to errOut.
 func TestMalformedLineE2E(t *testing.T) {

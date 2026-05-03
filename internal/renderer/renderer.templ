@@ -30,6 +30,8 @@ templ page(name, filePath string, start *time.Time, turns []Turn) {
 				.text-block { margin: 0.25rem 0; }
 				.raw-block { background: #f5f5f5; padding: 0.5rem; overflow-x: auto; font-size: 0.85em; }
 				.error-callout { border-left: 4px solid #d93025; background: #fce8e6; padding: 0.5rem 0.75rem; margin: 0.5rem 0; font-size: 0.9em; }
+				details.collapsible > .preview-content { max-height: calc(1.5em * var(--preview-lines, 5)); overflow: hidden; }
+				details.collapsible[open] > .preview-content { max-height: none; }
 				.toc { background: #f9f9f9; border: 1px solid #ddd; padding: 0.75rem 1rem; margin-bottom: 1.5rem; display: inline-block; min-width: 20rem; }
 				.toc h2 { margin: 0 0 0.5rem; font-size: 1rem; }
 				.toc ol { margin: 0; padding-left: 1.25rem; }
@@ -155,9 +157,39 @@ templ contentBlock(block parser.ContentBlock) {
 					<pre class="raw-block">{ string(b.Raw) }</pre>
 				</details>
 			</div>
+		case *parser.ToolUseBlock:
+			@toolUseBlock(b)
+		case *parser.ThinkingBlock:
+			@thinkingBlock(b)
 		case *parser.RawBlock:
 			<pre class="raw-block">[{ b.BlockType() }] { string(b.Data) }</pre>
 		default:
 			<p class="unknown-block">(unknown block)</p>
 	}
+}
+
+// toolUseBlock renders a tool_use content block as a collapsible <details> section.
+templ toolUseBlock(b *parser.ToolUseBlock) {
+	<details class="collapsible tool-use" style={ fmt.Sprintf("--preview-lines: %d", ToolUsePreviewLines) }>
+		<summary>
+			<span class="tool-icon">{ toolIcon(b.Name) }</span>
+			<span class="tool-name">{ b.Name }</span>
+			if arg := toolPrimaryArg(b.Name, b.Input); arg != "" {
+				<span class="tool-arg">{ arg }</span>
+			}
+		</summary>
+		<div class="preview-content">
+			<pre class="tool-input">{ toolInputText(b.Input) }</pre>
+		</div>
+	</details>
+}
+
+// thinkingBlock renders a thinking content block as a collapsible <details> section.
+templ thinkingBlock(b *parser.ThinkingBlock) {
+	<details class="collapsible thinking" style={ fmt.Sprintf("--preview-lines: %d", ThinkingPreviewLines) }>
+		<summary>Internal reasoning</summary>
+		<div class="preview-content">
+			<pre class="thinking-content">{ b.Thinking }</pre>
+		</div>
+	</details>
 }

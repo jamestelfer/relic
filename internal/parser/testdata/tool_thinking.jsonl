@@ -1,0 +1,1 @@
+{"type":"assistant","timestamp":"2025-01-15T10:01:00.000Z","message":{"role":"assistant","model":"claude-opus-4-5","content":[{"type":"tool_use","id":"toolu_01","name":"Bash","input":{"command":"echo hello world"}},{"type":"thinking","thinking":"Let me think about this problem carefully.\nFirst, I need to consider the requirements."}]}}
