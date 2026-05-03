@@ -73,6 +73,20 @@ func TestPrevNext(t *testing.T) {
 	assert.NotContains(t, html, `href="#turn-4"`, "last turn must have no next")
 }
 
+// TestToolResultTurnGrouping verifies that user messages containing only tool_result
+// blocks are not counted as separate turns: they belong to the turn started by the
+// preceding human text message.
+func TestToolResultTurnGrouping(t *testing.T) {
+	html := runFixture(t, options{inputPath: "testdata/fixture_tool_turn.jsonl"})
+	// Fixture has exactly 2 human messages, so exactly 2 turns.
+	assert.Contains(t, html, `id="turn-1"`)
+	assert.Contains(t, html, `id="turn-2"`)
+	assert.NotContains(t, html, `id="turn-3"`, "tool-result user message must not create a new turn")
+	// Tool result message must still be rendered (role=tool).
+	assert.Contains(t, html, "hello", "tool result content must appear in output")
+	assert.Contains(t, html, `class="message message-tool"`, "tool result must render with role=tool")
+}
+
 // TestToolResultE2E verifies tool_result blocks render with ANSI converted and no raw escapes.
 func TestToolResultE2E(t *testing.T) {
 	tmp := t.TempDir()

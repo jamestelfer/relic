@@ -70,17 +70,25 @@ func groupTurns(msgs []parser.Message) []Turn {
 	for _, m := range msgs {
 		switch m.Role {
 		case "user":
-			if current != nil {
-				turns = append(turns, *current)
-			}
-			current = &Turn{
-				Index:    len(turns) + 1,
-				Messages: []parser.Message{m},
-			}
-			// Attach any pre-first-turn errors to this first turn.
-			if len(preamble) > 0 {
-				current.Messages = append(preamble, current.Messages...)
-				preamble = nil
+			if messageRole(m) == "user" {
+				// Real human input: start a new turn.
+				if current != nil {
+					turns = append(turns, *current)
+				}
+				current = &Turn{
+					Index:    len(turns) + 1,
+					Messages: []parser.Message{m},
+				}
+				// Attach any pre-first-turn errors to this first turn.
+				if len(preamble) > 0 {
+					current.Messages = append(preamble, current.Messages...)
+					preamble = nil
+				}
+			} else {
+				// Tool result: part of the agent execution loop, not a new turn.
+				if current != nil {
+					current.Messages = append(current.Messages, m)
+				}
 			}
 		case "error":
 			if current != nil {

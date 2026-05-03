@@ -1,0 +1,6 @@
+{"type":"user","timestamp":"2025-01-15T10:00:01.000Z","uuid":"uuid-u1","sessionId":"s1","message":{"role":"user","content":[{"type":"text","text":"Run a command for me."}]}}
+{"type":"assistant","timestamp":"2025-01-15T10:00:02.000Z","uuid":"uuid-a1","sessionId":"s1","message":{"role":"assistant","content":[{"type":"tool_use","id":"tool-1","name":"Bash","input":{"command":"echo hello"}}]}}
+{"type":"user","timestamp":"2025-01-15T10:00:03.000Z","uuid":"uuid-u2","sessionId":"s1","message":{"role":"user","content":[{"type":"tool_result","tool_use_id":"tool-1","content":"hello\n"}]}}
+{"type":"assistant","timestamp":"2025-01-15T10:00:04.000Z","uuid":"uuid-a2","sessionId":"s1","message":{"role":"assistant","content":[{"type":"text","text":"The command output was: hello"}]}}
+{"type":"user","timestamp":"2025-01-15T10:00:10.000Z","uuid":"uuid-u3","sessionId":"s1","message":{"role":"user","content":[{"type":"text","text":"Thanks, now do something else."}]}}
+{"type":"assistant","timestamp":"2025-01-15T10:00:11.000Z","uuid":"uuid-a3","sessionId":"s1","message":{"role":"assistant","content":[{"type":"text","text":"Sure!"}]}}
