@@ -34,13 +34,19 @@ type Options struct {
 	Name string
 	// FilePath is the source file path shown in the banner.
 	FilePath string
+	// Theme is the Chroma style name for syntax highlighting (default: "github").
+	Theme string
 }
 
 // Render writes a full HTML document for msgs to w.
 func Render(w io.Writer, msgs []parser.Message, opts Options) error {
+	theme := opts.Theme
+	if theme == "" {
+		theme = "github"
+	}
 	turns := groupTurns(msgs)
 	start := sessionStart(msgs)
-	return page(opts.Name, opts.FilePath, start, turns).Render(context.Background(), w)
+	return page(opts.Name, opts.FilePath, start, turns, theme).Render(context.Background(), w)
 }
 
 // sessionStart returns the timestamp of the first message that has one.
@@ -245,7 +251,7 @@ func extToLang(ext string) string {
 }
 
 // toolInputHighlighted formats the input of a tool_use block as highlighted code HTML.
-func toolInputHighlighted(name string, input map[string]any) template.HTML {
+func toolInputHighlighted(name string, input map[string]any, theme string) template.HTML {
 	var code string
 	switch name {
 	case "Bash":
@@ -263,7 +269,7 @@ func toolInputHighlighted(name string, input map[string]any) template.HTML {
 		code = toolInputText(input)
 	}
 	lang := toolLang(name, input)
-	out, err := highlight.Highlight(code, lang)
+	out, err := highlight.Highlight(code, lang, theme)
 	if err != nil {
 		return template.HTML(template.HTMLEscapeString(code)) //nolint:gosec
 	}
@@ -324,38 +330,32 @@ func toolInputText(input map[string]any) string {
 
 // highlightRenderer is a custom goldmark NodeRenderer that replaces the default
 // fenced code block renderer with one that uses Chroma for syntax highlighting.
-type highlightRenderer struct{}
+type highlightRenderer struct{ theme string }
 
 func (h highlightRenderer) RegisterFuncs(reg renderer.NodeRendererFuncRegisterer) {
-	reg.Register(ast.KindFencedCodeBlock, renderHighlightedCodeBlock)
+	reg.Register(ast.KindFencedCodeBlock, h.renderHighlightedCodeBlock)
 }
 
 // renderHighlightedCodeBlock is a goldmark NodeRendererFunc for fenced code blocks.
-// On entering the node it collects the code lines, determines the language from the
-// fence info string, calls highlight.Highlight, and writes the result directly.
-// On exit it does nothing (the block was fully written on entry).
-func renderHighlightedCodeBlock(w util.BufWriter, source []byte, node ast.Node, entering bool) (ast.WalkStatus, error) {
+func (h highlightRenderer) renderHighlightedCodeBlock(w util.BufWriter, source []byte, node ast.Node, entering bool) (ast.WalkStatus, error) {
 	if !entering {
 		return ast.WalkContinue, nil
 	}
 	n := node.(*ast.FencedCodeBlock)
 
-	// Collect all lines of the code block.
 	var codeBuf bytes.Buffer
 	for i := range n.Lines().Len() {
 		line := n.Lines().At(i)
 		codeBuf.Write(line.Value(source))
 	}
 
-	// Determine language from the fence info string.
 	lang := ""
 	if langBytes := n.Language(source); langBytes != nil {
 		lang = string(langBytes)
 	}
 
-	out, err := highlight.Highlight(codeBuf.String(), lang)
+	out, err := highlight.Highlight(codeBuf.String(), lang, h.theme)
 	if err != nil {
-		// Fallback to plain pre/code on unexpected error.
 		_, _ = fmt.Fprintf(w, "<pre><code>%s</code></pre>\n", template.HTMLEscapeString(codeBuf.String()))
 		return ast.WalkContinue, nil
 	}
@@ -364,29 +364,28 @@ func renderHighlightedCodeBlock(w util.BufWriter, source []byte, node ast.Node, 
 	return ast.WalkContinue, nil
 }
 
-// md is the goldmark instance used for all Markdown rendering.
-// Extensions: tables, strikethrough, task list, linkify.
-// Fenced code blocks are syntax-highlighted via Chroma (class-based).
-var md = goldmark.New(
-	goldmark.WithExtensions(
-		extension.Table,
-		extension.Strikethrough,
-		extension.TaskList,
-		extension.Linkify,
-	),
-	goldmark.WithRendererOptions(
-		html.WithUnsafe(), // allow raw HTML passthrough in source
-		renderer.WithNodeRenderers(
-			util.Prioritized(highlightRenderer{}, 1), // higher priority than default
+// newGoldmark creates a goldmark instance configured for the given Chroma theme.
+func newGoldmark(theme string) goldmark.Markdown {
+	return goldmark.New(
+		goldmark.WithExtensions(
+			extension.Table,
+			extension.Strikethrough,
+			extension.TaskList,
+			extension.Linkify,
 		),
-	),
-)
+		goldmark.WithRendererOptions(
+			html.WithUnsafe(),
+			renderer.WithNodeRenderers(
+				util.Prioritized(highlightRenderer{theme: theme}, 1),
+			),
+		),
+	)
+}
 
-// renderMarkdown converts a Markdown string to safe HTML.
-func renderMarkdown(src string) template.HTML {
+// renderMarkdown converts a Markdown string to safe HTML using the given Chroma theme.
+func renderMarkdown(src, theme string) template.HTML {
 	var buf bytes.Buffer
-	if err := md.Convert([]byte(src), &buf); err != nil {
-		// Fall back to escaped plain text on unexpected error.
+	if err := newGoldmark(theme).Convert([]byte(src), &buf); err != nil {
 		return template.HTML(template.HTMLEscapeString(src)) //nolint:gosec
 	}
 	return template.HTML(buf.String()) //nolint:gosec

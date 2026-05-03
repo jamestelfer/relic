@@ -9,7 +9,7 @@ import (
 )
 
 // page renders a complete, minimal HTML document for a session.
-templ page(name, filePath string, start *time.Time, turns []Turn) {
+templ page(name, filePath string, start *time.Time, turns []Turn, theme string) {
 	<!DOCTYPE html>
 	<html lang="en">
 		<head>
@@ -64,7 +64,7 @@ templ page(name, filePath string, start *time.Time, turns []Turn) {
 			@toc(turns)
 			<main>
 				for _, turn := range turns {
-					@turnSection(turn, start, len(turns))
+					@turnSection(turn, start, len(turns), theme)
 				}
 			</main>
 		</body>
@@ -101,7 +101,7 @@ templ toc(turns []Turn) {
 }
 
 // turnSection renders a single turn (user + following assistant messages) in a labelled section.
-templ turnSection(turn Turn, start *time.Time, total int) {
+templ turnSection(turn Turn, start *time.Time, total int, theme string) {
 	<section id={ fmt.Sprintf("turn-%d", turn.Index) }>
 		<nav class="turn-nav">
 			if turn.Index > 1 {
@@ -120,13 +120,13 @@ templ turnSection(turn Turn, start *time.Time, total int) {
 			}
 		</nav>
 		for _, msg := range turn.Messages {
-			@message(msg, start)
+			@message(msg, start, theme)
 		}
 	</section>
 }
 
 // message renders a single message with role, timestamp, and content blocks.
-templ message(msg parser.Message, start *time.Time) {
+templ message(msg parser.Message, start *time.Time, theme string) {
 	<div class={ "message", "message-" + msg.Role }>
 		<div class="message-header">
 			<span class="message-role">{ msg.Role }</span>
@@ -140,17 +140,17 @@ templ message(msg parser.Message, start *time.Time) {
 		</div>
 		<div class="message-body">
 			for _, block := range msg.Content {
-				@contentBlock(block)
+				@contentBlock(block, theme)
 			}
 		</div>
 	</div>
 }
 
 // contentBlock renders a single content block.
-templ contentBlock(block parser.ContentBlock) {
+templ contentBlock(block parser.ContentBlock, theme string) {
 	switch b := block.(type) {
 		case *parser.TextBlock:
-			<div class="text-block">@templ.Raw(string(renderMarkdown(b.Text)))</div>
+			<div class="text-block">@templ.Raw(string(renderMarkdown(b.Text, theme)))</div>
 		case *parser.ErrorBlock:
 			<div class="error-callout">
 				<strong>⚠ Parse error on line { fmt.Sprintf("%d", b.LineNum) }:</strong> { b.Msg }
@@ -162,7 +162,7 @@ templ contentBlock(block parser.ContentBlock) {
 		case *parser.ToolResultBlock:
 			@toolResultBlock(b)
 		case *parser.ToolUseBlock:
-			@toolUseBlock(b)
+			@toolUseBlock(b, theme)
 		case *parser.ThinkingBlock:
 			@thinkingBlock(b)
 		case *parser.RawBlock:
@@ -173,7 +173,7 @@ templ contentBlock(block parser.ContentBlock) {
 }
 
 // toolUseBlock renders a tool_use content block as a collapsible <details> section.
-templ toolUseBlock(b *parser.ToolUseBlock) {
+templ toolUseBlock(b *parser.ToolUseBlock, theme string) {
 	<details class="collapsible tool-use" style={ fmt.Sprintf("--preview-lines: %d", ToolUsePreviewLines) }>
 		<summary>
 			<span class="tool-icon">{ toolIcon(b.Name) }</span>
@@ -183,7 +183,7 @@ templ toolUseBlock(b *parser.ToolUseBlock) {
 			}
 		</summary>
 		<div class="preview-content">
-			@templ.Raw(string(toolInputHighlighted(b.Name, b.Input)))
+			@templ.Raw(string(toolInputHighlighted(b.Name, b.Input, theme)))
 		</div>
 	</details>
 }

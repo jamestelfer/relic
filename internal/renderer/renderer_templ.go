@@ -17,7 +17,7 @@ import (
 )
 
 // page renders a complete, minimal HTML document for a session.
-func page(name, filePath string, start *time.Time, turns []Turn) templ.Component {
+func page(name, filePath string, start *time.Time, turns []Turn, theme string) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
@@ -76,7 +76,7 @@ func page(name, filePath string, start *time.Time, turns []Turn) templ.Component
 			return templ_7745c5c3_Err
 		}
 		for _, turn := range turns {
-			templ_7745c5c3_Err = turnSection(turn, start, len(turns)).Render(ctx, templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = turnSection(turn, start, len(turns), theme).Render(ctx, templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -248,7 +248,7 @@ func toc(turns []Turn) templ.Component {
 }
 
 // turnSection renders a single turn (user + following assistant messages) in a labelled section.
-func turnSection(turn Turn, start *time.Time, total int) templ.Component {
+func turnSection(turn Turn, start *time.Time, total int, theme string) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
@@ -371,7 +371,7 @@ func turnSection(turn Turn, start *time.Time, total int) templ.Component {
 			return templ_7745c5c3_Err
 		}
 		for _, msg := range turn.Messages {
-			templ_7745c5c3_Err = message(msg, start).Render(ctx, templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = message(msg, start, theme).Render(ctx, templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -385,7 +385,7 @@ func turnSection(turn Turn, start *time.Time, total int) templ.Component {
 }
 
 // message renders a single message with role, timestamp, and content blocks.
-func message(msg parser.Message, start *time.Time) templ.Component {
+func message(msg parser.Message, start *time.Time, theme string) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
@@ -498,7 +498,7 @@ func message(msg parser.Message, start *time.Time) templ.Component {
 			return templ_7745c5c3_Err
 		}
 		for _, block := range msg.Content {
-			templ_7745c5c3_Err = contentBlock(block).Render(ctx, templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = contentBlock(block, theme).Render(ctx, templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -512,7 +512,7 @@ func message(msg parser.Message, start *time.Time) templ.Component {
 }
 
 // contentBlock renders a single content block.
-func contentBlock(block parser.ContentBlock) templ.Component {
+func contentBlock(block parser.ContentBlock, theme string) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
@@ -539,7 +539,7 @@ func contentBlock(block parser.ContentBlock) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templ.Raw(string(renderMarkdown(b.Text))).Render(ctx, templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = templ.Raw(string(renderMarkdown(b.Text, theme))).Render(ctx, templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -597,7 +597,7 @@ func contentBlock(block parser.ContentBlock) templ.Component {
 				return templ_7745c5c3_Err
 			}
 		case *parser.ToolUseBlock:
-			templ_7745c5c3_Err = toolUseBlock(b).Render(ctx, templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = toolUseBlock(b, theme).Render(ctx, templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -648,7 +648,7 @@ func contentBlock(block parser.ContentBlock) templ.Component {
 }
 
 // toolUseBlock renders a tool_use content block as a collapsible <details> section.
-func toolUseBlock(b *parser.ToolUseBlock) templ.Component {
+func toolUseBlock(b *parser.ToolUseBlock, theme string) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
@@ -735,7 +735,7 @@ func toolUseBlock(b *parser.ToolUseBlock) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templ.Raw(string(toolInputHighlighted(b.Name, b.Input))).Render(ctx, templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = templ.Raw(string(toolInputHighlighted(b.Name, b.Input, theme))).Render(ctx, templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

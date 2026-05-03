@@ -23,22 +23,26 @@ var (
 	cssCache string
 )
 
-// Highlight returns code syntax-highlighted as HTML for the given language.
+// Highlight returns code syntax-highlighted as HTML for the given language and theme.
 // lang may be a Chroma language name (e.g. "go", "bash", "python") or a file
 // extension with or without leading dot (e.g. ".go", "go").
+// theme is a Chroma style name (e.g. "github", "monokai"); empty defaults to "github".
 //
 // If lang is empty or not recognised, the code is returned wrapped in a plain
 // <pre><code> block without error.
-func Highlight(code, lang string) (template.HTML, error) {
+func Highlight(code, lang, theme string) (template.HTML, error) {
 	var lexer = lexers.Get(lang)
 	if lexer == nil {
 		// Fall back to plain pre/code block.
 		return template.HTML(fmt.Sprintf("<pre><code>%s</code></pre>", template.HTMLEscapeString(code))), nil
 	}
 
-	style := styles.Get("github")
-	if style == nil {
-		style = styles.Fallback
+	style, ok := styles.Registry[theme]
+	if !ok || style == nil {
+		style, ok = styles.Registry["github"]
+		if !ok || style == nil {
+			style = styles.Fallback
+		}
 	}
 
 	iterator, err := lexer.Tokenise(nil, code)
@@ -51,6 +55,12 @@ func Highlight(code, lang string) (template.HTML, error) {
 		return "", fmt.Errorf("highlight format: %w", err)
 	}
 	return template.HTML(buf.String()), nil //nolint:gosec
+}
+
+// ValidateTheme returns true if name is a known Chroma style.
+func ValidateTheme(name string) bool {
+	_, ok := styles.Registry[name]
+	return ok
 }
 
 // CSS returns the combined Chroma CSS for the github (light) and github-dark
