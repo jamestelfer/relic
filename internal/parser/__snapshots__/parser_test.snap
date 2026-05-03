@@ -67,3 +67,9 @@ int(2)
     &parser.ThinkingBlock{Thinking:"Let me think about this problem carefully.\nFirst, I need to consider the requirements."},
 }
 ---
+
+[TestParseToolResultBlock - 1]
+[]parser.ContentBlock{
+    &parser.ToolResultBlock{ToolUseID:"toolu_01", Content:"\x1b[32mSuccess!\x1b[0m\nOutput line 2"},
+}
+---

@@ -1,0 +1,2 @@
+{"type":"user","timestamp":"2025-01-15T10:00:01.000Z","message":{"role":"user","content":"Run ls and show the result."}}
+{"type":"assistant","timestamp":"2025-01-15T10:00:05.000Z","message":{"role":"assistant","model":"claude-opus-4-5","content":[{"type":"tool_use","id":"toolu_01","name":"Bash","input":{"command":"ls -la"}},{"type":"tool_result","tool_use_id":"toolu_01","content":"\u001b[32mtotal 8\u001b[0m\ndrwxr-xr-x  2 user user 4096 Jan 15 10:00 .\ndrwxr-xr-x 10 user user 4096 Jan 15 10:00 .."},{"type":"text","text":"The directory listing is shown above."}]}}

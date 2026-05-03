@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/jamestelfer/relic/internal/ansi"
 	"github.com/jamestelfer/relic/internal/parser"
 )
 
@@ -157,6 +158,8 @@ templ contentBlock(block parser.ContentBlock) {
 					<pre class="raw-block">{ string(b.Raw) }</pre>
 				</details>
 			</div>
+		case *parser.ToolResultBlock:
+			@toolResultBlock(b)
 		case *parser.ToolUseBlock:
 			@toolUseBlock(b)
 		case *parser.ThinkingBlock:
@@ -190,6 +193,22 @@ templ thinkingBlock(b *parser.ThinkingBlock) {
 		<summary>Internal reasoning</summary>
 		<div class="preview-content">
 			<pre class="thinking-content">{ b.Thinking }</pre>
+		</div>
+	</details>
+}
+
+// toolResultBlock renders a tool_result content block as a collapsible <details> section.
+// ANSI escape sequences in the content are converted to HTML spans.
+templ toolResultBlock(b *parser.ToolResultBlock) {
+	<details class="collapsible tool-result" style={ fmt.Sprintf("--preview-lines: %d", ToolResultPreviewLines) }>
+		<summary>
+			<span class="tool-result-label">output</span>
+			if b.Content != "" {
+				<span class="tool-result-preview">{ toolResultSummary(b.Content) }</span>
+			}
+		</summary>
+		<div class="preview-content">
+			@templ.Raw(string(ansi.Convert(b.Content)))
 		</div>
 	</details>
 }

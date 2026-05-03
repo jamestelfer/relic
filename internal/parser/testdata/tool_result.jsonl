@@ -1,0 +1,1 @@
+{"type":"assistant","timestamp":"2025-01-15T10:01:00.000Z","message":{"role":"assistant","model":"claude-opus-4-5","content":[{"type":"tool_result","tool_use_id":"toolu_01","content":"\u001b[32mSuccess!\u001b[0m\nOutput line 2"}]}}

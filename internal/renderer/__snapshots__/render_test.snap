@@ -30,3 +30,8 @@
 Line two
 Line three</pre></div></details>
 ---
+
+[TestRenderToolResultBlock - 1]
+<details class="collapsible tool-result" style="--preview-lines: 10;"><summary><span class="tool-result-label">output</span> <span class="tool-result-preview">Success!</span></summary><div class="preview-content"><span class="term-fg32">Success!</span>
+Output line 2</div></details>
+---

@@ -165,6 +165,40 @@ func TestParseMalformedLine(t *testing.T) {
 	snaps.MatchSnapshot(t, parseErrs[0].Line)
 }
 
+// TestParseToolResultBlock verifies that tool_result content blocks are decoded correctly.
+func TestParseToolResultBlock(t *testing.T) {
+	f, err := os.Open("testdata/tool_result.jsonl")
+	if err != nil {
+		t.Fatalf("open fixture: %v", err)
+	}
+	defer func() { _ = f.Close() }()
+
+	msgs, _, err := parser.Parse(f)
+	if err != nil {
+		t.Fatalf("Parse: %v", err)
+	}
+
+	if len(msgs) != 1 {
+		t.Fatalf("expected 1 message, got %d", len(msgs))
+	}
+	if len(msgs[0].Content) != 1 {
+		t.Fatalf("expected 1 content block, got %d", len(msgs[0].Content))
+	}
+
+	trb, ok := msgs[0].Content[0].(*parser.ToolResultBlock)
+	if !ok {
+		t.Fatalf("Content[0] = %T, want *parser.ToolResultBlock", msgs[0].Content[0])
+	}
+	if trb.ToolUseID != "toolu_01" {
+		t.Errorf("ToolResultBlock.ToolUseID = %q, want %q", trb.ToolUseID, "toolu_01")
+	}
+	if trb.Content == "" {
+		t.Error("ToolResultBlock.Content is empty")
+	}
+
+	snaps.MatchSnapshot(t, msgs[0].Content)
+}
+
 // TestParseToolUseBlock verifies that tool_use content blocks are decoded as ToolUseBlock.
 func TestParseToolUseBlock(t *testing.T) {
 	f, err := os.Open("testdata/tool_thinking.jsonl")

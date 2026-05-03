@@ -174,6 +174,31 @@ func toolPrimaryArg(name string, input map[string]any) string {
 	return val
 }
 
+// toolResultSummary returns the first line of tool result content for the summary.
+func toolResultSummary(content string) string {
+	line := content
+	if i := strings.IndexByte(line, '\n'); i >= 0 {
+		line = line[:i]
+	}
+	// Strip ANSI escapes for the summary line.
+	var out strings.Builder
+	for i := 0; i < len(line); i++ {
+		if line[i] == '\x1b' {
+			// Skip until 'm'
+			for i < len(line) && line[i] != 'm' {
+				i++
+			}
+			continue
+		}
+		out.WriteByte(line[i])
+	}
+	s := out.String()
+	if len(s) > 80 {
+		s = s[:80]
+	}
+	return s
+}
+
 // toolInputText formats the input map of a tool_use block as readable text.
 func toolInputText(input map[string]any) string {
 	var sb strings.Builder

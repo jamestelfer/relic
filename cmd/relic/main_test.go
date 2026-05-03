@@ -112,6 +112,41 @@ func TestPrevNext(t *testing.T) {
 // TestJKKeyboardNav verifies that J/K keyboard navigation anchors are present.
 // J links (next turn) and K links (prev turn) are hidden by default and shown
 // via CSS :target when the turn section is targeted. No JavaScript is involved.
+// TestToolResultE2E verifies tool_result blocks render with ANSI converted and no raw escapes.
+func TestToolResultE2E(t *testing.T) {
+	tmp := t.TempDir()
+	outPath := filepath.Join(tmp, "out.html")
+	var logBuf bytes.Buffer
+	err := execute(options{
+		inputPath:  "testdata/fixture_tool_result.jsonl",
+		outputPath: outPath,
+	}, &logBuf)
+	if err != nil {
+		t.Fatalf("execute: %v", err)
+	}
+
+	html, err := os.ReadFile(outPath)
+	if err != nil {
+		t.Fatalf("read output: %v", err)
+	}
+	htmlStr := string(html)
+
+	// tool_result must render as <details>.
+	if !strings.Contains(htmlStr, "tool-result") {
+		t.Error("expected tool-result class in output")
+	}
+	// ANSI escape byte must be absent.
+	if strings.Contains(htmlStr, "\x1b") {
+		t.Error("expected ANSI escape byte to be absent in rendered HTML")
+	}
+	// ANSI colour should be converted to a span.
+	if !strings.Contains(htmlStr, "<span") {
+		t.Error("expected <span> from ANSI colour conversion")
+	}
+
+	snaps.MatchSnapshot(t, htmlStr)
+}
+
 // TestToolUseAndThinkingE2E verifies that tool_use and thinking blocks render
 // as collapsible <details> sections in the HTML output.
 func TestToolUseAndThinkingE2E(t *testing.T) {

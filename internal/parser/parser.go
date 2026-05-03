@@ -31,6 +31,14 @@ type TextBlock struct {
 
 func (b *TextBlock) BlockType() string { return "text" }
 
+// ToolResultBlock represents a tool_result content block (output of a tool call).
+type ToolResultBlock struct {
+	ToolUseID string
+	Content   string // may contain ANSI escape sequences
+}
+
+func (b *ToolResultBlock) BlockType() string { return "tool_result" }
+
 // ToolUseBlock represents a tool_use content block (a tool invocation).
 type ToolUseBlock struct {
 	ID    string
@@ -201,6 +209,14 @@ func decodeBlock(raw jsontext.Value) ContentBlock {
 		}
 		if err := json.Unmarshal([]byte(raw), &tb); err == nil {
 			return &TextBlock{Text: tb.Text}
+		}
+	case "tool_result":
+		var tr struct {
+			ToolUseID string `json:"tool_use_id"`
+			Content   string `json:"content"`
+		}
+		if err := json.Unmarshal([]byte(raw), &tr); err == nil {
+			return &ToolResultBlock{ToolUseID: tr.ToolUseID, Content: tr.Content}
 		}
 	case "tool_use":
 		var tu struct {

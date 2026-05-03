@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"os"
+	"strings"
 	"testing"
 
 	"github.com/gkampitakis/go-snaps/snaps"
@@ -104,4 +105,22 @@ func indexString(s, substr string) int {
 		}
 	}
 	return -1
+}
+
+// TestRenderToolResultBlock verifies tool_result blocks render as <details> with ANSI converted.
+func TestRenderToolResultBlock(t *testing.T) {
+	block := &parser.ToolResultBlock{
+		ToolUseID: "toolu_01",
+		Content:   "\x1b[32mSuccess!\x1b[0m\nOutput line 2",
+	}
+	out := renderBlock(t, block)
+	snaps.MatchSnapshot(t, out)
+
+	if !contains(out, "<details") {
+		t.Error("expected <details> element for tool_result block")
+	}
+	// ANSI escape byte must not appear in the rendered output.
+	if strings.Contains(out, "\x1b") {
+		t.Error("expected ANSI escape byte to be absent in rendered tool_result")
+	}
 }
