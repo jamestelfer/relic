@@ -10,6 +10,8 @@ require (
 	github.com/buildkite/terminal-to-html/v3 v3.16.8
 	github.com/charmbracelet/log v1.0.0
 	github.com/gkampitakis/go-snaps v0.5.21
+	github.com/stretchr/testify v1.11.1
+	github.com/urfave/cli/v3 v3.8.0
 	github.com/yuin/goldmark v1.8.2
 )
 
@@ -24,6 +26,7 @@ require (
 	github.com/charmbracelet/x/cellbuf v0.0.13-0.20250311204145-2c3ea96c31dd // indirect
 	github.com/charmbracelet/x/term v0.2.1 // indirect
 	github.com/cli/browser v1.3.0 // indirect
+	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/dlclark/regexp2 v1.12.0 // indirect
 	github.com/fatih/color v1.16.0 // indirect
 	github.com/fsnotify/fsnotify v1.7.0 // indirect
@@ -39,6 +42,7 @@ require (
 	github.com/mattn/go-runewidth v0.0.16 // indirect
 	github.com/muesli/termenv v0.16.0 // indirect
 	github.com/natefinch/atomic v1.0.1 // indirect
+	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/rivo/uniseg v0.4.7 // indirect
 	github.com/rogpeppe/go-internal v1.13.1 // indirect
 	github.com/sergi/go-diff v1.4.0 // indirect
@@ -53,4 +57,5 @@ require (
 	golang.org/x/sync v0.16.0 // indirect
 	golang.org/x/sys v0.34.0 // indirect
 	golang.org/x/tools v0.35.0 // indirect
+	gopkg.in/yaml.v3 v3.0.1 // indirect
 )

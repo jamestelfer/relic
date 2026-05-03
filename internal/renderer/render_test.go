@@ -4,11 +4,12 @@ import (
 	"bytes"
 	"context"
 	"os"
-	"strings"
 	"testing"
 
 	"github.com/gkampitakis/go-snaps/snaps"
 	"github.com/jamestelfer/relic/internal/parser"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestMain(m *testing.M) {
@@ -17,27 +18,23 @@ func TestMain(m *testing.M) {
 	os.Exit(v)
 }
 
-// TestRenderMarkdown_PlainText verifies plain paragraph text is wrapped in <p>.
 func TestRenderMarkdown_PlainText(t *testing.T) {
-	out := renderMarkdown("Hello, world.")
+	out := renderMarkdown("Hello, world.", "github")
 	snaps.MatchSnapshot(t, string(out))
 }
 
-// TestRenderMarkdown_Heading verifies ATX headings produce <h1>–<h6>.
 func TestRenderMarkdown_Heading(t *testing.T) {
-	out := renderMarkdown("# My Heading\n\nBody text.")
+	out := renderMarkdown("# My Heading\n\nBody text.", "github")
 	snaps.MatchSnapshot(t, string(out))
 }
 
-// TestRenderMarkdown_CodeFence verifies fenced code blocks produce <pre><code>.
 func TestRenderMarkdown_CodeFence(t *testing.T) {
-	out := renderMarkdown("```go\nfunc Add(a, b int) int { return a + b }\n```")
+	out := renderMarkdown("```go\nfunc Add(a, b int) int { return a + b }\n```", "github")
 	snaps.MatchSnapshot(t, string(out))
 }
 
-// TestRenderMarkdown_InlineCode verifies inline code produces <code>.
 func TestRenderMarkdown_InlineCode(t *testing.T) {
-	out := renderMarkdown("Use `fmt.Println` to print output.")
+	out := renderMarkdown("Use `fmt.Println` to print output.", "github")
 	snaps.MatchSnapshot(t, string(out))
 }
 
@@ -45,9 +42,8 @@ func TestRenderMarkdown_InlineCode(t *testing.T) {
 func renderBlock(t *testing.T, block parser.ContentBlock) string {
 	t.Helper()
 	var buf bytes.Buffer
-	if err := contentBlock(block).Render(context.Background(), &buf); err != nil {
-		t.Fatalf("render: %v", err)
-	}
+	err := contentBlock(block, "github").Render(context.Background(), &buf)
+	require.NoError(t, err)
 	return buf.String()
 }
 
@@ -60,13 +56,8 @@ func TestRenderToolUseBlock(t *testing.T) {
 	}
 	out := renderBlock(t, block)
 	snaps.MatchSnapshot(t, out)
-
-	if !contains(out, "<details") {
-		t.Error("expected <details> element for tool_use block")
-	}
-	if !contains(out, "<summary") {
-		t.Error("expected <summary> element for tool_use block")
-	}
+	assert.Contains(t, out, "<details")
+	assert.Contains(t, out, "<summary")
 }
 
 // TestRenderThinkingBlock verifies that thinking blocks render as <details> labelled
@@ -77,34 +68,13 @@ func TestRenderThinkingBlock(t *testing.T) {
 	}
 	out := renderBlock(t, block)
 	snaps.MatchSnapshot(t, out)
-
-	if !contains(out, "<details") {
-		t.Error("expected <details> element for thinking block")
-	}
-	if !contains(out, "Internal reasoning") {
-		t.Error("expected 'Internal reasoning' label in thinking block")
-	}
+	assert.Contains(t, out, "<details")
+	assert.Contains(t, out, "Internal reasoning")
 }
 
 // TestToolIconFallback verifies that unknown tool names return the default icon.
 func TestToolIconFallback(t *testing.T) {
-	icon := toolIcon("UnknownTool")
-	if icon != "⚙" {
-		t.Errorf("toolIcon(%q) = %q, want %q", "UnknownTool", icon, "⚙")
-	}
-}
-
-func contains(s, substr string) bool {
-	return len(s) >= len(substr) && (s == substr || len(substr) == 0 || indexString(s, substr) >= 0)
-}
-
-func indexString(s, substr string) int {
-	for i := range s {
-		if i+len(substr) <= len(s) && s[i:i+len(substr)] == substr {
-			return i
-		}
-	}
-	return -1
+	assert.Equal(t, "⚙", toolIcon("UnknownTool"))
 }
 
 // TestRenderToolResultBlock verifies tool_result blocks render as <details> with ANSI converted.
@@ -115,12 +85,6 @@ func TestRenderToolResultBlock(t *testing.T) {
 	}
 	out := renderBlock(t, block)
 	snaps.MatchSnapshot(t, out)
-
-	if !contains(out, "<details") {
-		t.Error("expected <details> element for tool_result block")
-	}
-	// ANSI escape byte must not appear in the rendered output.
-	if strings.Contains(out, "\x1b") {
-		t.Error("expected ANSI escape byte to be absent in rendered tool_result")
-	}
+	assert.Contains(t, out, "<details")
+	assert.NotContains(t, out, "\x1b", "ANSI escape byte must be absent in rendered tool_result")
 }
