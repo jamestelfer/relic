@@ -269,6 +269,21 @@ func TestJKKeyboardNav(t *testing.T) {
 	}
 }
 
+// TestSyntaxHighlightingCSS verifies that the rendered HTML contains Chroma CSS
+// for both github (light) and github-dark themes.
+func TestSyntaxHighlightingCSS(t *testing.T) {
+	html := runFixture(t, options{})
+
+	// Chroma CSS must be present in <head>.
+	if !strings.Contains(html, "prefers-color-scheme") {
+		t.Error("expected prefers-color-scheme media query in rendered HTML for dark mode")
+	}
+	// Class-based highlighting: no inline style=\"color:...\" attributes.
+	if strings.Contains(html, `style="color:`) {
+		t.Error(`expected no inline style="color:..." attributes (should use class-based Chroma CSS)`)
+	}
+}
+
 func TestSelfContained(t *testing.T) {
 	html := runFixture(t, options{})
 	for _, prefix := range []string{"http://", "https://"} {

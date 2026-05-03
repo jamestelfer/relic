@@ -57,6 +57,7 @@ templ page(name, filePath string, start *time.Time, turns []Turn) {
 					});
 				});
 			</script>
+			@chromaStyleComponent()
 		</head>
 		<body>
 			@banner(name, filePath, start, len(turns))
@@ -182,7 +183,7 @@ templ toolUseBlock(b *parser.ToolUseBlock) {
 			}
 		</summary>
 		<div class="preview-content">
-			<pre class="tool-input">{ toolInputText(b.Input) }</pre>
+			@templ.Raw(string(toolInputHighlighted(b.Name, b.Input)))
 		</div>
 	</details>
 }

@@ -7,13 +7,19 @@ import (
 	"fmt"
 	"html/template"
 	"io"
+	"path/filepath"
 	"strings"
 	"time"
 
+	"github.com/a-h/templ"
+	"github.com/jamestelfer/relic/internal/highlight"
 	"github.com/jamestelfer/relic/internal/parser"
 	"github.com/yuin/goldmark"
+	"github.com/yuin/goldmark/ast"
 	"github.com/yuin/goldmark/extension"
+	"github.com/yuin/goldmark/renderer"
 	"github.com/yuin/goldmark/renderer/html"
+	"github.com/yuin/goldmark/util"
 )
 
 // Turn groups a user message with the assistant messages that follow it.
@@ -174,6 +180,114 @@ func toolPrimaryArg(name string, input map[string]any) string {
 	return val
 }
 
+// toolLang infers a Chroma language name for the primary input of a tool_use block.
+// Returns empty string if no language can be inferred.
+func toolLang(name string, input map[string]any) string {
+	switch name {
+	case "Bash":
+		return "bash"
+	case "Write", "Edit", "MultiEdit":
+		path, _ := input["path"].(string)
+		if path == "" {
+			path, _ = input["file_path"].(string)
+		}
+		return extToLang(filepath.Ext(path))
+	case "Read":
+		path, _ := input["path"].(string)
+		if path == "" {
+			path, _ = input["file_path"].(string)
+		}
+		return extToLang(filepath.Ext(path))
+	}
+	return ""
+}
+
+// extToLang maps a file extension (e.g. ".go") to a Chroma language name.
+// Returns empty string for unrecognised extensions.
+func extToLang(ext string) string {
+	switch strings.ToLower(ext) {
+	case ".go":
+		return "go"
+	case ".py":
+		return "python"
+	case ".js", ".mjs":
+		return "javascript"
+	case ".ts", ".tsx":
+		return "typescript"
+	case ".sh", ".bash":
+		return "bash"
+	case ".json":
+		return "json"
+	case ".yaml", ".yml":
+		return "yaml"
+	case ".toml":
+		return "toml"
+	case ".md":
+		return "markdown"
+	case ".html", ".htm":
+		return "html"
+	case ".css":
+		return "css"
+	case ".sql":
+		return "sql"
+	case ".rs":
+		return "rust"
+	case ".java":
+		return "java"
+	case ".c", ".h":
+		return "c"
+	case ".cpp", ".cc", ".cxx", ".hpp":
+		return "cpp"
+	case ".rb":
+		return "ruby"
+	}
+	return ""
+}
+
+// toolInputHighlighted formats the input of a tool_use block as highlighted code HTML.
+func toolInputHighlighted(name string, input map[string]any) template.HTML {
+	var code string
+	switch name {
+	case "Bash":
+		cmd, _ := input["command"].(string)
+		code = cmd
+	case "Write":
+		content, _ := input["content"].(string)
+		code = content
+	case "Edit", "MultiEdit":
+		// Show full input as text for edit blocks
+		code = toolInputText(input)
+	case "Read":
+		code = toolInputText(input)
+	default:
+		code = toolInputText(input)
+	}
+	lang := toolLang(name, input)
+	out, err := highlight.Highlight(code, lang)
+	if err != nil {
+		return template.HTML(template.HTMLEscapeString(code)) //nolint:gosec
+	}
+	return out
+}
+
+// chromaStyleComponent returns a templ.Component that writes a <style> element
+// containing the Chroma CSS for light and dark themes directly to the writer,
+// bypassing HTML escaping (safe: CSS contains no user-controlled content).
+func chromaStyleComponent() templ.Component {
+	return templ.ComponentFunc(func(ctx context.Context, w io.Writer) error {
+		_, err := io.WriteString(w, "<style>")
+		if err != nil {
+			return err
+		}
+		_, err = io.WriteString(w, highlight.CSS())
+		if err != nil {
+			return err
+		}
+		_, err = io.WriteString(w, "</style>")
+		return err
+	})
+}
+
 // toolResultSummary returns the first line of tool result content for the summary.
 func toolResultSummary(content string) string {
 	line := content
@@ -208,8 +322,51 @@ func toolInputText(input map[string]any) string {
 	return strings.TrimRight(sb.String(), "\n")
 }
 
+// highlightRenderer is a custom goldmark NodeRenderer that replaces the default
+// fenced code block renderer with one that uses Chroma for syntax highlighting.
+type highlightRenderer struct{}
+
+func (h highlightRenderer) RegisterFuncs(reg renderer.NodeRendererFuncRegisterer) {
+	reg.Register(ast.KindFencedCodeBlock, renderHighlightedCodeBlock)
+}
+
+// renderHighlightedCodeBlock is a goldmark NodeRendererFunc for fenced code blocks.
+// On entering the node it collects the code lines, determines the language from the
+// fence info string, calls highlight.Highlight, and writes the result directly.
+// On exit it does nothing (the block was fully written on entry).
+func renderHighlightedCodeBlock(w util.BufWriter, source []byte, node ast.Node, entering bool) (ast.WalkStatus, error) {
+	if !entering {
+		return ast.WalkContinue, nil
+	}
+	n := node.(*ast.FencedCodeBlock)
+
+	// Collect all lines of the code block.
+	var codeBuf bytes.Buffer
+	for i := range n.Lines().Len() {
+		line := n.Lines().At(i)
+		codeBuf.Write(line.Value(source))
+	}
+
+	// Determine language from the fence info string.
+	lang := ""
+	if langBytes := n.Language(source); langBytes != nil {
+		lang = string(langBytes)
+	}
+
+	out, err := highlight.Highlight(codeBuf.String(), lang)
+	if err != nil {
+		// Fallback to plain pre/code on unexpected error.
+		_, _ = fmt.Fprintf(w, "<pre><code>%s</code></pre>\n", template.HTMLEscapeString(codeBuf.String()))
+		return ast.WalkContinue, nil
+	}
+	_, _ = w.WriteString(string(out))
+	_, _ = w.WriteString("\n")
+	return ast.WalkContinue, nil
+}
+
 // md is the goldmark instance used for all Markdown rendering.
 // Extensions: tables, strikethrough, task list, linkify.
+// Fenced code blocks are syntax-highlighted via Chroma (class-based).
 var md = goldmark.New(
 	goldmark.WithExtensions(
 		extension.Table,
@@ -219,6 +376,9 @@ var md = goldmark.New(
 	),
 	goldmark.WithRendererOptions(
 		html.WithUnsafe(), // allow raw HTML passthrough in source
+		renderer.WithNodeRenderers(
+			util.Prioritized(highlightRenderer{}, 1), // higher priority than default
+		),
 	),
 )
 

@@ -11,8 +11,8 @@
 ---
 
 [TestRenderMarkdown_CodeFence - 1]
-<pre><code class="language-go">func Add(a, b int) int { return a + b }
-</code></pre>
+<pre class="chroma"><code><span class="line"><span class="cl"><span class="kd">func</span><span class="w"> </span><span class="nf">Add</span><span class="p">(</span><span class="nx">a</span><span class="p">,</span><span class="w"> </span><span class="nx">b</span><span class="w"> </span><span class="kt">int</span><span class="p">)</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="k">return</span><span class="w"> </span><span class="nx">a</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="nx">b</span><span class="w"> </span><span class="p">}</span><span class="w">
+</span></span></span></code></pre>
 
 ---
 
@@ -22,7 +22,7 @@
 ---
 
 [TestRenderToolUseBlock - 1]
-<details class="collapsible tool-use" style="--preview-lines: 5;"><summary><span class="tool-icon">$</span> <span class="tool-name">Bash</span> <span class="tool-arg">echo hello world</span></summary><div class="preview-content"><pre class="tool-input">command: echo hello world</pre></div></details>
+<details class="collapsible tool-use" style="--preview-lines: 5;"><summary><span class="tool-icon">$</span> <span class="tool-name">Bash</span> <span class="tool-arg">echo hello world</span></summary><div class="preview-content"><pre class="chroma"><code><span class="line"><span class="cl"><span class="nb">echo</span> hello world</span></span></code></pre></div></details>
 ---
 
 [TestRenderThinkingBlock - 1]
