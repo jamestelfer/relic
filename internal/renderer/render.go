@@ -294,6 +294,21 @@ func chromaStyleComponent() templ.Component {
 	})
 }
 
+// messageRole returns the display role for a message. User messages whose
+// content is entirely tool results are labelled "tool" rather than "user" to
+// distinguish environment output from human input.
+func messageRole(msg parser.Message) string {
+	if msg.Role != "user" || len(msg.Content) == 0 {
+		return msg.Role
+	}
+	for _, block := range msg.Content {
+		if _, ok := block.(*parser.ToolResultBlock); !ok {
+			return "user"
+		}
+	}
+	return "tool"
+}
+
 // toolResultSummary returns the first line of tool result content for the summary.
 func toolResultSummary(content string) string {
 	line := content

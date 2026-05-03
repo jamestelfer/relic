@@ -11,6 +11,7 @@
                 .message-time { font-style: italic; }
                 .message-user .message-role { color: #1a73e8; }
                 .message-assistant .message-role { color: #188038; }
+                .message-tool .message-role { color: #888; }
                 .message-body { padding-left: 0.5rem; }
                 .text-block { margin: 0.25rem 0; }
                 .raw-block { background: #f5f5f5; padding: 0.5rem; overflow-x: auto; font-size: 0.85em; }
@@ -234,6 +235,7 @@
                 .message-time { font-style: italic; }
                 .message-user .message-role { color: #1a73e8; }
                 .message-assistant .message-role { color: #188038; }
+                .message-tool .message-role { color: #888; }
                 .message-body { padding-left: 0.5rem; }
                 .text-block { margin: 0.25rem 0; }
                 .raw-block { background: #f5f5f5; padding: 0.5rem; overflow-x: auto; font-size: 0.85em; }
@@ -445,6 +447,7 @@
                 .message-time { font-style: italic; }
                 .message-user .message-role { color: #1a73e8; }
                 .message-assistant .message-role { color: #188038; }
+                .message-tool .message-role { color: #888; }
                 .message-body { padding-left: 0.5rem; }
                 .text-block { margin: 0.25rem 0; }
                 .raw-block { background: #f5f5f5; padding: 0.5rem; overflow-x: auto; font-size: 0.85em; }
@@ -660,6 +663,7 @@ Let me think about what to run.</pre></div></details><details class="collapsible
                 .message-time { font-style: italic; }
                 .message-user .message-role { color: #1a73e8; }
                 .message-assistant .message-role { color: #188038; }
+                .message-tool .message-role { color: #888; }
                 .message-body { padding-left: 0.5rem; }
                 .text-block { margin: 0.25rem 0; }
                 .raw-block { background: #f5f5f5; padding: 0.5rem; overflow-x: auto; font-size: 0.85em; }
@@ -873,6 +877,7 @@ drwxr-xr-x 10 user user 4096 Jan 15 10:00 ..</pre></div></details><div class="te
                 .message-time { font-style: italic; }
                 .message-user .message-role { color: #1a73e8; }
                 .message-assistant .message-role { color: #188038; }
+                .message-tool .message-role { color: #888; }
                 .message-body { padding-left: 0.5rem; }
                 .text-block { margin: 0.25rem 0; }
                 .raw-block { background: #f5f5f5; padding: 0.5rem; overflow-x: auto; font-size: 0.85em; }

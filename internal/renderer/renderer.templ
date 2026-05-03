@@ -27,6 +27,7 @@ templ page(name, filePath string, start *time.Time, turns []Turn, theme string) 
 				.message-time { font-style: italic; }
 				.message-user .message-role { color: #1a73e8; }
 				.message-assistant .message-role { color: #188038; }
+				.message-tool .message-role { color: #888; }
 				.message-body { padding-left: 0.5rem; }
 				.text-block { margin: 0.25rem 0; }
 				.raw-block { background: #f5f5f5; padding: 0.5rem; overflow-x: auto; font-size: 0.85em; }
@@ -138,9 +139,9 @@ templ turnSection(turn Turn, start *time.Time, total int, theme string) {
 
 // message renders a single message with role, timestamp, and content blocks.
 templ message(msg parser.Message, start *time.Time, theme string) {
-	<div class={ "message", "message-" + msg.Role }>
+	<div class={ "message", "message-" + messageRole(msg) }>
 		<div class="message-header">
-			<span class="message-role">{ msg.Role }</span>
+			<span class="message-role">{ messageRole(msg) }</span>
 			if msg.Timestamp != nil && start != nil {
 				if msg.Timestamp.Equal(*start) {
 					<time class="message-time">{ msg.Timestamp.UTC().Format("Mon, 02 Jan 2006 15:04:05 UTC") }</time>
