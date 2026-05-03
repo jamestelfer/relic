@@ -18,9 +18,22 @@ import (
 	"github.com/urfave/cli/v3"
 )
 
+// outputMode represents the destination for rendered HTML.
+type outputMode string
+
+const (
+	outputModeHTML       outputMode = "html"
+	outputModeGist       outputMode = "gist"
+	outputModePublicGist outputMode = "public-gist"
+)
+
+// validOutputModes lists all accepted --output values in display order.
+var validOutputModes = []outputMode{outputModeHTML, outputModeGist, outputModePublicGist} //nolint:unused // used in Phase 2
+
 // options holds the resolved runtime configuration for a single invocation.
 type options struct {
 	inputPath  string
+	outputMode outputMode // "" or "html" | "gist" | "public-gist"
 	outputPath string
 	name       string
 	theme      string
@@ -33,6 +46,19 @@ type options struct {
 // opts.htmlOut (when outputPath is "-").
 // Log output goes to errOut.
 func execute(opts options, errOut io.Writer) (retErr error) {
+	// Validate output mode.
+	mode := opts.outputMode
+	if mode == "" {
+		mode = outputModeHTML
+	}
+	switch mode {
+	case outputModeHTML:
+		// handled below
+	case outputModeGist, outputModePublicGist:
+		return fmt.Errorf("output mode %q not yet implemented", mode)
+	default:
+		return fmt.Errorf("unknown output mode %q: valid values are html, gist, public-gist", opts.outputMode)
+	}
 	// Validate theme early — unknown theme is a user error.
 	theme := opts.theme
 	if theme == "" {
@@ -127,7 +153,11 @@ func buildCLI(run func(opts options, errOut io.Writer) error) *cli.Command {
 			&cli.StringFlag{
 				Name:    "output",
 				Aliases: []string{"o"},
-				Usage:   "output path; use '-' to write HTML to stdout",
+				Usage:   "output mode: html (default), gist, or public-gist",
+			},
+			&cli.StringFlag{
+				Name:  "output-path",
+				Usage: "explicit output file path; use '-' to write HTML to stdout (html mode only)",
 			},
 			&cli.StringFlag{
 				Name:  "theme",
@@ -158,7 +188,8 @@ func buildCLI(run func(opts options, errOut io.Writer) error) *cli.Command {
 				inputPath = chosen
 			}
 
-			outputPath := cmd.String("output")
+			mode := outputMode(cmd.String("output"))
+			outputPath := cmd.String("output-path")
 			theme := cmd.String("theme")
 			name := cmd.String("name")
 
@@ -169,6 +200,7 @@ func buildCLI(run func(opts options, errOut io.Writer) error) *cli.Command {
 
 			opts := options{
 				inputPath:  inputPath,
+				outputMode: mode,
 				outputPath: outputPath,
 				theme:      theme,
 				name:       name,
@@ -180,8 +212,9 @@ func buildCLI(run func(opts options, errOut io.Writer) error) *cli.Command {
 				if os.IsNotExist(unwrapAll(err)) {
 					return cli.Exit(err.Error(), 1)
 				}
-				// Theme validation errors are user errors.
-				if strings.Contains(err.Error(), "unknown theme") {
+				// Theme and mode validation errors are user errors.
+				if strings.Contains(err.Error(), "unknown theme") ||
+					strings.Contains(err.Error(), "unknown output mode") {
 					return cli.Exit(err.Error(), 1)
 				}
 				return cli.Exit(err.Error(), 2)

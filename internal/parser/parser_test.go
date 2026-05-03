@@ -46,8 +46,8 @@ func TestParseTextBlock(t *testing.T) {
 
 	// msgs[1] is the first assistant reply — content is [{"type":"text","text":"Sure!..."}]
 	require.Len(t, msgs[1].Content, 1)
-	tb, ok := msgs[1].Content[0].(*parser.TextBlock)
-	require.True(t, ok, "Content[0] should be *parser.TextBlock, got %T", msgs[1].Content[0])
+	require.IsType(t, (*parser.TextBlock)(nil), msgs[1].Content[0])
+	tb := msgs[1].Content[0].(*parser.TextBlock)
 	assert.NotEmpty(t, tb.Text)
 
 	snaps.MatchSnapshot(t, msgs[1].Content)
@@ -60,8 +60,8 @@ func TestParseStringContent(t *testing.T) {
 
 	// msgs[0] is the first user message — content is a plain string in the fixture.
 	require.Len(t, msgs[0].Content, 1)
-	tb, ok := msgs[0].Content[0].(*parser.TextBlock)
-	require.True(t, ok, "Content[0] should be *parser.TextBlock, got %T", msgs[0].Content[0])
+	require.IsType(t, (*parser.TextBlock)(nil), msgs[0].Content[0])
+	tb := msgs[0].Content[0].(*parser.TextBlock)
 	assert.Equal(t, "Hello, can you help me write a Go function?", tb.Text)
 }
 
@@ -72,8 +72,8 @@ func TestParseRawBlock(t *testing.T) {
 
 	require.Len(t, msgs, 1)
 	require.Len(t, msgs[0].Content, 1)
-	rb, ok := msgs[0].Content[0].(*parser.RawBlock)
-	require.True(t, ok, "Content[0] should be *parser.RawBlock, got %T", msgs[0].Content[0])
+	require.IsType(t, (*parser.RawBlock)(nil), msgs[0].Content[0])
+	rb := msgs[0].Content[0].(*parser.RawBlock)
 	assert.Equal(t, "custom_widget", rb.RawType)
 
 	snaps.MatchSnapshot(t, msgs[0].Content)
@@ -100,8 +100,8 @@ func TestParseToolResultBlock(t *testing.T) {
 
 	require.Len(t, msgs, 1)
 	require.Len(t, msgs[0].Content, 1)
-	trb, ok := msgs[0].Content[0].(*parser.ToolResultBlock)
-	require.True(t, ok, "Content[0] should be *parser.ToolResultBlock, got %T", msgs[0].Content[0])
+	require.IsType(t, (*parser.ToolResultBlock)(nil), msgs[0].Content[0])
+	trb := msgs[0].Content[0].(*parser.ToolResultBlock)
 	assert.Equal(t, "toolu_01", trb.ToolUseID)
 	assert.NotEmpty(t, trb.Content)
 
@@ -116,12 +116,12 @@ func TestParseToolUseBlock(t *testing.T) {
 	require.Len(t, msgs, 1)
 	require.Len(t, msgs[0].Content, 2)
 
-	tub, ok := msgs[0].Content[0].(*parser.ToolUseBlock)
-	require.True(t, ok, "Content[0] should be *parser.ToolUseBlock, got %T", msgs[0].Content[0])
+	require.IsType(t, (*parser.ToolUseBlock)(nil), msgs[0].Content[0])
+	tub := msgs[0].Content[0].(*parser.ToolUseBlock)
 	assert.Equal(t, "Bash", tub.Name)
 
-	tb, ok := msgs[0].Content[1].(*parser.ThinkingBlock)
-	require.True(t, ok, "Content[1] should be *parser.ThinkingBlock, got %T", msgs[0].Content[1])
+	require.IsType(t, (*parser.ThinkingBlock)(nil), msgs[0].Content[1])
+	tb := msgs[0].Content[1].(*parser.ThinkingBlock)
 	assert.NotEmpty(t, tb.Thinking)
 
 	snaps.MatchSnapshot(t, msgs[0].Content)

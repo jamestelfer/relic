@@ -12,6 +12,7 @@ import (
 	"github.com/gkampitakis/go-snaps/snaps"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"github.com/urfave/cli/v3"
 )
 
 func TestMain(m *testing.M) {
@@ -207,6 +208,75 @@ func TestMissingFile_ExitCode(t *testing.T) {
 	require.Error(t, err)
 }
 
+// TestCLI_OutputMode_Invalid verifies that --output <bad-value> via the CLI exits
+// non-zero and prints a message listing html, gist, and public-gist (R6).
+func TestCLI_OutputMode_Invalid(t *testing.T) {
+	// Override OsExiter so cli.Exit doesn't call os.Exit in the test process.
+	origExiter := cli.OsExiter
+	defer func() { cli.OsExiter = origExiter }()
+	cli.OsExiter = func(int) {}
+
+	var outBuf, errBuf bytes.Buffer
+	cmd := buildCLI(func(opts options, errOut io.Writer) error {
+		return execute(opts, errOut)
+	})
+	cmd.Writer = &outBuf
+	cmd.ErrWriter = &errBuf
+
+	err := cmd.Run(context.Background(), []string{
+		"relic",
+		"--output", "bad",
+		"testdata/fixture.jsonl",
+	})
+	require.Error(t, err)
+	msg := err.Error()
+	assert.Contains(t, msg, "html")
+	assert.Contains(t, msg, "gist")
+	assert.Contains(t, msg, "public-gist")
+}
+
+// TestCLI_OutputPathStdout verifies that --output-path - writes HTML to stdout.
+func TestCLI_OutputPathStdout(t *testing.T) {
+	var outBuf, errBuf bytes.Buffer
+	cmd := buildCLI(func(opts options, errOut io.Writer) error {
+		return execute(opts, errOut)
+	})
+	cmd.Writer = &outBuf
+	cmd.ErrWriter = &errBuf
+
+	err := cmd.Run(context.Background(), []string{
+		"relic",
+		"--output-path", "-",
+		"testdata/fixture.jsonl",
+	})
+	require.NoError(t, err)
+	assert.Contains(t, outBuf.String(), "<!doctype html")
+}
+
+// TestCLI_OutputPath verifies that --output-path <file> writes HTML to that path.
+func TestCLI_OutputPath(t *testing.T) {
+	tmp := t.TempDir()
+	outPath := filepath.Join(tmp, "explicit.html")
+
+	var errBuf bytes.Buffer
+	cmd := buildCLI(func(opts options, errOut io.Writer) error {
+		return execute(opts, errOut)
+	})
+	cmd.Writer = io.Discard
+	cmd.ErrWriter = &errBuf
+
+	err := cmd.Run(context.Background(), []string{
+		"relic",
+		"--output-path", outPath,
+		"testdata/fixture.jsonl",
+	})
+	require.NoError(t, err)
+
+	html, readErr := os.ReadFile(outPath)
+	require.NoError(t, readErr)
+	assert.Contains(t, string(html), "<!doctype html")
+}
+
 // TestCLI_Help verifies that the CLI --help output lists all three flags.
 func TestCLI_Help(t *testing.T) {
 	var outBuf bytes.Buffer
@@ -217,8 +287,72 @@ func TestCLI_Help(t *testing.T) {
 	_ = cmd.Run(context.Background(), []string{"relic", "--help"})
 	help := outBuf.String()
 	assert.Contains(t, help, "--output")
+	assert.Contains(t, help, "--output-path")
 	assert.Contains(t, help, "--theme")
 	assert.Contains(t, help, "--name")
+}
+
+// TestOutputMode_Invalid verifies that an unrecognised --output mode returns an error
+// that lists all valid mode values (R6).
+func TestOutputMode_Invalid(t *testing.T) {
+	var logBuf bytes.Buffer
+	err := execute(options{
+		inputPath:  "testdata/fixture.jsonl",
+		outputPath: t.TempDir() + "/out.html",
+		outputMode: "bad",
+	}, &logBuf)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "html")
+	assert.Contains(t, err.Error(), "gist")
+	assert.Contains(t, err.Error(), "public-gist")
+}
+
+// TestOutputMode_HTMLExplicit verifies that --output html produces the same result
+// as the default (no --output flag), satisfying R1 and R3.
+func TestOutputMode_HTMLExplicit(t *testing.T) {
+	tmp := t.TempDir()
+	outPath := filepath.Join(tmp, "out.html")
+	var logBuf bytes.Buffer
+	require.NoError(t, execute(options{
+		inputPath:  "testdata/fixture.jsonl",
+		outputPath: outPath,
+		outputMode: outputModeHTML,
+	}, &logBuf))
+	html, err := os.ReadFile(outPath)
+	require.NoError(t, err)
+	assert.Contains(t, string(html), "<!doctype html")
+}
+
+// TestCLI_OutputMode_GistAccepted verifies that --output gist and --output public-gist
+// are accepted by the flag parser without a parse error (structural, R1).
+// Gist logic is not yet wired, so a "not implemented" error is acceptable.
+func TestCLI_OutputMode_GistAccepted(t *testing.T) {
+	for _, mode := range []string{"gist", "public-gist"} {
+		t.Run(mode, func(t *testing.T) {
+			origExiter := cli.OsExiter
+			defer func() { cli.OsExiter = origExiter }()
+			cli.OsExiter = func(int) {}
+
+			var outBuf, errBuf bytes.Buffer
+			cmd := buildCLI(func(opts options, errOut io.Writer) error {
+				return execute(opts, errOut)
+			})
+			cmd.Writer = &outBuf
+			cmd.ErrWriter = &errBuf
+
+			err := cmd.Run(context.Background(), []string{
+				"relic",
+				"--output", mode,
+				"testdata/fixture.jsonl",
+			})
+			// Must not be a parse / "unknown output mode" error.
+			// A "not implemented" error is acceptable at this phase.
+			if err != nil {
+				assert.NotContains(t, err.Error(), "unknown output mode",
+					"--output %q must be accepted by the flag parser", mode)
+			}
+		})
+	}
 }
 
 // TestCLI_UnknownTheme verifies that an unknown --theme value returns a user error.
