@@ -34,6 +34,8 @@ templ page(name, filePath string, start *time.Time, turns []Turn) {
 				.toc ol { margin: 0; padding-left: 1.25rem; }
 				.toc li { margin: 0.2rem 0; }
 				.turn-nav { display: flex; gap: 1rem; font-size: 0.85em; margin-bottom: 0.5rem; }
+				.jk-nav a { display: none; }
+				section:target .jk-nav a { display: inline; }
 			</style>
 		</head>
 		<body>
@@ -86,6 +88,14 @@ templ turnSection(turn Turn, start *time.Time, total int) {
 			}
 			if turn.Index < total {
 				<a class="turn-next" href={ templ.SafeURL(fmt.Sprintf("#turn-%d", turn.Index+1)) }>next →</a>
+			}
+		</nav>
+		<nav class="jk-nav">
+			if turn.Index > 1 {
+				<a accesskey="k" href={ templ.SafeURL(fmt.Sprintf("#turn-%d", turn.Index-1)) }>[K] prev</a>
+			}
+			if turn.Index < total {
+				<a accesskey="j" href={ templ.SafeURL(fmt.Sprintf("#turn-%d", turn.Index+1)) }>[J] next</a>
 			}
 		</nav>
 		for _, msg := range turn.Messages {
