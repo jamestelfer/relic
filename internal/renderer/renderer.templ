@@ -55,6 +55,16 @@ templ page(name, filePath string, start *time.Time, turns []Turn, theme string) 
 						});
 						pre.appendChild(btn);
 					});
+
+					var turns = Array.from(document.querySelectorAll('section[id^="turn-"]')).map(function(s) { return s.id; });
+					document.addEventListener('keydown', function(e) {
+						if (e.target.matches('input,textarea,select,[contenteditable]')) return;
+						if (e.metaKey || e.ctrlKey || e.altKey) return;
+						var hash = window.location.hash.replace('#', '') || turns[0];
+						var idx = turns.indexOf(hash);
+						if (e.key === 'j' && idx < turns.length - 1) window.location.hash = turns[idx + 1];
+						if (e.key === 'k' && idx > 0) window.location.hash = turns[idx - 1];
+					});
 				});
 			</script>
 			@chromaStyleComponent()
@@ -113,10 +123,10 @@ templ turnSection(turn Turn, start *time.Time, total int, theme string) {
 		</nav>
 		<nav class="jk-nav">
 			if turn.Index > 1 {
-				<a accesskey="k" href={ templ.SafeURL(fmt.Sprintf("#turn-%d", turn.Index-1)) }>[K] prev</a>
+				<a href={ templ.SafeURL(fmt.Sprintf("#turn-%d", turn.Index-1)) }>[K] prev</a>
 			}
 			if turn.Index < total {
-				<a accesskey="j" href={ templ.SafeURL(fmt.Sprintf("#turn-%d", turn.Index+1)) }>[J] next</a>
+				<a href={ templ.SafeURL(fmt.Sprintf("#turn-%d", turn.Index+1)) }>[J] next</a>
 			}
 		</nav>
 		for _, msg := range turn.Messages {

@@ -155,8 +155,10 @@ func TestCopyToClipboardScript(t *testing.T) {
 
 func TestJKKeyboardNav(t *testing.T) {
 	html := runFixture(t, options{})
-	assert.Contains(t, html, `accesskey="j"`)
-	assert.Contains(t, html, `accesskey="k"`)
+	assert.Contains(t, html, `e.key === 'j'`, "expected JS keydown handler for j")
+	assert.Contains(t, html, `e.key === 'k'`, "expected JS keydown handler for k")
+	assert.Contains(t, html, "[J] next", "expected jk-nav label for next")
+	assert.Contains(t, html, "[K] prev", "expected jk-nav label for prev")
 	assert.Contains(t, html, ":target", "expected CSS :target rule for J/K navigation")
 }
 
