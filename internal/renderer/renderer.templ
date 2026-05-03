@@ -1,0 +1,102 @@
+package renderer
+
+import (
+	"fmt"
+	"time"
+
+	"github.com/jamestelfer/relic/internal/parser"
+)
+
+// page renders a complete, minimal HTML document for a session.
+templ page(name, filePath string, start *time.Time, turns []Turn) {
+	<!DOCTYPE html>
+	<html lang="en">
+		<head>
+			<meta charset="utf-8"/>
+			<meta name="viewport" content="width=device-width, initial-scale=1"/>
+			<title>{ name } — relic</title>
+			<style>
+				body { font-family: sans-serif; max-width: 900px; margin: 0 auto; padding: 1rem; }
+				.session-banner { border-bottom: 2px solid #ccc; margin-bottom: 1.5rem; padding-bottom: 1rem; }
+				.session-banner dl { display: grid; grid-template-columns: max-content 1fr; gap: 0.25rem 1rem; }
+				section[id^="turn-"] { border-left: 3px solid #e0e0e0; margin: 1rem 0; padding-left: 1rem; }
+				.message { margin-bottom: 1rem; }
+				.message-header { display: flex; gap: 1rem; font-size: 0.85em; color: #666; margin-bottom: 0.25rem; }
+				.message-role { font-weight: bold; text-transform: capitalize; }
+				.message-time { font-style: italic; }
+				.message-user .message-role { color: #1a73e8; }
+				.message-assistant .message-role { color: #188038; }
+				.message-body { padding-left: 0.5rem; }
+				.text-block { margin: 0.25rem 0; white-space: pre-wrap; }
+				.raw-block { background: #f5f5f5; padding: 0.5rem; overflow-x: auto; font-size: 0.85em; }
+			</style>
+		</head>
+		<body>
+			@banner(name, filePath, start, len(turns))
+			<main>
+				for _, turn := range turns {
+					@turnSection(turn, start)
+				}
+			</main>
+		</body>
+	</html>
+}
+
+// banner renders the session summary header.
+templ banner(name, filePath string, firstDate *time.Time, turnCount int) {
+	<header class="session-banner">
+		<h1>{ name }</h1>
+		<dl>
+			<dt>File</dt>
+			<dd>{ filePath }</dd>
+			if firstDate != nil {
+				<dt>Date</dt>
+				<dd>{ firstDate.UTC().Format(time.RFC1123) }</dd>
+			}
+			<dt>Turns</dt>
+			<dd>{ fmt.Sprintf("%d", turnCount) }</dd>
+		</dl>
+	</header>
+}
+
+// turnSection renders a single turn (user + following assistant messages) in a labelled section.
+templ turnSection(turn Turn, start *time.Time) {
+	<section id={ fmt.Sprintf("turn-%d", turn.Index) }>
+		for _, msg := range turn.Messages {
+			@message(msg, start)
+		}
+	</section>
+}
+
+// message renders a single message with role, timestamp, and content blocks.
+templ message(msg parser.Message, start *time.Time) {
+	<div class={ "message", "message-" + msg.Role }>
+		<div class="message-header">
+			<span class="message-role">{ msg.Role }</span>
+			if msg.Timestamp != nil && start != nil {
+				if msg.Timestamp.Equal(*start) {
+					<time class="message-time">{ msg.Timestamp.UTC().Format("Mon, 02 Jan 2006 15:04:05 UTC") }</time>
+				} else {
+					<time class="message-time" title={ msg.Timestamp.UTC().Format(time.RFC3339) }>{ relativeTime(*msg.Timestamp, *start) }</time>
+				}
+			}
+		</div>
+		<div class="message-body">
+			for _, block := range msg.Content {
+				@contentBlock(block)
+			}
+		</div>
+	</div>
+}
+
+// contentBlock renders a single content block.
+templ contentBlock(block parser.ContentBlock) {
+	switch b := block.(type) {
+		case *parser.TextBlock:
+			<p class="text-block">{ b.Text }</p>
+		case *parser.RawBlock:
+			<pre class="raw-block">[{ b.BlockType() }] { string(b.Data) }</pre>
+		default:
+			<p class="unknown-block">(unknown block)</p>
+	}
+}

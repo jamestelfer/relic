@@ -1,0 +1,52 @@
+
+[TestParseFixture - 1]
+[]parser.Message{
+    {
+        Role:      "user",
+        Timestamp: time.Date(2025, time.January, 15, 10, 0, 1, 0, time.UTC),
+        Model:     "",
+        Content:   {
+            &parser.TextBlock{Text:"Hello, can you help me write a Go function?"},
+        },
+    },
+    {
+        Role:      "assistant",
+        Timestamp: time.Date(2025, time.January, 15, 10, 0, 5, 0, time.UTC),
+        Model:     "claude-opus-4-5",
+        Content:   {
+            &parser.TextBlock{Text:"Sure! I can help you write a Go function. What would you like it to do?"},
+        },
+    },
+    {
+        Role:      "user",
+        Timestamp: time.Date(2025, time.January, 15, 10, 0, 30, 0, time.UTC),
+        Model:     "",
+        Content:   {
+            &parser.TextBlock{Text:"Please write a function that adds two integers."},
+        },
+    },
+    {
+        Role:      "assistant",
+        Timestamp: time.Date(2025, time.January, 15, 10, 0, 35, 0, time.UTC),
+        Model:     "claude-opus-4-5",
+        Content:   {
+            &parser.TextBlock{Text:"Here is the function:\n\n```go\nfunc Add(a, b int) int {\n    return a + b\n}\n```"},
+        },
+    },
+}
+---
+
+[TestParseTextBlock - 1]
+[]parser.ContentBlock{
+    &parser.TextBlock{Text:"Sure! I can help you write a Go function. What would you like it to do?"},
+}
+---
+
+[TestParseRawBlock - 1]
+[]parser.ContentBlock{
+    &parser.RawBlock{
+        RawType: "custom_widget",
+        Data:    {0x7b, 0x22, 0x74, 0x79, 0x70, 0x65, 0x22, 0x3a, 0x22, 0x63, 0x75, 0x73, 0x74, 0x6f, 0x6d, 0x5f, 0x77, 0x69, 0x64, 0x67, 0x65, 0x74, 0x22, 0x2c, 0x22, 0x77, 0x69, 0x64, 0x67, 0x65, 0x74, 0x5f, 0x69, 0x64, 0x22, 0x3a, 0x22, 0x77, 0x2d, 0x34, 0x32, 0x22, 0x2c, 0x22, 0x70, 0x61, 0x79, 0x6c, 0x6f, 0x61, 0x64, 0x22, 0x3a, 0x7b, 0x22, 0x63, 0x6f, 0x6c, 0x6f, 0x72, 0x22, 0x3a, 0x22, 0x62, 0x6c, 0x75, 0x65, 0x22, 0x2c, 0x22, 0x73, 0x69, 0x7a, 0x65, 0x22, 0x3a, 0x33, 0x7d, 0x7d},
+    },
+}
+---
