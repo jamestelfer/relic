@@ -29,13 +29,19 @@ templ page(name, filePath string, start *time.Time, turns []Turn) {
 				.message-body { padding-left: 0.5rem; }
 				.text-block { margin: 0.25rem 0; white-space: pre-wrap; }
 				.raw-block { background: #f5f5f5; padding: 0.5rem; overflow-x: auto; font-size: 0.85em; }
+				.toc { background: #f9f9f9; border: 1px solid #ddd; padding: 0.75rem 1rem; margin-bottom: 1.5rem; display: inline-block; min-width: 20rem; }
+				.toc h2 { margin: 0 0 0.5rem; font-size: 1rem; }
+				.toc ol { margin: 0; padding-left: 1.25rem; }
+				.toc li { margin: 0.2rem 0; }
+				.turn-nav { display: flex; gap: 1rem; font-size: 0.85em; margin-bottom: 0.5rem; }
 			</style>
 		</head>
 		<body>
 			@banner(name, filePath, start, len(turns))
+			@toc(turns)
 			<main>
 				for _, turn := range turns {
-					@turnSection(turn, start)
+					@turnSection(turn, start, len(turns))
 				}
 			</main>
 		</body>
@@ -59,9 +65,29 @@ templ banner(name, filePath string, firstDate *time.Time, turnCount int) {
 	</header>
 }
 
+// toc renders the table of contents: one entry per turn.
+templ toc(turns []Turn) {
+	<nav class="toc">
+		<h2>Contents</h2>
+		<ol>
+			for _, turn := range turns {
+				<li><a href={ templ.SafeURL("#turn-" + fmt.Sprintf("%d", turn.Index)) }>{ tocLabel(turn) }</a></li>
+			}
+		</ol>
+	</nav>
+}
+
 // turnSection renders a single turn (user + following assistant messages) in a labelled section.
-templ turnSection(turn Turn, start *time.Time) {
+templ turnSection(turn Turn, start *time.Time, total int) {
 	<section id={ fmt.Sprintf("turn-%d", turn.Index) }>
+		<nav class="turn-nav">
+			if turn.Index > 1 {
+				<a class="turn-prev" href={ templ.SafeURL(fmt.Sprintf("#turn-%d", turn.Index-1)) }>← prev</a>
+			}
+			if turn.Index < total {
+				<a class="turn-next" href={ templ.SafeURL(fmt.Sprintf("#turn-%d", turn.Index+1)) }>next →</a>
+			}
+		</nav>
 		for _, msg := range turn.Messages {
 			@message(msg, start)
 		}

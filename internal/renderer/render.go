@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"strings"
 	"time"
 
 	"github.com/jamestelfer/relic/internal/parser"
@@ -66,7 +67,28 @@ func groupTurns(msgs []parser.Message) []Turn {
 	return turns
 }
 
-// relativeTime formats t as a human-readable duration since start.
+// tocLabel returns the TOC entry label for a turn: the first line of the
+// first text block in the first (user) message, truncated to 80 characters.
+// Falls back to "(non-text message)" if no text block is present.
+func tocLabel(turn Turn) string {
+	if len(turn.Messages) == 0 {
+		return "(non-text message)"
+	}
+	for _, block := range turn.Messages[0].Content {
+		if tb, ok := block.(*parser.TextBlock); ok {
+			line := tb.Text
+			if i := strings.IndexByte(line, '\n'); i >= 0 {
+				line = line[:i]
+			}
+			if len(line) > 80 {
+				line = line[:80]
+			}
+			return line
+		}
+	}
+	return "(non-text message)"
+}
+
 // It assumes t > start.
 func relativeTime(t, start time.Time) string {
 	d := t.Sub(start)
