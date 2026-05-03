@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"fmt"
@@ -11,6 +12,7 @@ import (
 	"strings"
 
 	charmlog "github.com/charmbracelet/log"
+	"github.com/jamestelfer/relic/internal/gist"
 	"github.com/jamestelfer/relic/internal/highlight"
 	"github.com/jamestelfer/relic/internal/parser"
 	"github.com/jamestelfer/relic/internal/picker"
@@ -30,6 +32,12 @@ const (
 // validOutputModes lists all accepted --output values in display order.
 var validOutputModes = []outputMode{outputModeHTML, outputModeGist, outputModePublicGist} //nolint:unused // used in Phase 2
 
+// GistPublisher publishes rendered HTML to a GitHub Gist.
+// The interface allows tests to inject a fake without shelling out.
+type GistPublisher interface {
+	Publish(html []byte, filename string, public bool) (gistURL, previewURL string, err error)
+}
+
 // options holds the resolved runtime configuration for a single invocation.
 type options struct {
 	inputPath  string
@@ -37,8 +45,11 @@ type options struct {
 	outputPath string
 	name       string
 	theme      string
-	// htmlOut is used when outputPath == "-" (stdout). If nil, a file is created.
+	// htmlOut is the stdout writer: used for HTML output (outputPath=="-") or
+	// for Gist URL lines (gist modes).
 	htmlOut io.Writer
+	// gistRunner overrides the real gh runner in tests. nil → use real gh.
+	gistRunner GistPublisher
 }
 
 // execute is the testable entrypoint. It reads the JSONL file at
@@ -55,7 +66,7 @@ func execute(opts options, errOut io.Writer) (retErr error) {
 	case outputModeHTML:
 		// handled below
 	case outputModeGist, outputModePublicGist:
-		return fmt.Errorf("output mode %q not yet implemented", mode)
+		// handled below
 	default:
 		return fmt.Errorf("unknown output mode %q: valid values are html, gist, public-gist", opts.outputMode)
 	}
@@ -92,6 +103,39 @@ func execute(opts options, errOut io.Writer) (retErr error) {
 		name = sessionName(opts.inputPath)
 	}
 
+	// --- Gist publish path ---
+	if mode == outputModeGist || mode == outputModePublicGist {
+		var buf bytes.Buffer
+		if err := renderer.Render(&buf, msgs, renderer.Options{
+			Name:     name,
+			FilePath: opts.inputPath,
+			Theme:    theme,
+		}); err != nil {
+			return fmt.Errorf("render: %w", err)
+		}
+
+		filename := name + ".html"
+		public := mode == outputModePublicGist
+
+		publisher := opts.gistRunner
+		if publisher == nil {
+			publisher = &defaultGistPublisher{}
+		}
+		gistURL, previewURL, err := publisher.Publish(buf.Bytes(), filename, public)
+		if err != nil {
+			return fmt.Errorf("publish gist: %w", err)
+		}
+
+		out := opts.htmlOut
+		if out == nil {
+			return fmt.Errorf("gist mode: no output writer provided")
+		}
+		_, _ = fmt.Fprintf(out, "Gist:    %s\n", gistURL)
+		_, _ = fmt.Fprintf(out, "Preview: %s\n", previewURL)
+		return nil
+	}
+
+	// --- HTML file path ---
 	var out io.Writer
 	if opts.outputPath == "-" {
 		// Write to the provided htmlOut writer (stdout in production).
@@ -121,6 +165,13 @@ func execute(opts options, errOut io.Writer) (retErr error) {
 		FilePath: opts.inputPath,
 		Theme:    theme,
 	})
+}
+
+// defaultGistPublisher delegates to the real gist.Publish using the gh CLI.
+type defaultGistPublisher struct{}
+
+func (d *defaultGistPublisher) Publish(html []byte, filename string, public bool) (string, string, error) {
+	return gist.Publish(html, filename, public)
 }
 
 // sessionName derives the session label from the input filename stem.
@@ -194,7 +245,7 @@ func buildCLI(run func(opts options, errOut io.Writer) error) *cli.Command {
 			name := cmd.String("name")
 
 			var htmlOut io.Writer
-			if outputPath == "-" {
+			if outputPath == "-" || mode == outputModeGist || mode == outputModePublicGist {
 				htmlOut = cmd.Root().Writer
 			}
 

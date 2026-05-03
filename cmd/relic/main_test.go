@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"context"
+	"fmt"
 	"io"
 	"os"
 	"path/filepath"
@@ -292,6 +293,110 @@ func TestCLI_Help(t *testing.T) {
 	assert.Contains(t, help, "--name")
 }
 
+// TestExecute_GistGhNotFound verifies that when gist publish fails with gh not found,
+// the error message mentions gh auth login (R13).
+func TestExecute_GistGhNotFound(t *testing.T) {
+	stub := &stubGistRunner{
+		err: fmt.Errorf("gh CLI not found in PATH — install it and run `gh auth login`"),
+	}
+	var outBuf, logBuf bytes.Buffer
+	err := execute(options{
+		inputPath:  "testdata/fixture.jsonl",
+		outputMode: outputModeGist,
+		htmlOut:    &outBuf,
+		gistRunner: stub,
+	}, &logBuf)
+
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "gh auth login")
+}
+
+// TestExecute_GistFilename verifies that the gist filename is derived from the
+// session name (same logic as the local HTML filename), not the raw input path (R10).
+func TestExecute_GistFilename(t *testing.T) {
+	stub := &stubGistRunner{
+		gistURL:    "https://gist.github.com/user/abc123",
+		previewURL: "https://gisthost.github.io/?abc123/fixture.html",
+	}
+	var outBuf, logBuf bytes.Buffer
+	err := execute(options{
+		inputPath:  "testdata/fixture.jsonl",
+		outputMode: outputModeGist,
+		htmlOut:    &outBuf,
+		gistRunner: stub,
+	}, &logBuf)
+
+	require.NoError(t, err)
+	assert.Equal(t, "fixture.html", stub.capturedFilename,
+		"gist filename must be derived from the session name stem + .html")
+}
+
+// TestExecute_PublicGistMode verifies that --output public-gist passes public=true
+// to the publisher (R5).
+func TestExecute_PublicGistMode(t *testing.T) {
+	stub := &stubGistRunner{
+		gistURL:    "https://gist.github.com/user/abc123",
+		previewURL: "https://gisthost.github.io/?abc123/fixture.html",
+	}
+	var outBuf, logBuf bytes.Buffer
+	err := execute(options{
+		inputPath:  "testdata/fixture.jsonl",
+		outputMode: outputModePublicGist,
+		htmlOut:    &outBuf,
+		gistRunner: stub,
+	}, &logBuf)
+
+	require.NoError(t, err)
+	assert.True(t, stub.capturedPublic, "public-gist mode must call Publish with public=true")
+}
+
+// TestExecute_GistMode verifies that --output gist renders to memory, prints
+// Gist: and Preview: URLs to stdout, and writes no local .html file (R4, R7, R8, R10).
+func TestExecute_GistMode(t *testing.T) {
+	tmp := t.TempDir()
+
+	var outBuf, logBuf bytes.Buffer
+	err := execute(options{
+		inputPath:  "testdata/fixture.jsonl",
+		outputMode: outputModeGist,
+		htmlOut:    &outBuf, // stdout in gist mode
+		gistRunner: &stubGistRunner{
+			gistURL:    "https://gist.github.com/user/abc123",
+			previewURL: "https://gisthost.github.io/?abc123/fixture.html",
+		},
+	}, &logBuf)
+
+	require.NoError(t, err)
+
+	out := outBuf.String()
+	assert.Contains(t, out, "Gist:")
+	assert.Contains(t, out, "https://gist.github.com/user/abc123")
+	assert.Contains(t, out, "Preview:")
+	assert.Contains(t, out, "https://gisthost.github.io/?abc123/fixture.html")
+
+	// No .html file must be written anywhere in the working directory.
+	matches, _ := filepath.Glob(filepath.Join(tmp, "*.html"))
+	assert.Empty(t, matches, "gist mode must not write a local .html file")
+}
+
+// stubGistRunner is a test double for gist publishing used in execute() tests.
+type stubGistRunner struct {
+	gistURL    string
+	previewURL string
+	err        error
+	// captured inputs
+	capturedHTML     []byte
+	capturedFilename string
+	capturedPublic   bool
+}
+
+func (s *stubGistRunner) Publish(html []byte, filename string, public bool) (string, string, error) {
+	s.capturedHTML = html
+	s.capturedFilename = filename
+	s.capturedPublic = public
+	return s.gistURL, s.previewURL, s.err
+}
+
 // TestOutputMode_Invalid verifies that an unrecognised --output mode returns an error
 // that lists all valid mode values (R6).
 func TestOutputMode_Invalid(t *testing.T) {
@@ -321,6 +426,35 @@ func TestOutputMode_HTMLExplicit(t *testing.T) {
 	html, err := os.ReadFile(outPath)
 	require.NoError(t, err)
 	assert.Contains(t, string(html), "<!doctype html")
+}
+
+// TestCLI_GistMode_PrintsURLs verifies that the CLI routes --output gist to execute
+// and the Gist:/Preview: lines appear on stdout (R8).
+func TestCLI_GistMode_PrintsURLs(t *testing.T) {
+	var outBuf, errBuf bytes.Buffer
+	cmd := buildCLI(func(opts options, errOut io.Writer) error {
+		// Inject a stub publisher so no real gh call is made.
+		opts.gistRunner = &stubGistRunner{
+			gistURL:    "https://gist.github.com/user/testid",
+			previewURL: "https://gisthost.github.io/?testid/fixture.html",
+		}
+		return execute(opts, errOut)
+	})
+	cmd.Writer = &outBuf
+	cmd.ErrWriter = &errBuf
+
+	err := cmd.Run(context.Background(), []string{
+		"relic",
+		"--output", "gist",
+		"testdata/fixture.jsonl",
+	})
+	require.NoError(t, err)
+
+	out := outBuf.String()
+	assert.Contains(t, out, "Gist:")
+	assert.Contains(t, out, "https://gist.github.com/user/testid")
+	assert.Contains(t, out, "Preview:")
+	assert.Contains(t, out, "https://gisthost.github.io/?testid/fixture.html")
 }
 
 // TestCLI_OutputMode_GistAccepted verifies that --output gist and --output public-gist
