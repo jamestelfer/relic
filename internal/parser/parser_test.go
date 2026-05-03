@@ -22,7 +22,7 @@ func TestParseFixture(t *testing.T) {
 	}
 	defer func() { _ = f.Close() }()
 
-	msgs, err := parser.Parse(f)
+	msgs, _, err := parser.Parse(f)
 	if err != nil {
 		t.Fatalf("Parse: %v", err)
 	}
@@ -56,7 +56,7 @@ func TestParseTextBlock(t *testing.T) {
 	}
 	defer func() { _ = f.Close() }()
 
-	msgs, err := parser.Parse(f)
+	msgs, _, err := parser.Parse(f)
 	if err != nil {
 		t.Fatalf("Parse: %v", err)
 	}
@@ -84,7 +84,7 @@ func TestParseStringContent(t *testing.T) {
 	}
 	defer func() { _ = f.Close() }()
 
-	msgs, err := parser.Parse(f)
+	msgs, _, err := parser.Parse(f)
 	if err != nil {
 		t.Fatalf("Parse: %v", err)
 	}
@@ -110,7 +110,7 @@ func TestParseRawBlock(t *testing.T) {
 	}
 	defer func() { _ = f.Close() }()
 
-	msgs, err := parser.Parse(f)
+	msgs, _, err := parser.Parse(f)
 	if err != nil {
 		t.Fatalf("Parse: %v", err)
 	}
@@ -132,6 +132,39 @@ func TestParseRawBlock(t *testing.T) {
 	snaps.MatchSnapshot(t, msgs[0].Content)
 }
 
+// TestParseMalformedLine verifies that a malformed JSONL line produces a ParseError
+// with the correct line number while remaining valid messages are still returned.
+func TestParseMalformedLine(t *testing.T) {
+	f, err := os.Open("testdata/malformed.jsonl")
+	if err != nil {
+		t.Fatalf("open fixture: %v", err)
+	}
+	defer func() { _ = f.Close() }()
+
+	msgs, parseErrs, err := parser.Parse(f)
+	if err != nil {
+		t.Fatalf("Parse returned terminal error: %v", err)
+	}
+	if len(parseErrs) != 1 {
+		t.Fatalf("expected 1 ParseError, got %d", len(parseErrs))
+	}
+	if parseErrs[0].Line != 2 {
+		t.Errorf("ParseError.Line = %d, want 2", parseErrs[0].Line)
+	}
+	if len(parseErrs[0].Raw) == 0 {
+		t.Error("ParseError.Raw is empty, want the malformed line bytes")
+	}
+	if parseErrs[0].Err == nil {
+		t.Error("ParseError.Err is nil, want underlying error")
+	}
+	// Valid messages on other lines are still returned.
+	if len(msgs) == 0 {
+		t.Error("expected at least one valid message from non-malformed lines")
+	}
+
+	snaps.MatchSnapshot(t, parseErrs[0].Line)
+}
+
 // TestParseNoContent verifies that a message with empty content array is handled.
 func TestParseNoContent(t *testing.T) {
 	f, err := os.Open("testdata/empty_content.jsonl")
@@ -140,7 +173,7 @@ func TestParseNoContent(t *testing.T) {
 	}
 	defer func() { _ = f.Close() }()
 
-	msgs, err := parser.Parse(f)
+	msgs, _, err := parser.Parse(f)
 	if err != nil {
 		t.Fatalf("Parse: %v", err)
 	}

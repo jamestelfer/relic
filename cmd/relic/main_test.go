@@ -112,6 +112,42 @@ func TestPrevNext(t *testing.T) {
 // TestJKKeyboardNav verifies that J/K keyboard navigation anchors are present.
 // J links (next turn) and K links (prev turn) are hidden by default and shown
 // via CSS :target when the turn section is targeted. No JavaScript is involved.
+// TestMalformedLineE2E verifies that a session with a malformed line renders an
+// error callout in the HTML and exits 0. The slog warning goes to errOut.
+func TestMalformedLineE2E(t *testing.T) {
+	tmp := t.TempDir()
+	outPath := filepath.Join(tmp, "out.html")
+	var logBuf bytes.Buffer
+	err := execute(options{
+		inputPath:  "testdata/malformed.jsonl",
+		outputPath: outPath,
+	}, &logBuf)
+	if err != nil {
+		t.Fatalf("execute: %v", err)
+	}
+
+	html, err := os.ReadFile(outPath)
+	if err != nil {
+		t.Fatalf("read output: %v", err)
+	}
+	htmlStr := string(html)
+
+	// Error callout must appear in HTML.
+	if !strings.Contains(htmlStr, "error-callout") {
+		t.Error("expected error-callout element in output HTML")
+	}
+	if !strings.Contains(htmlStr, "Parse error on line 2") {
+		t.Error("expected 'Parse error on line 2' in error callout")
+	}
+
+	// Warning logged to stderr.
+	if !strings.Contains(logBuf.String(), "malformed") && !strings.Contains(logBuf.String(), "line") {
+		t.Errorf("expected warning in log output, got: %q", logBuf.String())
+	}
+
+	snaps.MatchSnapshot(t, htmlStr)
+}
+
 // TestMarkdownRendering verifies that text blocks are rendered through goldmark.
 func TestMarkdownRendering(t *testing.T) {
 	html := runFixture(t, options{})

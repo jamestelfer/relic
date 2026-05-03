@@ -29,6 +29,7 @@ templ page(name, filePath string, start *time.Time, turns []Turn) {
 				.message-body { padding-left: 0.5rem; }
 				.text-block { margin: 0.25rem 0; }
 				.raw-block { background: #f5f5f5; padding: 0.5rem; overflow-x: auto; font-size: 0.85em; }
+				.error-callout { border-left: 4px solid #d93025; background: #fce8e6; padding: 0.5rem 0.75rem; margin: 0.5rem 0; font-size: 0.9em; }
 				.toc { background: #f9f9f9; border: 1px solid #ddd; padding: 0.75rem 1rem; margin-bottom: 1.5rem; display: inline-block; min-width: 20rem; }
 				.toc h2 { margin: 0 0 0.5rem; font-size: 1rem; }
 				.toc ol { margin: 0; padding-left: 1.25rem; }
@@ -146,6 +147,14 @@ templ contentBlock(block parser.ContentBlock) {
 	switch b := block.(type) {
 		case *parser.TextBlock:
 			<div class="text-block">@templ.Raw(string(renderMarkdown(b.Text)))</div>
+		case *parser.ErrorBlock:
+			<div class="error-callout">
+				<strong>⚠ Parse error on line { fmt.Sprintf("%d", b.LineNum) }:</strong> { b.Msg }
+				<details>
+					<summary>Raw line</summary>
+					<pre class="raw-block">{ string(b.Raw) }</pre>
+				</details>
+			</div>
 		case *parser.RawBlock:
 			<pre class="raw-block">[{ b.BlockType() }] { string(b.Data) }</pre>
 		default:

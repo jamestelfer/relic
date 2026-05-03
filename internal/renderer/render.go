@@ -49,12 +49,15 @@ func sessionStart(msgs []parser.Message) *time.Time {
 }
 
 // groupTurns groups messages into turns, where each turn starts with a user message.
-// Messages that appear before the first user message are discarded.
+// Error pseudo-messages (Role == "error") are appended to the current turn,
+// or held in a pre-session preamble if no user turn has started yet.
 func groupTurns(msgs []parser.Message) []Turn {
 	var turns []Turn
 	var current *Turn
+	var preamble []parser.Message // errors before the first user message
 	for _, m := range msgs {
-		if m.Role == "user" {
+		switch m.Role {
+		case "user":
 			if current != nil {
 				turns = append(turns, *current)
 			}
@@ -62,8 +65,21 @@ func groupTurns(msgs []parser.Message) []Turn {
 				Index:    len(turns) + 1,
 				Messages: []parser.Message{m},
 			}
-		} else if current != nil {
-			current.Messages = append(current.Messages, m)
+			// Attach any pre-first-turn errors to this first turn.
+			if len(preamble) > 0 {
+				current.Messages = append(preamble, current.Messages...)
+				preamble = nil
+			}
+		case "error":
+			if current != nil {
+				current.Messages = append(current.Messages, m)
+			} else {
+				preamble = append(preamble, m)
+			}
+		default:
+			if current != nil {
+				current.Messages = append(current.Messages, m)
+			}
 		}
 	}
 	if current != nil {

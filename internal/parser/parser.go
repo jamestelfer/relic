@@ -15,6 +15,15 @@ type ContentBlock interface {
 	BlockType() string
 }
 
+// ErrorBlock represents a failed JSONL line, rendered as an error callout.
+type ErrorBlock struct {
+	LineNum int
+	Raw     []byte
+	Msg     string
+}
+
+func (b *ErrorBlock) BlockType() string { return "error" }
+
 // TextBlock holds a plain-text or Markdown content block.
 type TextBlock struct {
 	Text string
@@ -29,6 +38,13 @@ type RawBlock struct {
 }
 
 func (b *RawBlock) BlockType() string { return b.RawType }
+
+// ParseError records a non-fatal failure decoding a single JSONL line.
+type ParseError struct {
+	Line int    // 1-indexed line number in the source file
+	Raw  []byte // raw bytes of the failed line
+	Err  error  // underlying decode error
+}
 
 // Message represents a single user or assistant message from a session.
 type Message struct {
@@ -54,14 +70,19 @@ type msgPayload struct {
 
 // Parse reads a JSONL session file and returns one Message per user/assistant
 // record. Lines with other top-level types (system, queue-operation, etc.) are
-// silently skipped. An I/O failure returns a non-nil error.
-func Parse(r io.Reader) ([]Message, error) {
+// silently skipped. Per-line decode failures are collected in []ParseError and
+// do not prevent other lines from being parsed. An I/O failure returns a
+// non-nil error.
+func Parse(r io.Reader) ([]Message, []ParseError, error) {
 	var msgs []Message
+	var parseErrs []ParseError
 	scanner := bufio.NewScanner(r)
 	// Increase buffer size for lines with large content.
 	scanner.Buffer(make([]byte, 1<<20), 1<<20)
 
+	lineNum := 0
 	for scanner.Scan() {
+		lineNum++
 		line := scanner.Bytes()
 		if len(line) == 0 {
 			continue
@@ -69,7 +90,20 @@ func Parse(r io.Reader) ([]Message, error) {
 
 		var rec record
 		if err := json.Unmarshal(line, &rec); err != nil {
-			// Phase 7 will handle per-line errors gracefully; for now skip malformed lines.
+			raw := make([]byte, len(line))
+			copy(raw, line)
+			pe := ParseError{Line: lineNum, Raw: raw, Err: err}
+			parseErrs = append(parseErrs, pe)
+			// Insert an error pseudo-message at this position so the renderer
+			// can show a callout in the right place.
+			msgs = append(msgs, Message{
+				Role: "error",
+				Content: []ContentBlock{&ErrorBlock{
+					LineNum: lineNum,
+					Raw:     raw,
+					Msg:     err.Error(),
+				}},
+			})
 			continue
 		}
 
@@ -95,10 +129,10 @@ func Parse(r io.Reader) ([]Message, error) {
 	}
 
 	if err := scanner.Err(); err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
-	return msgs, nil
+	return msgs, parseErrs, nil
 }
 
 // decodeContent converts a raw JSON content value (string or array) into

@@ -3,10 +3,12 @@ package main
 import (
 	"fmt"
 	"io"
+	"log/slog"
 	"os"
 	"path/filepath"
 	"strings"
 
+	charmlog "github.com/charmbracelet/log"
 	"github.com/jamestelfer/relic/internal/parser"
 	"github.com/jamestelfer/relic/internal/renderer"
 )
@@ -22,15 +24,23 @@ type options struct {
 // opts.inputPath, renders the HTML, and writes it to opts.outputPath.
 // Log output goes to errOut.
 func execute(opts options, errOut io.Writer) (retErr error) {
+	// Wire slog to the charmbracelet handler, writing to errOut.
+	logger := slog.New(charmlog.NewWithOptions(errOut, charmlog.Options{Level: charmlog.WarnLevel}))
+
 	f, err := os.Open(opts.inputPath)
 	if err != nil {
 		return fmt.Errorf("open %s: %w", opts.inputPath, err)
 	}
 	defer func() { _ = f.Close() }()
 
-	msgs, err := parser.Parse(f)
+	msgs, parseErrs, err := parser.Parse(f)
 	if err != nil {
 		return fmt.Errorf("parse %s: %w", opts.inputPath, err)
+	}
+	if len(parseErrs) > 0 {
+		for _, pe := range parseErrs {
+			logger.Warn("skipping malformed line", "line", pe.Line, "error", pe.Err)
+		}
 	}
 
 	name := opts.name
