@@ -5,16 +5,21 @@ go 1.26
 tool github.com/a-h/templ/cmd/templ
 
 require (
+	github.com/a-h/templ v0.3.1001
+	github.com/alecthomas/chroma/v2 v2.24.1
+	github.com/buildkite/terminal-to-html/v3 v3.16.8
+	github.com/charmbracelet/log v1.0.0
+	github.com/gkampitakis/go-snaps v0.5.21
+	github.com/yuin/goldmark v1.8.2
+)
+
+require (
 	github.com/a-h/parse v0.0.0-20250122154542-74294addb73e // indirect
-	github.com/a-h/templ v0.3.1001 // indirect
-	github.com/alecthomas/chroma/v2 v2.24.1 // indirect
 	github.com/andybalholm/brotli v1.1.0 // indirect
 	github.com/aymanbagabas/go-osc52/v2 v2.0.1 // indirect
-	github.com/buildkite/terminal-to-html/v3 v3.16.8 // indirect
 	github.com/cenkalti/backoff/v4 v4.3.0 // indirect
 	github.com/charmbracelet/colorprofile v0.2.3-0.20250311203215-f60798e515dc // indirect
 	github.com/charmbracelet/lipgloss v1.1.0 // indirect
-	github.com/charmbracelet/log v1.0.0 // indirect
 	github.com/charmbracelet/x/ansi v0.8.0 // indirect
 	github.com/charmbracelet/x/cellbuf v0.0.13-0.20250311204145-2c3ea96c31dd // indirect
 	github.com/charmbracelet/x/term v0.2.1 // indirect
@@ -23,7 +28,6 @@ require (
 	github.com/fatih/color v1.16.0 // indirect
 	github.com/fsnotify/fsnotify v1.7.0 // indirect
 	github.com/gkampitakis/ciinfo v0.3.2 // indirect
-	github.com/gkampitakis/go-snaps v0.5.21 // indirect
 	github.com/go-logfmt/logfmt v0.6.1 // indirect
 	github.com/goccy/go-yaml v1.18.0 // indirect
 	github.com/kr/pretty v0.3.1 // indirect
@@ -43,8 +47,6 @@ require (
 	github.com/tidwall/pretty v1.2.1 // indirect
 	github.com/tidwall/sjson v1.2.5 // indirect
 	github.com/xo/terminfo v0.0.0-20220910002029-abceb7e1c41e // indirect
-	github.com/yuin/goldmark v1.8.2 // indirect
-	github.com/yuin/goldmark-emoji v1.0.6 // indirect
 	golang.org/x/exp v0.0.0-20231006140011-7918f672742d // indirect
 	golang.org/x/mod v0.26.0 // indirect
 	golang.org/x/net v0.42.0 // indirect
