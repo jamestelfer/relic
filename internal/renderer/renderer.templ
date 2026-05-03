@@ -27,7 +27,7 @@ templ page(name, filePath string, start *time.Time, turns []Turn) {
 				.message-user .message-role { color: #1a73e8; }
 				.message-assistant .message-role { color: #188038; }
 				.message-body { padding-left: 0.5rem; }
-				.text-block { margin: 0.25rem 0; white-space: pre-wrap; }
+				.text-block { margin: 0.25rem 0; }
 				.raw-block { background: #f5f5f5; padding: 0.5rem; overflow-x: auto; font-size: 0.85em; }
 				.toc { background: #f9f9f9; border: 1px solid #ddd; padding: 0.75rem 1rem; margin-bottom: 1.5rem; display: inline-block; min-width: 20rem; }
 				.toc h2 { margin: 0 0 0.5rem; font-size: 1rem; }
@@ -37,6 +37,22 @@ templ page(name, filePath string, start *time.Time, turns []Turn) {
 				.jk-nav a { display: none; }
 				section:target .jk-nav a { display: inline; }
 			</style>
+			<script>
+				document.addEventListener('DOMContentLoaded', function() {
+					document.querySelectorAll('pre').forEach(function(pre) {
+						var btn = document.createElement('button');
+						btn.textContent = 'Copy';
+						btn.style.cssText = 'position:absolute;top:0.25rem;right:0.25rem;font-size:0.75em;padding:0.1rem 0.4rem;cursor:pointer;';
+						pre.style.position = 'relative';
+						btn.addEventListener('click', function() {
+							navigator.clipboard.writeText(pre.querySelector('code') ? pre.querySelector('code').innerText : pre.innerText);
+							btn.textContent = 'Copied!';
+							setTimeout(function(){ btn.textContent = 'Copy'; }, 1500);
+						});
+						pre.appendChild(btn);
+					});
+				});
+			</script>
 		</head>
 		<body>
 			@banner(name, filePath, start, len(turns))
@@ -129,7 +145,7 @@ templ message(msg parser.Message, start *time.Time) {
 templ contentBlock(block parser.ContentBlock) {
 	switch b := block.(type) {
 		case *parser.TextBlock:
-			<p class="text-block">{ b.Text }</p>
+			<div class="text-block">@templ.Raw(string(renderMarkdown(b.Text)))</div>
 		case *parser.RawBlock:
 			<pre class="raw-block">[{ b.BlockType() }] { string(b.Data) }</pre>
 		default:

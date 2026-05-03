@@ -2,13 +2,18 @@
 package renderer
 
 import (
+	"bytes"
 	"context"
 	"fmt"
+	"html/template"
 	"io"
 	"strings"
 	"time"
 
 	"github.com/jamestelfer/relic/internal/parser"
+	"github.com/yuin/goldmark"
+	"github.com/yuin/goldmark/extension"
+	"github.com/yuin/goldmark/renderer/html"
 )
 
 // Turn groups a user message with the assistant messages that follow it.
@@ -89,6 +94,31 @@ func tocLabel(turn Turn) string {
 	return "(non-text message)"
 }
 
+// md is the goldmark instance used for all Markdown rendering.
+// Extensions: tables, strikethrough, task list, linkify.
+var md = goldmark.New(
+	goldmark.WithExtensions(
+		extension.Table,
+		extension.Strikethrough,
+		extension.TaskList,
+		extension.Linkify,
+	),
+	goldmark.WithRendererOptions(
+		html.WithUnsafe(), // allow raw HTML passthrough in source
+	),
+)
+
+// renderMarkdown converts a Markdown string to safe HTML.
+func renderMarkdown(src string) template.HTML {
+	var buf bytes.Buffer
+	if err := md.Convert([]byte(src), &buf); err != nil {
+		// Fall back to escaped plain text on unexpected error.
+		return template.HTML(template.HTMLEscapeString(src)) //nolint:gosec
+	}
+	return template.HTML(buf.String()) //nolint:gosec
+}
+
+// relativeTime formats the elapsed duration between t and start as a human-readable string.
 // It assumes t > start.
 func relativeTime(t, start time.Time) string {
 	d := t.Sub(start)

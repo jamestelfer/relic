@@ -1,0 +1,22 @@
+
+[TestRenderMarkdown_PlainText - 1]
+<p>Hello, world.</p>
+
+---
+
+[TestRenderMarkdown_Heading - 1]
+<h1>My Heading</h1>
+<p>Body text.</p>
+
+---
+
+[TestRenderMarkdown_CodeFence - 1]
+<pre><code class="language-go">func Add(a, b int) int { return a + b }
+</code></pre>
+
+---
+
+[TestRenderMarkdown_InlineCode - 1]
+<p>Use <code>fmt.Println</code> to print output.</p>
+
+---

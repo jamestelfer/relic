@@ -109,6 +109,56 @@ func TestPrevNext(t *testing.T) {
 	}
 }
 
+// TestJKKeyboardNav verifies that J/K keyboard navigation anchors are present.
+// J links (next turn) and K links (prev turn) are hidden by default and shown
+// via CSS :target when the turn section is targeted. No JavaScript is involved.
+// TestMarkdownRendering verifies that text blocks are rendered through goldmark.
+func TestMarkdownRendering(t *testing.T) {
+	html := runFixture(t, options{})
+
+	// The fixture contains code fences in text blocks; goldmark should render them as <code>.
+	if !strings.Contains(html, "<code") {
+		t.Error("expected <code> elements from Markdown code fence rendering")
+	}
+	// A <pre> block should wrap the code fence.
+	if !strings.Contains(html, "<pre") {
+		t.Error("expected <pre> elements from Markdown code fence rendering")
+	}
+	// The raw backtick fence markers should NOT appear in rendered output.
+	if strings.Contains(html, "```go") {
+		t.Error("expected raw Markdown code fence to be absent in rendered output")
+	}
+}
+
+// TestCopyToClipboardScript verifies exactly one <script> tag is present
+// (the copy-to-clipboard snippet added in Phase 6).
+func TestCopyToClipboardScript(t *testing.T) {
+	html := runFixture(t, options{})
+	count := strings.Count(html, "<script")
+	if count != 1 {
+		t.Errorf("expected exactly 1 <script> tag, got %d", count)
+	}
+}
+
+func TestJKKeyboardNav(t *testing.T) {
+	html := runFixture(t, options{})
+
+	// accesskey="j" (next) must be present — turns 1 and 2 have a next turn.
+	if !strings.Contains(html, `accesskey="j"`) {
+		t.Error(`expected accesskey="j" for next-turn navigation`)
+	}
+	// accesskey="k" (prev) must be present — turns 2 and 3 have a prev turn.
+	if !strings.Contains(html, `accesskey="k"`) {
+		t.Error(`expected accesskey="k" for prev-turn navigation`)
+	}
+	// No <script> tags from J/K nav itself (copy-to-clipboard added in Phase 6 is fine).
+	// Verified independently by TestCopyToClipboardScript.
+	// CSS must include :target rule for .jk-nav visibility.
+	if !strings.Contains(html, ":target") {
+		t.Error("expected CSS :target rule for J/K navigation")
+	}
+}
+
 func TestSelfContained(t *testing.T) {
 	html := runFixture(t, options{})
 	for _, prefix := range []string{"http://", "https://"} {
