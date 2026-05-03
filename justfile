@@ -38,5 +38,9 @@ test *args="./...": generate
 update-snaps *args="./...": generate
     UPDATE_SNAPS=true go test {{args}}
 
-# Full verify: generate → fix → fmt → build → lint → test
-verify: generate fix fmt build lint test
+# Tidy module dependencies
+tidy:
+    go mod tidy
+
+# Full verify: generate → tidy → fix → fmt → build → lint → test
+verify: generate tidy fix fmt build lint test
