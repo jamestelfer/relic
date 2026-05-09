@@ -2,226 +2,755 @@ package renderer
 
 import (
 	"fmt"
-	"time"
 
-	"github.com/jamestelfer/relic/internal/ansi"
-	"github.com/jamestelfer/relic/internal/parser"
+	"github.com/jamestelfer/relic/internal/session"
 )
 
-// page renders a complete, minimal HTML document for a session.
-templ page(name, filePath string, start *time.Time, turns []Turn, theme string) {
+templ page(s session.Session, opts Options) {
 	<!DOCTYPE html>
 	<html lang="en">
 		<head>
 			<meta charset="utf-8"/>
 			<meta name="viewport" content="width=device-width, initial-scale=1"/>
-			<title>{ name } — relic</title>
-			<style>
-				body { font-family: sans-serif; max-width: 900px; margin: 0 auto; padding: 1rem; }
-				.session-banner { border-bottom: 2px solid #ccc; margin-bottom: 1.5rem; padding-bottom: 1rem; }
-				.session-banner dl { display: grid; grid-template-columns: max-content 1fr; gap: 0.25rem 1rem; }
-				section[id^="turn-"] { border-left: 3px solid #e0e0e0; margin: 1rem 0; padding-left: 1rem; }
-				.message { margin-bottom: 1rem; }
-				.message-header { display: flex; gap: 1rem; font-size: 0.85em; color: #666; margin-bottom: 0.25rem; }
-				.message-role { font-weight: bold; text-transform: capitalize; }
-				.message-time { font-style: italic; }
-				.message-user .message-role { color: #1a73e8; }
-				.message-assistant .message-role { color: #188038; }
-				.message-tool .message-role { color: #888; }
-				.message-body { padding-left: 0.5rem; }
-				.text-block { margin: 0.25rem 0; }
-				.raw-block { background: #f5f5f5; padding: 0.5rem; overflow-x: auto; font-size: 0.85em; }
-				.error-callout { border-left: 4px solid #d93025; background: #fce8e6; padding: 0.5rem 0.75rem; margin: 0.5rem 0; font-size: 0.9em; }
-				details.collapsible > .preview-content { max-height: calc(1.5em * var(--preview-lines, 5)); overflow: hidden; }
-				details.collapsible[open] > .preview-content { max-height: none; }
-				.toc { background: #f9f9f9; border: 1px solid #ddd; padding: 0.75rem 1rem; margin-bottom: 1.5rem; display: inline-block; min-width: 20rem; }
-				.toc h2 { margin: 0 0 0.5rem; font-size: 1rem; }
-				.toc ol { margin: 0; padding-left: 1.25rem; }
-				.toc li { margin: 0.2rem 0; }
-				.turn-nav { display: flex; gap: 1rem; font-size: 0.85em; margin-bottom: 0.5rem; }
-				.jk-nav a { display: none; }
-				section:target .jk-nav a { display: inline; }
-				.tool-arg, .tool-result-preview { font-family: monospace; font-size: 0.9em; }
-			</style>
-			<script>
-				document.addEventListener('DOMContentLoaded', function() {
-					document.querySelectorAll('pre').forEach(function(pre) {
-						var btn = document.createElement('button');
-						btn.textContent = 'Copy';
-						btn.style.cssText = 'position:absolute;top:0.25rem;right:0.25rem;font-size:0.75em;padding:0.1rem 0.4rem;cursor:pointer;';
-						pre.style.position = 'relative';
-						btn.addEventListener('click', function() {
-							navigator.clipboard.writeText(pre.querySelector('code') ? pre.querySelector('code').innerText : pre.innerText);
-							btn.textContent = 'Copied!';
-							setTimeout(function(){ btn.textContent = 'Copy'; }, 1500);
-						});
-						pre.appendChild(btn);
-					});
-
-					var turns = Array.from(document.querySelectorAll('section[id^="turn-"]')).map(function(s) { return s.id; });
-					document.addEventListener('keydown', function(e) {
-						if (e.target.matches('input,textarea,select,[contenteditable]')) return;
-						if (e.metaKey || e.ctrlKey || e.altKey) return;
-						var hash = window.location.hash.replace('#', '') || turns[0];
-						var idx = turns.indexOf(hash);
-						if (e.key === 'j' && idx < turns.length - 1) window.location.hash = turns[idx + 1];
-						if (e.key === 'k' && idx > 0) window.location.hash = turns[idx - 1];
-					});
-				});
-			</script>
-			@chromaStyleComponent()
+			<title>{ resolveTitle(opts, s) } — relic</title>
+			@faviconLinkComponent()
+			@styleComponent()
 		</head>
 		<body>
-			@banner(name, filePath, start, len(turns))
-			@toc(turns)
-			<main>
-				for _, turn := range turns {
-					@turnSection(turn, start, len(turns), theme)
-				}
-			</main>
+			<div class="layout">
+				<aside class="rail">
+					<details class="rail-wrap">
+						<summary class="rail-summary">{ fmt.Sprintf("Outline · %d turns", len(s.Turns)) }</summary>
+						@railBrand()
+						@railOutline(s.Turns)
+						@railLegend()
+						@railKbd()
+					</details>
+				</aside>
+				<main>
+					@sessionHeader(s, opts)
+					for i := range s.Turns {
+						@turnSection(s.Turns, i)
+					}
+					@sessionFoot(s)
+				</main>
+			</div>
+			@railResponsiveScript()
+			@clampScript()
+			@copyButtonScript()
+			@imageZoomScript()
+			@navigationScript()
 		</body>
 	</html>
 }
 
-// banner renders the session summary header.
-templ banner(name, filePath string, firstDate *time.Time, turnCount int) {
-	<header class="session-banner">
-		<h1>{ name }</h1>
-		<dl>
-			<dt>File</dt>
-			<dd>{ filePath }</dd>
-			if firstDate != nil {
-				<dt>Date</dt>
-				<dd>{ firstDate.UTC().Format(time.RFC1123) }</dd>
-			}
-			<dt>Turns</dt>
-			<dd>{ fmt.Sprintf("%d", turnCount) }</dd>
-		</dl>
-	</header>
+templ railBrand() {
+	<div class="brand">
+		<svg width="32" height="32" viewBox="0 0 64 64" aria-hidden="true">
+			<rect x="6" y="38" width="52" height="6" rx="1.5" fill="var(--lapis-600)"></rect>
+			<rect x="6" y="46" width="52" height="6" rx="1.5" fill="var(--lapis-600)" opacity="0.7"></rect>
+			<rect x="6" y="54" width="52" height="6" rx="1.5" fill="var(--lapis-600)" opacity="0.45"></rect>
+			<circle cx="32" cy="22" r="11" fill="var(--citron-100)"></circle>
+			<circle cx="32" cy="22" r="6.5" fill="var(--citron-500)" stroke="var(--ink-900)" stroke-width="1"></circle>
+		</svg>
+		<span class="wm">Rel<i>i</i>c</span>
+	</div>
 }
 
-// toc renders the table of contents: one entry per turn.
-templ toc(turns []Turn) {
-	<nav class="toc">
-		<h2>Contents</h2>
+templ railOutline(turns []session.Turn) {
+	<h2>Outline</h2>
+	if len(turns) > 0 {
 		<ol>
 			for _, turn := range turns {
-				<li><a href={ templ.SafeURL("#turn-" + fmt.Sprintf("%d", turn.Index)) }>{ tocLabel(turn) }</a></li>
+				<li>
+					<a href={ templ.SafeURL("#turn-" + fmt.Sprintf("%d", turn.Index)) }>
+						if turn.Title != "" {
+							{ turn.Title }
+						} else {
+							{ fmt.Sprintf("Turn %d", turn.Index) }
+						}
+					</a>
+				</li>
 			}
 		</ol>
-	</nav>
+	}
 }
 
-// turnSection renders a single turn (user + following assistant messages) in a labelled section.
-templ turnSection(turn Turn, start *time.Time, total int, theme string) {
-	<section id={ fmt.Sprintf("turn-%d", turn.Index) }>
-		<nav class="turn-nav">
-			if turn.Index > 1 {
-				<a class="turn-prev" href={ templ.SafeURL(fmt.Sprintf("#turn-%d", turn.Index-1)) }>← prev</a>
-			}
-			if turn.Index < total {
-				<a class="turn-next" href={ templ.SafeURL(fmt.Sprintf("#turn-%d", turn.Index+1)) }>next →</a>
-			}
-		</nav>
-		<nav class="jk-nav">
-			if turn.Index > 1 {
-				<a href={ templ.SafeURL(fmt.Sprintf("#turn-%d", turn.Index-1)) }>[K] prev</a>
-			}
-			if turn.Index < total {
-				<a href={ templ.SafeURL(fmt.Sprintf("#turn-%d", turn.Index+1)) }>[J] next</a>
-			}
-		</nav>
-		for _, msg := range turn.Messages {
-			@message(msg, start, theme)
+templ railLegend() {
+	<h2>Roles</h2>
+	<div class="legend">
+		<dl>
+			<dt class="user">user</dt><dd>your prompt</dd>
+			<dt class="asst">asst</dt><dd>Claude reply</dd>
+			<dt class="tool">tool</dt><dd>Bash · Read · Edit</dd>
+			<dt class="think">think</dt><dd>internal reasoning</dd>
+		</dl>
+	</div>
+}
+
+templ railKbd() {
+	<div class="kbd">
+		<kbd>J</kbd> prev turn &nbsp; <kbd>K</kbd> next
+	</div>
+}
+
+templ turnSection(turns []session.Turn, i int) {
+	{{ turn := turns[i] }}
+	<section id={ fmt.Sprintf("turn-%d", turn.Index) } class="turn">
+		@turnMeta(turns, i)
+		@turnMarker(turn.Index, len(turns))
+		for _, block := range turn.Blocks {
+			@blockComponent(block)
 		}
+		@turnFoot(turns, i)
 	</section>
 }
 
-// message renders a single message with role, timestamp, and content blocks.
-templ message(msg parser.Message, start *time.Time, theme string) {
-	<div class={ "message", "message-" + messageRole(msg) }>
-		<div class="message-header">
-			<span class="message-role">{ messageRole(msg) }</span>
-			if msg.Timestamp != nil && start != nil {
-				if msg.Timestamp.Equal(*start) {
-					<time class="message-time">{ msg.Timestamp.UTC().Format("Mon, 02 Jan 2006 15:04:05 UTC") }</time>
-				} else {
-					<time class="message-time" title={ msg.Timestamp.UTC().Format(time.RFC3339) }>{ relativeTime(*msg.Timestamp, *start) }</time>
+templ turnMarker(index, total int) {
+	<div class="turn-marker">{ fmt.Sprintf("TURN %02d / %02d", index, total) }</div>
+}
+
+templ turnMeta(turns []session.Turn, i int) {
+	{{ turn := turns[i] }}
+	<div class="turn-meta">
+		<span class="num">{ fmt.Sprintf("%02d", turn.Index) }</span>
+		if turn.Start != nil {
+			<span>{ turn.Start.UTC().Format("15:04 UTC") }</span>
+		}
+		if i > 0 {
+			{{ offset := turn.RelativeOffset(&turns[i-1]) }}
+			if offset > 0 {
+				<span>·</span>
+				<span>{ formatOffset(offset) + " later" }</span>
+			}
+		}
+	</div>
+}
+
+templ turnFoot(turns []session.Turn, i int) {
+	<div class="turn-foot">
+		if i > 0 {
+			<a href={ templ.SafeURL(fmt.Sprintf("#turn-%d", turns[i-1].Index)) }>
+				{ "← prev · " + turnTitleOrDefault(turns[i-1]) }
+			</a>
+		}
+		<span class="spacer"></span>
+		if i < len(turns)-1 {
+			<a href={ templ.SafeURL(fmt.Sprintf("#turn-%d", turns[i+1].Index)) }>
+				{ turnTitleOrDefault(turns[i+1]) + " →" }
+			</a>
+		} else {
+			<span class="end">end of session</span>
+		}
+	</div>
+}
+
+templ blockComponent(block session.Block) {
+	switch b := block.(type) {
+		case *session.UserText:
+			@userTextBlock(b)
+		case *session.AssistantText:
+			@assistantTextBlock(b)
+		case *session.ToolCall:
+			@toolCallBlock(b)
+		case *session.ToolResult:
+			@toolResultBlock(b)
+		case *session.Thinking:
+			@thinkingBlock(b)
+		case *session.RedactedThinking:
+			@redactedThinkingBlock(b)
+		case *session.UserBashInput:
+			@userBashInputBlock(b)
+		case *session.UserBashResult:
+			@userBashResultBlock(b)
+		case *session.Image:
+			@imageBlock(b)
+		case *session.Error:
+			@errorBlock(b)
+		case *session.LocalCommand:
+			@localCommandBlock(b)
+		case *session.System:
+			@systemBlock(b)
+		case *session.CompactionBoundary:
+			@compactionBoundaryBlock(b)
+		case *session.CompactionSummary:
+			@compactionSummaryBlock(b)
+		case *session.ApiError:
+			@apiErrorBlock(b)
+		case *session.HookInjection:
+			@hookInjectionBlock(b)
+		case *session.SessionResult:
+			@sessionResultBlock(b)
+		case *session.Raw:
+			@rawBlock(b)
+	}
+}
+
+templ userTextBlock(b *session.UserText) {
+	<article class="block conversation user">
+		<div class="role"><span class="tag">user</span></div>
+		<div class="clamp">
+			<div class="clamp-body">
+				<div class="body">
+					@templ.Raw(string(renderMarkdown(b.Text)))
+				</div>
+			</div>
+			<button class="clamp-toggle" type="button">
+				<span class="label">Show more</span>
+			</button>
+		</div>
+	</article>
+}
+
+templ assistantTextBlock(b *session.AssistantText) {
+	<article class="block conversation assistant">
+		<div class="role"><span class="tag">assistant</span></div>
+		<div class="clamp">
+			<div class="clamp-body">
+				<div class="body">
+					@templ.Raw(string(renderMarkdown(b.Text)))
+				</div>
+			</div>
+			<button class="clamp-toggle" type="button">
+				<span class="label">Show more</span>
+			</button>
+		</div>
+	</article>
+}
+
+templ thinkingBlock(b *session.Thinking) {
+	<article class="block thinking">
+		<details class="thinking">
+			<summary>Internal reasoning</summary>
+			<div class="clamp">
+				<div class="clamp-body">
+					<div class="preview">
+						@templ.Raw(string(renderMarkdown(b.Text)))
+					</div>
+				</div>
+				<button class="clamp-toggle" type="button">
+					<span class="label">Show more</span>
+				</button>
+			</div>
+		</details>
+	</article>
+}
+
+templ redactedThinkingBlock(b *session.RedactedThinking) {
+	<article class="block redacted-thinking">
+		<div class="role">
+			<span class="tag">thinking</span>
+		</div>
+		<div class="redacted-note">
+			<span>🔒</span>
+			<span>Redacted reasoning — content unavailable</span>
+		</div>
+	</article>
+}
+
+templ toolCallBlock(b *session.ToolCall) {
+	<article class="block tool" id={ b.ID }>
+		<div class="role">
+			<span class="tag">tool_use</span>
+			if b.LinkedResultID != nil {
+				<a class="pair-id" href={ templ.SafeURL("#result-" + *b.LinkedResultID) }>{ pairIDLabel(b.ID) + " ↓" }</a>
+			}
+		</div>
+		<div class="tool-card" data-tool={ toolDataAttr(b.Name) }>
+			<div class="head">
+				<span class="icon">{ toolIcon(b.Name) }</span>
+				<span class="name">{ toolDisplayName(b.Name) }</span>
+				<span class="arg">{ b.Arg() }</span>
+			</div>
+			@toolBody(b)
+		</div>
+	</article>
+}
+
+templ toolBody(b *session.ToolCall) {
+	switch {
+		case b.Name == "WebSearch" || b.Name == "WebFetch":
+			@webSearchBody(b)
+		case b.Name == "Task":
+			@taskBody(b)
+		case b.Name == "TodoWrite":
+			@todoWriteBody(b)
+		case b.Name == "exit_plan_mode":
+			@planBody(b)
+		case isMCPTool(b.Name):
+			@mcpBody(b)
+		default:
+			if codeHTML := toolCodeHTML(b); codeHTML != "" {
+				<div class="clamp">
+					<div class="clamp-body">
+						@templ.Raw(string(codeHTML))
+					</div>
+					<button class="clamp-toggle" type="button">
+						<span class="label">Show more</span>
+					</button>
+				</div>
+			}
+	}
+}
+
+templ webSearchBody(b *session.ToolCall) {
+	<div class="websearch-body">
+		if q, ok := b.Input["query"].(string); ok && q != "" {
+			<div class="ws-query"><span class="ws-label">query</span><span class="ws-text">{ q }</span></div>
+		}
+		if u, ok := b.Input["url"].(string); ok && u != "" {
+			<div class="ws-query"><span class="ws-label">url</span><span class="ws-text">{ u }</span></div>
+		}
+		if p, ok := b.Input["prompt"].(string); ok && p != "" {
+			<div class="ws-query"><span class="ws-label">prompt</span><span class="ws-text">{ p }</span></div>
+		}
+	</div>
+}
+
+templ taskBody(b *session.ToolCall) {
+	<div class="task-delegation">
+		<div class="task-meta">
+			if st, ok := b.Input["subagent_type"].(string); ok && st != "" {
+				<span class="task-badge">{ st }</span>
+			}
+			if desc, ok := b.Input["description"].(string); ok && desc != "" {
+				<span class="task-type">{ desc }</span>
+			}
+		</div>
+		if p, ok := b.Input["prompt"].(string); ok && p != "" {
+			<div class="clamp">
+				<div class="clamp-body">
+					<div class="task-prompt">{ p }</div>
+				</div>
+				<button class="clamp-toggle" type="button">
+					<span class="label">Show more</span>
+				</button>
+			</div>
+		}
+	</div>
+}
+
+templ todoWriteBody(b *session.ToolCall) {
+	if todos, ok := b.Input["todos"].([]any); ok && len(todos) > 0 {
+		<div class="todo-list">
+			for _, t := range todos {
+				if item, ok := t.(map[string]any); ok {
+					<div class={ "todo-item", todoStatus(item) }>
+						<div class="todo-check"></div>
+						<span class="todo-text">{ todoContent(item) }</span>
+						if p := todoPriority(item); p != "" {
+							<span class={ "todo-priority", p }>{ p }</span>
+						}
+					</div>
 				}
 			}
 		</div>
-		<div class="message-body">
-			for _, block := range msg.Content {
-				@contentBlock(block, theme)
+	}
+}
+
+templ planBody(b *session.ToolCall) {
+	if plan, ok := b.Input["plan"].(string); ok && plan != "" {
+		<div class="plan-body clamp">
+			<div class="clamp-body">
+				@templ.Raw(string(renderMarkdown(plan)))
+			</div>
+			<button class="clamp-toggle" type="button">
+				<span class="label">Show more</span>
+			</button>
+		</div>
+	}
+}
+
+templ mcpBody(b *session.ToolCall) {
+	<div class="mcp-server">MCP server: <strong>{ mcpServer(b.Name) }</strong> · tool: <strong>{ mcpTool(b.Name) }</strong></div>
+	if jsonStr := formatJSON(b.Input); jsonStr != "" {
+		<div class="clamp">
+			<div class="clamp-body">
+				@templ.Raw(string(highlightJSON(jsonStr)))
+			</div>
+			<button class="clamp-toggle" type="button">
+				<span class="label">Show more</span>
+			</button>
+		</div>
+	}
+}
+
+templ toolResultBlock(b *session.ToolResult) {
+	<article class="block tool-result" id={ "result-" + b.ToolUseID }>
+		<div class="role">
+			<span class="tag">tool_result</span>
+			if b.LinkedCallID != nil {
+				<a class="pair-id" href={ templ.SafeURL("#" + *b.LinkedCallID) }>{ "↑ " + pairIDLabel(b.ToolUseID) }</a>
 			}
+		</div>
+		<div class="clamp">
+			<div class="clamp-body">
+				<div class="term">
+					<div class="chrome">
+						<span class="dots"><span></span><span></span><span></span></span>
+						<span class="label">{ termLabel(b) }</span>
+					</div>
+					if isMCPTool(b.LinkedCallName) {
+						@templ.Raw(string(mcpResultHTML(b.Content)))
+					} else {
+						<pre>@templ.Raw(string(safeANSI(b.Content)))</pre>
+					}
+				</div>
+			</div>
+			<button class="clamp-toggle" type="button">
+				<span class="label">Show more</span>
+			</button>
+		</div>
+	</article>
+}
+
+templ localCommandBlock(b *session.LocalCommand) {
+	<article class="block slash-cmd">
+		<div class="slash-card">
+			<span class="slash">/</span>
+			<span class="cmd">{ b.Name }</span>
+			if b.Args != "" {
+				<span class="args">{ b.Args }</span>
+			}
+		</div>
+	</article>
+}
+
+templ systemBlock(b *session.System) {
+	if b.Subtype == "command_output" {
+		<article class="block cmd-output">
+			<div class="cmd-output-body">{ b.Content }</div>
+		</article>
+	} else {
+		<article class="block meta">
+			<div class="meta-bar">
+				<span class="icon">s</span>
+				<span>system</span>
+				if b.Subtype != "" {
+					<span class="detail">{ b.Subtype }</span>
+				}
+			</div>
+			<div class="body"><pre><code>{ b.Content }</code></pre></div>
+		</article>
+	}
+}
+
+templ errorBlock(b *session.Error) {
+	<article class="block error">
+		<div class="role">
+			<span class="tag">parse_error</span>
+		</div>
+		<div class="err-callout">
+			<strong>Parse error</strong>{ fmt.Sprintf(" at line %d", b.LineNum) }
+			if len(b.Raw) > 0 {
+				<span class="raw">{ string(b.Raw) }</span>
+			}
+		</div>
+	</article>
+}
+
+templ compactionBoundaryBlock(b *session.CompactionBoundary) {
+	<div class="meta-separator">{ b.Label }</div>
+}
+
+templ compactionSummaryBlock(b *session.CompactionSummary) {
+	<article class="block meta">
+		<details class="compact-summary">
+			<summary>
+				<span class="cs-label">Context summary</span>
+			</summary>
+			<div class="cs-body">
+				@templ.Raw(string(renderMarkdown(b.Content)))
+			</div>
+		</details>
+	</article>
+}
+
+templ apiErrorBlock(b *session.ApiError) {
+	<article class="block api-error">
+		<div class="api-error-card">
+			<div class="icon">!</div>
+			<div class="content">
+				if b.ErrorType != "" {
+					<div class="etype">{ b.ErrorType }</div>
+				}
+				<div class="msg">{ b.Message }</div>
+			</div>
+		</div>
+	</article>
+}
+
+templ hookInjectionBlock(b *session.HookInjection) {
+	<article class="block meta">
+		<div class="meta-bar">
+			<span class="icon">⚙</span>
+			<span>hook_injection</span>
+			<span class="detail">{ truncateHookDetail(b.Content) }</span>
+		</div>
+	</article>
+}
+
+templ sessionResultBlock(b *session.SessionResult) {
+	<div class={ "session-result", resultClass(b) }>
+		<div class="sr-icon">{ resultIcon(b) }</div>
+		<div class="sr-body">
+			<div class="sr-label">{ resultLabel(b) }</div>
+			<div class="sr-stats">
+				if b.DurationMS > 0 {
+					<div class="stat"><span class="stat-label">Duration</span><span class="stat-val">{ formatDurationMS(b.DurationMS) }</span></div>
+				}
+				if b.NumTurns > 0 {
+					<div class="stat"><span class="stat-label">Turns</span><span class="stat-val">{ fmt.Sprintf("%d", b.NumTurns) }</span></div>
+				}
+				if b.CostUSD > 0 {
+					<div class="stat"><span class="stat-label">Cost</span><span class="stat-val">{ fmt.Sprintf("$%.2f", b.CostUSD) }</span></div>
+				}
+			</div>
 		</div>
 	</div>
 }
 
-// contentBlock renders a single content block.
-templ contentBlock(block parser.ContentBlock, theme string) {
-	switch b := block.(type) {
-		case *parser.TextBlock:
-			<div class="text-block">@templ.Raw(string(renderMarkdown(b.Text, theme)))</div>
-		case *parser.ErrorBlock:
-			<div class="error-callout">
-				<strong>⚠ Parse error on line { fmt.Sprintf("%d", b.LineNum) }:</strong> { b.Msg }
-				<details>
-					<summary>Raw line</summary>
-					<pre class="raw-block">{ string(b.Raw) }</pre>
-				</details>
+templ userBashInputBlock(b *session.UserBashInput) {
+	<article class="block user-bash" id={ b.ID }>
+		<div class="role">
+			<span class="tag">USER_BASH</span>
+			if b.LinkedResultID != nil {
+				<a class="pair-id" href={ templ.SafeURL("#" + *b.LinkedResultID) }>{ pairIDLabel(b.ID) + " ↓" }</a>
+			}
+		</div>
+		<div class="tool-card" data-tool="UserBash">
+			<div class="head">
+				<span class="icon">!</span>
+				<span class="name">UserBash</span>
+				<span class="arg">{ b.Command }</span>
 			</div>
-		case *parser.ToolResultBlock:
-			@toolResultBlock(b)
-		case *parser.ToolUseBlock:
-			@toolUseBlock(b, theme)
-		case *parser.ThinkingBlock:
-			@thinkingBlock(b)
-		case *parser.RawBlock:
-			<pre class="raw-block">[{ b.BlockType() }] { string(b.Data) }</pre>
-		default:
-			<p class="unknown-block">(unknown block)</p>
-	}
+			<div class="clamp">
+				<div class="clamp-body">
+					@templ.Raw(string(userBashCodeHTML(b.Command)))
+				</div>
+				<button class="clamp-toggle" type="button">
+					<span class="label">Show more</span>
+				</button>
+			</div>
+		</div>
+	</article>
 }
 
-// toolUseBlock renders a tool_use content block as a collapsible <details> section.
-templ toolUseBlock(b *parser.ToolUseBlock, theme string) {
-	<details class="collapsible tool-use" style={ fmt.Sprintf("--preview-lines: %d", ToolUsePreviewLines) }>
-		<summary>
-			<span class="tool-icon">{ toolIcon(b.Name) }</span>
-			<span class="tool-name">{ b.Name }</span>
-			if arg := toolPrimaryArg(b.Name, b.Input); arg != "" {
-				<span class="tool-arg">{ arg }</span>
+templ userBashResultBlock(b *session.UserBashResult) {
+	<article class="block user-bash-result" id={ b.ID }>
+		<div class="role">
+			<span class="tag">user_bash_result</span>
+			if b.LinkedCallID != nil {
+				<a class="pair-id" href={ templ.SafeURL("#" + *b.LinkedCallID) }>{ "↑ " + pairIDLabel(b.ID) }</a>
 			}
-		</summary>
-		<div class="preview-content">
-			@templ.Raw(string(toolInputHighlighted(b.Name, b.Input, theme)))
 		</div>
-	</details>
+		<div class="clamp">
+			<div class="clamp-body">
+				<div class="term">
+					<div class="chrome">
+						<span class="dots"><span></span><span></span><span></span></span>
+						<span class="label">user_bash</span>
+					</div>
+					<pre>@templ.Raw(string(userBashOutputHTML(b.Stdout, b.Stderr)))</pre>
+				</div>
+			</div>
+			<button class="clamp-toggle" type="button">
+				<span class="label">Show more</span>
+			</button>
+		</div>
+	</article>
 }
 
-// thinkingBlock renders a thinking content block as a collapsible <details> section.
-templ thinkingBlock(b *parser.ThinkingBlock) {
-	<details class="collapsible thinking" style={ fmt.Sprintf("--preview-lines: %d", ThinkingPreviewLines) }>
-		<summary>Internal reasoning</summary>
-		<div class="preview-content">
-			<pre class="thinking-content">{ b.Thinking }</pre>
+templ imageBlock(b *session.Image) {
+	<article class="block image-block">
+		<div class="role">
+			<span class="tag">image</span>
 		</div>
-	</details>
+		<div class="image-card">
+			<div class="image-head">
+				<span class="image-meta">{ imageMetaLabel(b) }</span>
+				<span class="image-hint">click to expand</span>
+			</div>
+			<img class="image-preview" src={ "data:" + b.MediaType + ";base64," + b.Base64 } alt="inline image" loading="lazy"/>
+		</div>
+	</article>
 }
 
-// toolResultBlock renders a tool_result content block as a collapsible <details> section.
-// ANSI escape sequences in the content are converted to HTML spans.
-templ toolResultBlock(b *parser.ToolResultBlock) {
-	<details class="collapsible tool-result" style={ fmt.Sprintf("--preview-lines: %d", ToolResultPreviewLines) }>
-		<summary>
-			<span class="tool-result-label">output</span>
-			if b.Content != "" {
-				<span class="tool-result-preview">{ toolResultSummary(b.Content) }</span>
-			}
-		</summary>
-		<div class="preview-content">
-			<pre class="raw-block">@templ.Raw(string(ansi.Convert(b.Content)))</pre>
-		</div>
-	</details>
+templ rawBlock(b *session.Raw) {
+	<article class="block meta">
+		<details class="unknown-block">
+			<summary>
+				<span class="ub-tag">unknown block</span>
+				<span class="ub-type">{ b.RawType }</span>
+			</summary>
+			@templ.Raw(string(highlightJSON(formatRawJSON(b.Data))))
+		</details>
+	</article>
+}
+
+templ sessionHeader(s session.Session, opts Options) {
+	<header class="session-head">
+		@catalogEyebrow(s, opts)
+		<h1>{ resolveTitle(opts, s) }</h1>
+		@metadataGrid(s, opts)
+	</header>
+}
+
+templ catalogEyebrow(s session.Session, opts Options) {
+	<div class="catalog">
+		<span class="dot"></span>
+		<span>REL</span>
+		if s.Start != nil {
+			<span>·</span>
+			<span>{ s.Start.UTC().Format("2006-01-02") }</span>
+		}
+		if s.Model != "" {
+			<span>·</span>
+			<span>{ s.Model }</span>
+		}
+		if opts.FilePath != "" {
+			<span>·</span>
+			<span>{ catalogFilename(opts.FilePath) }</span>
+		}
+	</div>
+}
+
+templ sessionFoot(s session.Session) {
+	<footer class="session-foot">
+		<span>{ sessionFootSummary(s) }</span>
+		<span><a href={ templ.SafeURL(relicRepoURL) }>{ "relic v" + Version }</a></span>
+	</footer>
+}
+
+templ metadataGrid(s session.Session, opts Options) {
+	<dl>
+		if s.Start != nil {
+			<dt>Started</dt>
+			<dd>{ s.Start.UTC().Format("15:04 UTC") }</dd>
+		}
+		if s.DurationNanos > 0 {
+			<dt>Duration</dt>
+			<dd>{ formatDuration(s.DurationNanos) }</dd>
+		}
+		<dt>Turns</dt>
+		<dd>{ fmt.Sprintf("%d", len(s.Turns)) }</dd>
+		if len(s.FilesTouched) > 0 {
+			<dt>Files touched</dt>
+			<dd>{ fmt.Sprintf("%d", len(s.FilesTouched)) }</dd>
+		}
+	</dl>
+}
+
+templ railResponsiveScript() {
+	@templ.Raw(`<script>
+(function() {
+  var d = document.querySelector("details.rail-wrap");
+  if (!d) return;
+  var mq = window.matchMedia("(min-width: 701px)");
+  function sync() { d.open = mq.matches; }
+  sync();
+  if (mq.addEventListener) mq.addEventListener("change", sync);
+  else if (mq.addListener) mq.addListener(sync);
+})();
+</script>`)
+}
+
+templ clampScript() {
+	@templ.Raw(`<script>
+(function() {
+  function markFit() {
+    document.querySelectorAll(".clamp").forEach(function(c) {
+      if (c.classList.contains("is-open")) return;
+      var body = c.querySelector(".clamp-body");
+      if (!body) return;
+      if (body.scrollHeight <= body.clientHeight + 1) {
+        c.classList.add("is-fit");
+      } else {
+        c.classList.remove("is-fit");
+      }
+    });
+  }
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", markFit);
+  } else {
+    markFit();
+  }
+  window.addEventListener("load", markFit);
+  document.addEventListener("click", function(e) {
+    var btn = e.target.closest(".clamp-toggle");
+    if (!btn) return;
+    var clamp = btn.closest(".clamp");
+    if (!clamp) return;
+    var open = clamp.classList.toggle("is-open");
+    var label = btn.querySelector(".label");
+    if (label) label.textContent = open ? "Show less" : "Show more";
+  });
+})();
+</script>`)
+}
+
+templ copyButtonScript() {
+	@templ.Raw(`<script>
+document.addEventListener('click', function(e) {
+  var btn = e.target.closest('.copy-btn');
+  if (!btn) return;
+  var pre = btn.closest('pre');
+  if (!pre) return;
+  var code = pre.querySelector('code');
+  if (!code) return;
+  navigator.clipboard.writeText(code.innerText).then(function() {
+    var orig = btn.textContent;
+    btn.textContent = 'copied';
+    setTimeout(function() { btn.textContent = orig; }, 1500);
+  });
+});
+</script>`)
+}
+
+templ imageZoomScript() {
+	@templ.Raw(`<script>
+document.addEventListener("click", function(e) {
+  var img = e.target.closest(".image-preview");
+  if (!img) return;
+  img.classList.toggle("expanded");
+  var hint = img.closest(".image-card") && img.closest(".image-card").querySelector(".image-hint");
+  if (hint) hint.textContent = img.classList.contains("expanded") ? "click to collapse" : "click to expand";
+});
+</script>`)
+}
+
+templ navigationScript() {
+	@templ.Raw(`<script>
+(function() {
+  var turns = Array.from(document.querySelectorAll('section.turn'));
+  var railItems = Array.from(document.querySelectorAll('.rail ol li'));
+  var currentIndex = 0;
+
+  if (window.IntersectionObserver) {
+    var observer = new IntersectionObserver(function(entries) {
+      entries.forEach(function(entry) {
+        if (!entry.isIntersecting) return;
+        var idx = turns.indexOf(entry.target);
+        if (idx >= 0) currentIndex = idx;
+        var id = entry.target.id;
+        railItems.forEach(function(li) {
+          var a = li.querySelector('a');
+          li.classList.toggle('active', !!a && a.getAttribute('href') === '#' + id);
+        });
+      });
+    }, { threshold: 0.3 });
+    turns.forEach(function(s) { observer.observe(s); });
+  }
+
+  document.addEventListener('keydown', function(e) {
+    var active = document.activeElement;
+    var tag = active ? active.tagName : '';
+    if (tag === "INPUT" || tag === "TEXTAREA" || (active && active.getAttribute("contenteditable") !== null)) return;
+    if (e.key === "j") currentIndex = Math.max(currentIndex - 1, 0);
+    else if (e.key === "k") currentIndex = Math.min(currentIndex + 1, turns.length - 1);
+    else return;
+    turns[currentIndex].scrollIntoView({ behavior: 'smooth', block: 'start' });
+  });
+})();
+</script>`)
 }

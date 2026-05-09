@@ -13,10 +13,10 @@ import (
 
 	charmlog "github.com/charmbracelet/log"
 	"github.com/jamestelfer/relic/internal/gist"
-	"github.com/jamestelfer/relic/internal/highlight"
 	"github.com/jamestelfer/relic/internal/parser"
 	"github.com/jamestelfer/relic/internal/picker"
 	"github.com/jamestelfer/relic/internal/renderer"
+	"github.com/jamestelfer/relic/internal/session"
 	"github.com/urfave/cli/v3"
 )
 
@@ -28,9 +28,6 @@ const (
 	outputModeGist       outputMode = "gist"
 	outputModePublicGist outputMode = "public-gist"
 )
-
-// validOutputModes lists all accepted --output values in display order.
-var validOutputModes = []outputMode{outputModeHTML, outputModeGist, outputModePublicGist} //nolint:unused // used in Phase 2
 
 // GistPublisher publishes rendered HTML to a GitHub Gist.
 // The interface allows tests to inject a fake without shelling out.
@@ -44,17 +41,18 @@ type options struct {
 	outputMode outputMode // "" or "html" | "gist" | "public-gist"
 	outputPath string
 	name       string
-	theme      string
-	// htmlOut is the stdout writer: used for HTML output (outputPath=="-") or
-	// for Gist URL lines (gist modes).
-	htmlOut io.Writer
+	debug      bool
+	// stdout is the stdout writer: it receives HTML content (outputPath=="-"),
+	// Gist URL lines (gist modes), or the absolute output path echo
+	// (default HTML-file mode).
+	stdout io.Writer
 	// gistRunner overrides the real gh runner in tests. nil → use real gh.
 	gistRunner GistPublisher
 }
 
 // execute is the testable entrypoint. It reads the JSONL file at
 // opts.inputPath, renders the HTML, and writes it to opts.outputPath or
-// opts.htmlOut (when outputPath is "-").
+// opts.stdout (when outputPath is "-").
 // Log output goes to errOut.
 func execute(opts options, errOut io.Writer) (retErr error) {
 	// Validate output mode.
@@ -70,17 +68,13 @@ func execute(opts options, errOut io.Writer) (retErr error) {
 	default:
 		return fmt.Errorf("unknown output mode %q: valid values are html, gist, public-gist", opts.outputMode)
 	}
-	// Validate theme early — unknown theme is a user error.
-	theme := opts.theme
-	if theme == "" {
-		theme = "github"
-	}
-	if !highlight.ValidateTheme(theme) {
-		return fmt.Errorf("unknown theme %q: use a valid Chroma style name", theme)
-	}
 
 	// Wire slog to the charmbracelet handler, writing to errOut.
-	logger := slog.New(charmlog.NewWithOptions(errOut, charmlog.Options{Level: charmlog.WarnLevel}))
+	logLevel := charmlog.WarnLevel
+	if opts.debug {
+		logLevel = charmlog.DebugLevel
+	}
+	logger := slog.New(charmlog.NewWithOptions(errOut, charmlog.Options{Level: logLevel}))
 
 	f, err := os.Open(opts.inputPath)
 	if err != nil {
@@ -88,7 +82,7 @@ func execute(opts options, errOut io.Writer) (retErr error) {
 	}
 	defer func() { _ = f.Close() }()
 
-	msgs, parseErrs, err := parser.Parse(f)
+	res, parseErrs, err := parser.Parse(f)
 	if err != nil {
 		return fmt.Errorf("parse %s: %w", opts.inputPath, err)
 	}
@@ -98,19 +92,30 @@ func execute(opts options, errOut io.Writer) (retErr error) {
 		}
 	}
 
+	logUnhandled(logger, res)
+
 	name := opts.name
+	fallback := sessionName(opts.inputPath)
 	if name == "" {
-		name = sessionName(opts.inputPath)
+		// Keep `name` as the outer-scope label (used for gist filenames etc.)
+		// but leave Options.Name empty so the renderer applies the documented
+		// precedence (EmbeddedName → filename fallback) rather than treating
+		// the filename-derived value as an explicit --name.
+		name = fallback
+	}
+
+	sess := session.Transform(res)
+
+	renderOpts := renderer.Options{
+		Name:             opts.name,
+		FilePath:         opts.inputPath,
+		FilenameFallback: fallback,
 	}
 
 	// --- Gist publish path ---
 	if mode == outputModeGist || mode == outputModePublicGist {
 		var buf bytes.Buffer
-		if err := renderer.Render(&buf, msgs, renderer.Options{
-			Name:     name,
-			FilePath: opts.inputPath,
-			Theme:    theme,
-		}); err != nil {
+		if err := renderer.Render(&buf, sess, renderOpts); err != nil {
 			return fmt.Errorf("render: %w", err)
 		}
 
@@ -126,7 +131,7 @@ func execute(opts options, errOut io.Writer) (retErr error) {
 			return fmt.Errorf("publish gist: %w", err)
 		}
 
-		out := opts.htmlOut
+		out := opts.stdout
 		if out == nil {
 			return fmt.Errorf("gist mode: no output writer provided")
 		}
@@ -136,35 +141,64 @@ func execute(opts options, errOut io.Writer) (retErr error) {
 	}
 
 	// --- HTML file path ---
-	var out io.Writer
 	if opts.outputPath == "-" {
-		// Write to the provided htmlOut writer (stdout in production).
-		if opts.htmlOut == nil {
-			return fmt.Errorf("outputPath is '-' but no htmlOut writer provided")
+		if opts.stdout == nil {
+			return fmt.Errorf("outputPath is '-' but no stdout writer provided")
 		}
-		out = opts.htmlOut
-	} else {
-		outPath := opts.outputPath
-		if outPath == "" {
-			outPath = deriveOutputPath(opts.inputPath)
-		}
-		outFile, err := os.Create(outPath)
-		if err != nil {
-			return fmt.Errorf("create %s: %w", outPath, err)
-		}
-		defer func() {
-			if cerr := outFile.Close(); cerr != nil && retErr == nil {
-				retErr = fmt.Errorf("close %s: %w", outPath, cerr)
-			}
-		}()
-		out = outFile
+		return renderer.Render(opts.stdout, sess, renderOpts)
 	}
 
-	return renderer.Render(out, msgs, renderer.Options{
-		Name:     name,
-		FilePath: opts.inputPath,
-		Theme:    theme,
-	})
+	outPath := opts.outputPath
+	if outPath == "" {
+		outPath = defaultOutputPath(opts.inputPath)
+	}
+	absOutPath, err := filepath.Abs(outPath)
+	if err != nil {
+		return fmt.Errorf("resolve %s: %w", outPath, err)
+	}
+	outFile, err := os.Create(absOutPath)
+	if err != nil {
+		return fmt.Errorf("create %s: %w", absOutPath, err)
+	}
+	defer func() {
+		if cerr := outFile.Close(); cerr != nil && retErr == nil {
+			retErr = fmt.Errorf("close %s: %w", absOutPath, cerr)
+		}
+	}()
+
+	if err := renderer.Render(outFile, sess, renderOpts); err != nil {
+		return err
+	}
+	logger.Debug("render complete", "path", absOutPath)
+	if opts.stdout != nil {
+		_, _ = fmt.Fprintln(opts.stdout, absOutPath)
+	}
+	return nil
+}
+
+// logUnhandled emits one Debug line per unrecognised content block and per
+// top-level record whose type we don't handle. The SkippedRecords stream is
+// authoritative for top-level records — the CLI does not rescan the file.
+func logUnhandled(logger *slog.Logger, res parser.Result) {
+	for _, msg := range res.Messages {
+		for _, c := range msg.Content {
+			rb, ok := c.(*parser.RawBlock)
+			if !ok {
+				continue
+			}
+			logger.Debug("unhandled content block",
+				"line", msg.LineNum,
+				"type", rb.RawType,
+				"role", msg.Role,
+			)
+		}
+	}
+	for _, sr := range res.SkippedRecords {
+		logger.Debug("unhandled top-level record",
+			"line", sr.LineNum,
+			"type", sr.Type,
+		)
+	}
 }
 
 // defaultGistPublisher delegates to the real gist.Publish using the gh CLI.
@@ -184,13 +218,15 @@ func sessionName(inputPath string) string {
 	return name
 }
 
-// deriveOutputPath replaces the .jsonl extension with .html.
-func deriveOutputPath(inputPath string) string {
-	ext := filepath.Ext(inputPath)
-	if strings.ToLower(ext) == ".jsonl" {
-		return strings.TrimSuffix(inputPath, ext) + ".html"
+// defaultOutputPath returns the default HTML output path: CWD/<stem>.html,
+// where stem is the input filename without its .jsonl extension.
+func defaultOutputPath(inputPath string) string {
+	stem := sessionName(inputPath)
+	cwd, err := os.Getwd()
+	if err != nil {
+		cwd = "."
 	}
-	return inputPath + ".html"
+	return filepath.Join(cwd, stem+".html")
 }
 
 // buildCLI constructs the urfave/cli/v3 Command tree. The run callback is
@@ -211,14 +247,13 @@ func buildCLI(run func(opts options, errOut io.Writer) error) *cli.Command {
 				Usage: "explicit output file path; use '-' to write HTML to stdout (html mode only)",
 			},
 			&cli.StringFlag{
-				Name:  "theme",
-				Value: "github",
-				Usage: "Chroma syntax-highlight theme (e.g. github, monokai, dracula)",
-			},
-			&cli.StringFlag{
 				Name:    "name",
 				Aliases: []string{"n"},
 				Usage:   "override the session name shown in the banner",
+			},
+			&cli.BoolFlag{
+				Name:  "debug",
+				Usage: "enable debug-level logging on stderr",
 			},
 		},
 		Action: func(ctx context.Context, cmd *cli.Command) error {
@@ -241,21 +276,15 @@ func buildCLI(run func(opts options, errOut io.Writer) error) *cli.Command {
 
 			mode := outputMode(cmd.String("output"))
 			outputPath := cmd.String("output-path")
-			theme := cmd.String("theme")
 			name := cmd.String("name")
-
-			var htmlOut io.Writer
-			if outputPath == "-" || mode == outputModeGist || mode == outputModePublicGist {
-				htmlOut = cmd.Root().Writer
-			}
 
 			opts := options{
 				inputPath:  inputPath,
 				outputMode: mode,
 				outputPath: outputPath,
-				theme:      theme,
 				name:       name,
-				htmlOut:    htmlOut,
+				debug:      cmd.Bool("debug"),
+				stdout:     cmd.Root().Writer,
 			}
 
 			if err := run(opts, cmd.Root().ErrWriter); err != nil {
@@ -263,9 +292,8 @@ func buildCLI(run func(opts options, errOut io.Writer) error) *cli.Command {
 				if os.IsNotExist(unwrapAll(err)) {
 					return cli.Exit(err.Error(), 1)
 				}
-				// Theme and mode validation errors are user errors.
-				if strings.Contains(err.Error(), "unknown theme") ||
-					strings.Contains(err.Error(), "unknown output mode") {
+				// Mode validation errors are user errors.
+				if strings.Contains(err.Error(), "unknown output mode") {
 					return cli.Exit(err.Error(), 1)
 				}
 				return cli.Exit(err.Error(), 2)

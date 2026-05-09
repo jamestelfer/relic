@@ -1,0 +1,3 @@
+{"type":"user","timestamp":"2025-01-01T10:00:00Z","message":{"role":"user","content":"setup the project"}}
+{"type":"user","timestamp":"2025-01-01T10:00:05Z","isMeta":true,"message":{"role":"user","content":"<command-name>/compact</command-name>\n<command-message>compacted</command-message>\n<command-args></command-args>"}}
+{"type":"user","timestamp":"2025-01-01T10:00:10Z","isMeta":true,"message":{"role":"user","content":"<local-command-stdout>Authentication successful. Connected to server.</local-command-stdout>"}}

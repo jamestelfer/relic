@@ -73,7 +73,6 @@
 /* GenericOutput */ .chroma .go { color: #1f2328 }
 /* GenericUnderline */ .chroma .gl { text-decoration: underline }
 /* TextWhitespace */ .chroma .w { color: #ffffff }
-
 @media (prefers-color-scheme: dark) {
 /* Background */ .bg { color: #e6edf3; background-color: #0d1117; }
 /* PreWrapper */ .chroma { color: #e6edf3; background-color: #0d1117; -webkit-text-size-adjust: none; }
@@ -153,7 +152,16 @@
 /* GenericTraceback */ .chroma .gt { color: #ff7b72 }
 /* GenericUnderline */ .chroma .gl { text-decoration: underline }
 /* TextWhitespace */ .chroma .w { color: #6e7681 }
-
+}
+.chroma { background-color: var(--bg-code); }
+pre.chroma {
+  font-family: var(--font-mono);
+  font-size: 0.875rem;
+  line-height: 1.5;
+  margin: 0;
+  padding: 1rem;
+  border-radius: 0;
+  overflow-x: auto;
 }
 
 ---

@@ -1,0 +1,4 @@
+{"type":"user","timestamp":"2025-01-15T10:00:01.000Z","message":{"role":"user","content":"go"}}
+{"type":"system","subtype":"local_command","content":"<command-name>/focus</command-name>\n<command-message>focus mode</command-message>\n<command-args></command-args>","level":"info"}
+{"type":"assistant","timestamp":"2025-01-15T10:00:02.000Z","message":{"role":"assistant","content":[{"type":"text","text":"after"}]}}
+{"type":"system","subtype":"turn_duration","durationMs":1234,"messageCount":2}

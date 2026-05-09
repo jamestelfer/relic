@@ -16,8 +16,14 @@ fmt:
     go fmt ./...
 
 # Build
+# Injects a version stamp of the form YYYYMMDD-<shortsha> derived from the
+# HEAD commit date (not wall clock) so two builds of the same commit produce
+# identical stamps. See docs/session-fidelity.prd.md §Build-time version stamp.
 build: generate
-    go build -o dist/ ./cmd/...
+    #!/usr/bin/env bash
+    set -euo pipefail
+    stamp="$(git log -1 --format=%cd --date=format:%Y%m%d)-$(git rev-parse --short HEAD)"
+    go build -ldflags "-X github.com/jamestelfer/relic/internal/renderer.Version=${stamp}" -o dist/ ./cmd/...
 
 # Lint
 lint: generate

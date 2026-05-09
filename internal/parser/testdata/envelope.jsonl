@@ -1,0 +1,4 @@
+{"type":"user","timestamp":"2025-01-15T10:00:01.000Z","isSidechain":true,"version":"1.0.42","cwd":"/home/user/project","gitBranch":"main","slug":"abc123","message":{"role":"user","content":"sidechain message"}}
+{"type":"assistant","timestamp":"2025-01-15T10:00:02.000Z","isCompactSummary":true,"message":{"role":"assistant","content":[{"type":"text","text":"compact summary"}]}}
+{"type":"user","timestamp":"2025-01-15T10:00:03.000Z","isApiErrorMessage":true,"message":{"role":"user","content":"API error occurred"}}
+{"type":"assistant","timestamp":"2025-01-15T10:00:04.000Z","message":{"role":"assistant","content":[{"type":"text","text":"normal message"}]}}

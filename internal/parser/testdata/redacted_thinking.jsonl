@@ -1,0 +1,1 @@
+{"type":"assistant","timestamp":"2025-01-01T10:00:00Z","message":{"role":"assistant","model":"claude-opus-4-5","content":[{"type":"thinking","thinking":"visible reasoning"},{"type":"redacted_thinking","data":"abc123"}]}}

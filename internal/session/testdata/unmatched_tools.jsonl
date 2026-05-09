@@ -1,0 +1,4 @@
+{"type":"user","timestamp":"2025-01-15T10:00:01.000Z","message":{"role":"user","content":"Do something"}}
+{"type":"assistant","message":{"role":"assistant","content":[{"type":"tool_use","id":"toolu_orphan_call","name":"Bash","input":{"command":"echo test"}}]}}
+{"type":"user","message":{"role":"user","content":[{"type":"tool_result","tool_use_id":"toolu_orphan_result","content":"some output"}]}}
+{"type":"assistant","message":{"role":"assistant","content":[{"type":"text","text":"Done"}]}}

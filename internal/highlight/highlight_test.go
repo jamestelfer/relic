@@ -48,18 +48,56 @@ func TestHighlight_UnknownLanguageName(t *testing.T) {
 	assert.Contains(t, string(out), "<pre")
 }
 
-// TestValidateTheme verifies known and unknown theme names.
-func TestValidateTheme(t *testing.T) {
-	assert.True(t, highlight.ValidateTheme("github"), "github should be a valid theme")
-	assert.True(t, highlight.ValidateTheme("monokai"), "monokai should be a valid theme")
-	assert.False(t, highlight.ValidateTheme("totally_unknown_xyz"), "unknown theme should be invalid")
-}
-
-// TestCSS verifies that CSS() returns non-empty CSS containing both github
-// (default) and github-dark (media query) rule sets.
+// TestCSS verifies that CSS() returns non-empty CSS containing both light and
+// dark theme rules, plus structural overrides.
 func TestCSS(t *testing.T) {
 	css := highlight.CSS()
 	require.NotEmpty(t, css)
-	assert.Contains(t, css, "prefers-color-scheme")
+	assert.Contains(t, css, "@media (prefers-color-scheme: dark)")
+	assert.Contains(t, css, "background-color: var(--bg-code)")
 	snaps.MatchSnapshot(t, css)
+}
+
+func TestStyle_LoadedFromEmbed(t *testing.T) {
+	s := highlight.Style()
+	require.NotNil(t, s, "style must load successfully")
+	assert.Equal(t, "github", s.Name)
+}
+
+func TestHighlight_UserBashSession(t *testing.T) {
+	out, err := highlight.Highlight("! echo hello", "userbashsession", "")
+	require.NoError(t, err)
+	assert.NotEmpty(t, out)
+	assert.Contains(t, string(out), "<pre")
+	assert.Contains(t, string(out), "echo")
+}
+
+func TestDiff_AdditionsAndDeletions(t *testing.T) {
+	old := "hello\nworld\n"
+	new := "hello\nearth\n"
+	out := highlight.Diff(old, new, "test.txt")
+	require.NotEmpty(t, out)
+	html := string(out)
+	// Should contain Chroma CSS classes (class-based, not inline)
+	assert.Contains(t, html, "chroma")
+	// Should show the diff content
+	assert.Contains(t, html, "world")
+	assert.Contains(t, html, "earth")
+}
+
+func TestDiff_IdenticalStrings(t *testing.T) {
+	out := highlight.Diff("same\n", "same\n", "f.go")
+	assert.Empty(t, out, "identical strings should produce empty output")
+}
+
+func TestDiff_PureAddition(t *testing.T) {
+	out := highlight.Diff("", "new content\n", "f.go")
+	require.NotEmpty(t, out)
+	assert.Contains(t, string(out), "new content")
+}
+
+func TestDiff_PureDeletion(t *testing.T) {
+	out := highlight.Diff("old content\n", "", "f.go")
+	require.NotEmpty(t, out)
+	assert.Contains(t, string(out), "old content")
 }

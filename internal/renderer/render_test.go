@@ -1,90 +1,452 @@
-package renderer
+package renderer_test
 
 import (
 	"bytes"
-	"context"
-	"os"
+	"strings"
 	"testing"
 
-	"github.com/gkampitakis/go-snaps/snaps"
-	"github.com/jamestelfer/relic/internal/parser"
+	"github.com/jamestelfer/relic/internal/renderer"
+	"github.com/jamestelfer/relic/internal/session"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
-func TestMain(m *testing.M) {
-	v := m.Run()
-	_, _ = snaps.Clean(m)
-	os.Exit(v)
-}
-
-func TestRenderMarkdown_PlainText(t *testing.T) {
-	out := renderMarkdown("Hello, world.", "github")
-	snaps.MatchSnapshot(t, string(out))
-}
-
-func TestRenderMarkdown_Heading(t *testing.T) {
-	out := renderMarkdown("# My Heading\n\nBody text.", "github")
-	snaps.MatchSnapshot(t, string(out))
-}
-
-func TestRenderMarkdown_CodeFence(t *testing.T) {
-	out := renderMarkdown("```go\nfunc Add(a, b int) int { return a + b }\n```", "github")
-	snaps.MatchSnapshot(t, string(out))
-}
-
-func TestRenderMarkdown_InlineCode(t *testing.T) {
-	out := renderMarkdown("Use `fmt.Println` to print output.", "github")
-	snaps.MatchSnapshot(t, string(out))
-}
-
-// renderBlock renders a single ContentBlock to an HTML string via the templ component.
-func renderBlock(t *testing.T, block parser.ContentBlock) string {
+func render(t *testing.T, s session.Session, opts renderer.Options) string {
 	t.Helper()
 	var buf bytes.Buffer
-	err := contentBlock(block, "github").Render(context.Background(), &buf)
+	err := renderer.Render(&buf, s, opts)
 	require.NoError(t, err)
 	return buf.String()
 }
 
-// TestRenderToolUseBlock verifies that tool_use blocks render as <details> with summary.
-func TestRenderToolUseBlock(t *testing.T) {
-	block := &parser.ToolUseBlock{
-		ID:    "toolu_01",
-		Name:  "Bash",
-		Input: map[string]any{"command": "echo hello world"},
-	}
-	out := renderBlock(t, block)
-	snaps.MatchSnapshot(t, out)
-	assert.Contains(t, out, "<details")
-	assert.Contains(t, out, "<summary")
+func TestRender_OutputStartsWithDoctype(t *testing.T) {
+	out := render(t, session.Session{}, renderer.Options{Name: "test"})
+	assert.Contains(t, out, "<!doctype html")
 }
 
-// TestRenderThinkingBlock verifies that thinking blocks render as <details> labelled
-// "Internal reasoning" with a preview height.
-func TestRenderThinkingBlock(t *testing.T) {
-	block := &parser.ThinkingBlock{
-		Thinking: "Line one\nLine two\nLine three",
-	}
-	out := renderBlock(t, block)
-	snaps.MatchSnapshot(t, out)
-	assert.Contains(t, out, "<details")
-	assert.Contains(t, out, "Internal reasoning")
+func TestRender_EmptySession_ValidHTML(t *testing.T) {
+	out := render(t, session.Session{}, renderer.Options{Name: "empty"})
+	assert.Contains(t, out, "<!doctype html")
+	assert.Contains(t, out, "</html>")
 }
 
-// TestToolIconFallback verifies that unknown tool names return the default icon.
-func TestToolIconFallback(t *testing.T) {
-	assert.Equal(t, "⚙", toolIcon("UnknownTool"))
+func TestRender_Title_ExplicitName(t *testing.T) {
+	s := session.Session{EmbeddedName: "embedded-title"}
+	out := render(t, s, renderer.Options{Name: "explicit", FilenameFallback: "fallback"})
+	assert.Contains(t, out, "<title>explicit")
 }
 
-// TestRenderToolResultBlock verifies tool_result blocks render as <details> with ANSI converted.
-func TestRenderToolResultBlock(t *testing.T) {
-	block := &parser.ToolResultBlock{
-		ToolUseID: "toolu_01",
-		Content:   "\x1b[32mSuccess!\x1b[0m\nOutput line 2",
+func TestRender_Title_EmbeddedFallback(t *testing.T) {
+	s := session.Session{EmbeddedName: "embedded-title"}
+	out := render(t, s, renderer.Options{FilenameFallback: "fallback"})
+	assert.Contains(t, out, "<title>embedded-title")
+}
+
+func TestRender_Title_FilenameFallback(t *testing.T) {
+	s := session.Session{}
+	out := render(t, s, renderer.Options{FilenameFallback: "fixture"})
+	assert.Contains(t, out, "<title>fixture")
+}
+
+func TestRender_Title_UntitledSession(t *testing.T) {
+	out := render(t, session.Session{}, renderer.Options{})
+	assert.Contains(t, out, "<title>untitled session")
+}
+
+func TestRender_SingleStyleBlock(t *testing.T) {
+	out := render(t, session.Session{}, renderer.Options{Name: "test"})
+	count := strings.Count(out, "<style>")
+	assert.Equal(t, 1, count, "expected exactly one <style> block, got %d", count)
+}
+
+func TestRender_PreservesGoogleFontsImport(t *testing.T) {
+	out := render(t, session.Session{}, renderer.Options{Name: "test"})
+	assert.Contains(t, out, "@import", "Google Fonts @import should be preserved in output")
+}
+
+func TestRender_ChromaCSSInStyleBlock(t *testing.T) {
+	out := render(t, session.Session{}, renderer.Options{Name: "test"})
+	assert.Contains(t, out, ".chroma", "Chroma CSS classes should be in the style block")
+}
+
+func TestRender_UserTextBlockStructure(t *testing.T) {
+	s := session.Session{
+		Turns: []session.Turn{{Index: 1, Blocks: []session.Block{
+			&session.UserText{Text: "hello world"},
+		}}},
 	}
-	out := renderBlock(t, block)
-	snaps.MatchSnapshot(t, out)
+	out := render(t, s, renderer.Options{Name: "test"})
+	assert.Contains(t, out, `class="block conversation user"`)
+	assert.Contains(t, out, "hello world")
+
+	// Design system: .role row with .tag "user"
+	assert.Contains(t, out, `<div class="role"><span class="tag">user</span></div>`)
+}
+
+func TestRender_AssistantTextBlockStructure(t *testing.T) {
+	s := session.Session{
+		Turns: []session.Turn{{Index: 1, Blocks: []session.Block{
+			&session.AssistantText{Text: "I can help with that."},
+		}}},
+	}
+	out := render(t, s, renderer.Options{Name: "test"})
+	assert.Contains(t, out, `class="block conversation assistant"`)
+	assert.Contains(t, out, "I can help with that.")
+
+	// Design system: .role row with .tag "assistant"
+	assert.Contains(t, out, `<div class="role"><span class="tag">assistant</span></div>`)
+}
+
+func TestRender_ThinkingBlockCollapsible(t *testing.T) {
+	s := session.Session{
+		Turns: []session.Turn{{Index: 1, Blocks: []session.Block{
+			&session.Thinking{Text: "Let me reason about this"},
+		}}},
+	}
+	out := render(t, s, renderer.Options{Name: "test"})
+	assert.Contains(t, out, `class="block thinking"`)
 	assert.Contains(t, out, "<details")
-	assert.NotContains(t, out, "\x1b", "ANSI escape byte must be absent in rendered tool_result")
+	assert.Contains(t, out, "Let me reason about this")
+}
+
+func TestRender_ToolCallHasIDAttribute(t *testing.T) {
+	s := session.Session{
+		Turns: []session.Turn{{Index: 1, Blocks: []session.Block{
+			&session.ToolCall{ID: "toolu_01ABC", Name: "Bash", Input: map[string]any{"command": "ls"}},
+		}}},
+	}
+	out := render(t, s, renderer.Options{Name: "test"})
+	assert.Contains(t, out, `id="toolu_01ABC"`)
+}
+
+func TestRender_ToolResultHasIDAttribute(t *testing.T) {
+	s := session.Session{
+		Turns: []session.Turn{{Index: 1, Blocks: []session.Block{
+			&session.ToolResult{ToolUseID: "toolu_01ABC", Content: "output", LinkedCallName: "Bash"},
+		}}},
+	}
+	out := render(t, s, renderer.Options{Name: "test"})
+	// Result uses "result-" prefix to distinguish from the call's anchor
+	assert.Contains(t, out, `id="result-toolu_01ABC"`)
+}
+
+func TestRender_PairIDBadgeLinks(t *testing.T) {
+	callID := "toolu_01ABCDEF"
+	linkedID := callID
+	s := session.Session{
+		Turns: []session.Turn{{Index: 1, Blocks: []session.Block{
+			&session.ToolCall{ID: callID, Name: "Bash", Input: map[string]any{"command": "ls"}, LinkedResultID: &linkedID},
+			&session.ToolResult{ToolUseID: callID, Content: "file.txt", LinkedCallID: &linkedID, LinkedCallName: "Bash"},
+		}}},
+	}
+	out := render(t, s, renderer.Options{Name: "test"})
+	// Call's badge links to the result
+	assert.Contains(t, out, `href="#result-toolu_01ABCDEF"`)
+	// Result's badge links back to the call
+	assert.Contains(t, out, `href="#toolu_01ABCDEF"`)
+}
+
+func TestRender_ToolCallStructure_RoleRowWithPairID(t *testing.T) {
+	callID := "toolu_01XYZ789"
+	linkedID := callID
+	s := session.Session{
+		Turns: []session.Turn{{Index: 1, Blocks: []session.Block{
+			&session.ToolCall{ID: callID, Name: "Read", Input: map[string]any{"file_path": "/tmp/x.go"}, LinkedResultID: &linkedID},
+		}}},
+	}
+	out := render(t, s, renderer.Options{Name: "test"})
+
+	// Design system: tool call has .role row containing .tag "tool_use" and .pair-id badge
+	assert.Contains(t, out, `<span class="tag">tool_use</span>`)
+	assert.Contains(t, out, `class="pair-id"`)
+	// pair-id badge must be in the .role row, NOT in .tool-card .head
+	roleStart := strings.Index(out, `<span class="tag">tool_use</span>`)
+	require.Greater(t, roleStart, 0)
+	roleEnd := strings.Index(out[roleStart:], `</div>`)
+	roleRow := out[roleStart : roleStart+roleEnd]
+	assert.Contains(t, roleRow, `class="pair-id"`, "pair-id badge should be in .role row")
+}
+
+func TestRender_ToolResultStructure_RoleRowWithPairID(t *testing.T) {
+	callID := "toolu_01XYZ789"
+	linkedID := callID
+	s := session.Session{
+		Turns: []session.Turn{{Index: 1, Blocks: []session.Block{
+			&session.ToolResult{ToolUseID: callID, Content: "output", LinkedCallID: &linkedID, LinkedCallName: "Bash"},
+		}}},
+	}
+	out := render(t, s, renderer.Options{Name: "test"})
+
+	// Design system: tool result has .role row containing .tag "tool_result" and .pair-id badge
+	assert.Contains(t, out, `<span class="tag">tool_result</span>`)
+	assert.Contains(t, out, `class="pair-id"`)
+	// pair-id badge in role row, NOT in .term .chrome
+	roleStart := strings.Index(out, `<span class="tag">tool_result</span>`)
+	require.Greater(t, roleStart, 0)
+	roleEnd := strings.Index(out[roleStart:], `</div>`)
+	roleRow := out[roleStart : roleStart+roleEnd]
+	assert.Contains(t, roleRow, `class="pair-id"`, "pair-id badge should be in .role row")
+}
+
+func TestRender_EditToolShowsDiff(t *testing.T) {
+	s := session.Session{
+		Turns: []session.Turn{{Index: 1, Blocks: []session.Block{
+			&session.ToolCall{ID: "toolu_edit1", Name: "Edit", Input: map[string]any{
+				"file_path":  "/tmp/test.go",
+				"old_string": "hello\n",
+				"new_string": "world\n",
+			}},
+		}}},
+	}
+	out := render(t, s, renderer.Options{Name: "test"})
+	assert.Contains(t, out, `data-tool="Edit"`)
+	assert.Contains(t, out, "chroma", "diff should use Chroma CSS classes")
+}
+
+func TestRender_MultiEditToolShowsDiffs(t *testing.T) {
+	s := session.Session{
+		Turns: []session.Turn{{Index: 1, Blocks: []session.Block{
+			&session.ToolCall{ID: "toolu_me1", Name: "MultiEdit", Input: map[string]any{
+				"file_path": "/tmp/test.go",
+				"edits": []any{
+					map[string]any{"old_string": "a\n", "new_string": "b\n"},
+					map[string]any{"old_string": "x\n", "new_string": "y\n"},
+				},
+			}},
+		}}},
+	}
+	out := render(t, s, renderer.Options{Name: "test"})
+	assert.Contains(t, out, `data-tool="MultiEdit"`)
+	assert.Contains(t, out, "chroma")
+}
+
+func TestRender_WebSearchTool(t *testing.T) {
+	s := session.Session{
+		Turns: []session.Turn{{Index: 1, Blocks: []session.Block{
+			&session.ToolCall{ID: "toolu_ws1", Name: "WebSearch", Input: map[string]any{"query": "golang concurrency"}},
+		}}},
+	}
+	out := render(t, s, renderer.Options{Name: "test"})
+	assert.Contains(t, out, "ws-query")
+	assert.Contains(t, out, "golang concurrency")
+}
+
+func TestRender_TaskTool(t *testing.T) {
+	s := session.Session{
+		Turns: []session.Turn{{Index: 1, Blocks: []session.Block{
+			&session.ToolCall{ID: "toolu_t1", Name: "Task", Input: map[string]any{
+				"prompt":        "Research this topic",
+				"subagent_type": "code-reviewer",
+			}},
+		}}},
+	}
+	out := render(t, s, renderer.Options{Name: "test"})
+	assert.Contains(t, out, "task-badge")
+	assert.Contains(t, out, "code-reviewer")
+	assert.Contains(t, out, "Research this topic")
+}
+
+func TestRender_TodoWriteTool(t *testing.T) {
+	s := session.Session{
+		Turns: []session.Turn{{Index: 1, Blocks: []session.Block{
+			&session.ToolCall{ID: "toolu_td1", Name: "TodoWrite", Input: map[string]any{
+				"todos": []any{
+					map[string]any{"content": "write tests", "status": "completed", "priority": "high"},
+					map[string]any{"content": "deploy", "status": "in-progress", "priority": "medium"},
+				},
+			}},
+		}}},
+	}
+	out := render(t, s, renderer.Options{Name: "test"})
+	assert.Contains(t, out, "todo-list")
+	assert.Contains(t, out, "write tests")
+	assert.Contains(t, out, "deploy")
+}
+
+func TestRender_MCPTool(t *testing.T) {
+	s := session.Session{
+		Turns: []session.Turn{{Index: 1, Blocks: []session.Block{
+			&session.ToolCall{ID: "toolu_mcp1", Name: "mcp__myserver__mytool", Input: map[string]any{"key": "value"}},
+		}}},
+	}
+	out := render(t, s, renderer.Options{Name: "test"})
+	assert.Contains(t, out, "mcp-server")
+	assert.Contains(t, out, "myserver")
+	assert.Contains(t, out, "mytool")
+}
+
+func TestRender_UnknownTool(t *testing.T) {
+	s := session.Session{
+		Turns: []session.Turn{{Index: 1, Blocks: []session.Block{
+			&session.ToolCall{ID: "toolu_unk", Name: "FancyNewTool", Input: map[string]any{"arg1": "val1"}},
+		}}},
+	}
+	out := render(t, s, renderer.Options{Name: "test"})
+	assert.Contains(t, out, `data-tool="FancyNewTool"`)
+}
+
+func TestRender_BashToolHighlighted(t *testing.T) {
+	s := session.Session{
+		Turns: []session.Turn{{Index: 1, Blocks: []session.Block{
+			&session.ToolCall{ID: "toolu_bash1", Name: "Bash", Input: map[string]any{"command": "echo hello"}},
+		}}},
+	}
+	out := render(t, s, renderer.Options{Name: "test"})
+	assert.Contains(t, out, `data-tool="Bash"`)
+	assert.Contains(t, out, "$", "Bash icon should be $")
+}
+
+func TestRender_OrphanedToolResult(t *testing.T) {
+	s := session.Session{
+		Turns: []session.Turn{{Index: 1, Blocks: []session.Block{
+			&session.ToolResult{ToolUseID: "toolu_orphan", Content: "some output"},
+		}}},
+	}
+	out := render(t, s, renderer.Options{Name: "test"})
+	assert.Contains(t, out, "tool_result", "orphaned result should show 'tool_result' label")
+	// Orphaned: LinkedCallID is nil so no pair-id link renders
+	assert.NotContains(t, out, `pair-id" href=`, "orphaned result should not have pair-id link")
+}
+
+func TestRender_RedactedThinkingNotExpandable(t *testing.T) {
+	s := session.Session{
+		Turns: []session.Turn{{Index: 1, Blocks: []session.Block{
+			&session.RedactedThinking{Data: "secret"},
+		}}},
+	}
+	out := render(t, s, renderer.Options{Name: "test"})
+	assert.Contains(t, out, `class="block redacted-thinking"`)
+	assert.Contains(t, out, `class="redacted-note"`)
+	assert.NotContains(t, out, "secret", "redacted data must not appear in output")
+
+	// Design system: redacted-note contains 🔒 icon
+	start := strings.Index(out, `class="block redacted-thinking"`)
+	require.Greater(t, start, 0)
+	end := strings.Index(out[start:], "</article>")
+	require.Greater(t, end, 0)
+	article := out[start : start+end]
+	assert.NotContains(t, article, "<details", "redacted thinking must not be expandable")
+	assert.Contains(t, article, "🔒", "redacted thinking should use 🔒 icon per design system")
+}
+
+func TestRender_WebSearchStructure(t *testing.T) {
+	s := session.Session{
+		Turns: []session.Turn{{Index: 1, Blocks: []session.Block{
+			&session.ToolCall{ID: "toolu_ws1", Name: "WebSearch", Input: map[string]any{"query": "golang testing"}},
+		}}},
+	}
+	out := render(t, s, renderer.Options{Name: "test"})
+
+	// Design system: .websearch-body > .ws-query > .ws-label + .ws-text
+	assert.Contains(t, out, `class="websearch-body"`)
+	assert.Contains(t, out, `class="ws-query"`)
+	assert.Contains(t, out, `class="ws-label"`)
+	assert.Contains(t, out, `class="ws-text"`)
+	assert.Contains(t, out, "golang testing")
+}
+
+func TestRender_TaskStructure(t *testing.T) {
+	s := session.Session{
+		Turns: []session.Turn{{Index: 1, Blocks: []session.Block{
+			&session.ToolCall{ID: "toolu_t1", Name: "Task", Input: map[string]any{
+				"prompt":        "Research this topic",
+				"subagent_type": "code-reviewer",
+			}},
+		}}},
+	}
+	out := render(t, s, renderer.Options{Name: "test"})
+
+	// Design system: .task-delegation > .task-meta > .task-badge + .task-type
+	assert.Contains(t, out, `class="task-delegation"`)
+	assert.Contains(t, out, `class="task-meta"`)
+	assert.Contains(t, out, `class="task-badge"`)
+	assert.Contains(t, out, `class="task-prompt"`)
+}
+
+func TestRender_TodoWriteStructure(t *testing.T) {
+	s := session.Session{
+		Turns: []session.Turn{{Index: 1, Blocks: []session.Block{
+			&session.ToolCall{ID: "toolu_td1", Name: "TodoWrite", Input: map[string]any{
+				"todos": []any{
+					map[string]any{"content": "write tests", "status": "completed", "priority": "high"},
+				},
+			}},
+		}}},
+	}
+	out := render(t, s, renderer.Options{Name: "test"})
+
+	// Design system: .todo-list > .todo-item > .todo-check + .todo-text + .todo-priority
+	assert.Contains(t, out, `class="todo-list"`)
+	assert.Contains(t, out, `class="todo-check"`)
+	assert.Contains(t, out, `class="todo-text"`)
+	assert.Contains(t, out, `class="todo-priority`)
+}
+
+func TestRender_MCPToolStructure(t *testing.T) {
+	s := session.Session{
+		Turns: []session.Turn{{Index: 1, Blocks: []session.Block{
+			&session.ToolCall{ID: "toolu_mcp1", Name: "mcp__github__create_issue", Input: map[string]any{"title": "test"}},
+		}}},
+	}
+	out := render(t, s, renderer.Options{Name: "test"})
+
+	// Design system: .mcp-server breadcrumb + Chroma-highlighted JSON body
+	assert.Contains(t, out, `class="mcp-server"`)
+	assert.Contains(t, out, `class="chroma"`)
+	assert.Contains(t, out, "github")
+	assert.Contains(t, out, "create_issue")
+}
+
+func TestRender_ImageBlock(t *testing.T) {
+	s := session.Session{
+		Turns: []session.Turn{{Index: 1, Blocks: []session.Block{
+			&session.Image{
+				MediaType: "image/png",
+				Base64:    "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==",
+			},
+		}}},
+	}
+	out := render(t, s, renderer.Options{Name: "test"})
+
+	// Design system: .block.image-block > .role + .image-card > .image-head + img.image-preview
+	assert.Contains(t, out, `class="block image-block"`)
+	assert.Contains(t, out, `class="image-card"`)
+	assert.Contains(t, out, `class="image-head"`)
+	assert.Contains(t, out, `class="image-preview"`)
+	assert.Contains(t, out, "data:image/png;base64,")
+	assert.Contains(t, out, "click to expand")
+}
+
+func TestRender_UnknownBlock(t *testing.T) {
+	s := session.Session{
+		Turns: []session.Turn{{Index: 1, Blocks: []session.Block{
+			&session.Raw{RawType: "server_tool_use", Data: []byte(`{"type":"server_tool_use","id":"srvtool_01"}`)},
+		}}},
+	}
+	out := render(t, s, renderer.Options{Name: "test"})
+
+	// Design system: .block.meta > details.unknown-block > summary(.ub-tag + .ub-type) + chroma JSON
+	assert.Contains(t, out, `class="block meta"`)
+	assert.Contains(t, out, `unknown-block`)
+	assert.Contains(t, out, `class="ub-tag"`)
+	assert.Contains(t, out, `class="ub-type"`)
+	assert.Contains(t, out, "server_tool_use")
+}
+
+func TestRender_CSSContainsDesignSystemComponents(t *testing.T) {
+	out := render(t, session.Session{}, renderer.Options{Name: "test"})
+
+	// Key design system CSS selectors that must be present
+	assert.Contains(t, out, ".block.conversation", "conversation card styles")
+	assert.Contains(t, out, ".block.user", "user color styles")
+	assert.Contains(t, out, ".block.assistant", "assistant color styles")
+	assert.Contains(t, out, ".block.tool", "tool color styles")
+	assert.Contains(t, out, ".pair-id", "pair-id badge styles")
+	assert.Contains(t, out, ".websearch-body", "websearch body styles")
+	assert.Contains(t, out, ".task-delegation", "task delegation styles")
+	assert.Contains(t, out, ".todo-list", "todo list styles")
+	assert.Contains(t, out, ".mcp-server", "mcp server styles")
+	assert.Contains(t, out, ".diff-body", "diff body styles")
+	assert.Contains(t, out, ".image-card", "image card styles")
+	assert.Contains(t, out, "details.unknown-block", "unknown block styles")
 }
