@@ -1,0 +1,163 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Relic — logo</title>
+<link rel="stylesheet" href="../colors_and_type.css">
+<style>
+  body { padding: 64px; background: var(--bg); }
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 32px; max-width: 980px; margin: 0 auto; }
+  .card { background: var(--bg-paper); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 48px; box-shadow: var(--shadow-1); display: flex; flex-direction: column; gap: 24px; }
+  .card.dark { background: var(--ink-900); color: var(--fg-on-dark); border-color: var(--ink-800); }
+  .card.lapis { background: var(--lapis-700); color: white; border-color: var(--lapis-800); }
+  .label { font-size: var(--text-xs); font-weight: 600; letter-spacing: var(--tracking-wide); text-transform: uppercase; color: var(--fg-muted); }
+  .card.dark .label, .card.lapis .label { color: rgba(255,255,255,0.55); }
+  .lockup { display: flex; align-items: center; gap: 14px; }
+  .wordmark { font-family: var(--font-display); font-size: 56px; line-height: 1; letter-spacing: -0.02em; }
+  .row { display: flex; gap: 32px; align-items: center; flex-wrap: wrap; }
+  .mark-only { display: flex; gap: 24px; align-items: flex-end; }
+  .small-lockup .wordmark { font-size: 28px; }
+  .tiny-lockup .wordmark { font-size: 18px; }
+  h1 { font-family: var(--font-display); font-size: 44px; margin: 0 0 8px; letter-spacing: -0.015em; line-height: 1; }
+  .sub { color: var(--fg-muted); margin: 0 0 40px; max-width: 60ch; }
+</style>
+</head>
+<body>
+<h1>Relic</h1>
+<p class="sub">A serif wordmark sat next to a stratigraphy mark — three sediment bands and a single citron <em>find</em> dot lifted above them. Italic <em>i</em> with a citron tittle echoes the find.</p>
+
+<div class="grid">
+
+  <!-- Light primary -->
+  <div class="card">
+    <span class="label">Primary lockup</span>
+    <div class="lockup">
+      <!-- MARK -->
+      <svg width="64" height="64" viewBox="0 0 64 64" aria-label="Relic mark">
+        <!-- strata -->
+        <rect x="6" y="38" width="52" height="6" rx="1.5" fill="var(--lapis-600)"/>
+        <rect x="6" y="46" width="52" height="6" rx="1.5" fill="var(--lapis-600)" opacity="0.7"/>
+        <rect x="6" y="54" width="52" height="6" rx="1.5" fill="var(--lapis-600)" opacity="0.45"/>
+        <!-- find dot halo -->
+        <circle cx="32" cy="22" r="11" fill="var(--citron-100)"/>
+        <!-- find dot core -->
+        <circle cx="32" cy="22" r="6.5" fill="var(--citron-500)" stroke="var(--ink-900)" stroke-width="1"/>
+        <!-- thin ink hairline rule under dot, anchoring it to strata -->
+        <line x1="6" y1="34" x2="58" y2="34" stroke="var(--ink-300)" stroke-width="0.8"/>
+      </svg>
+      <span class="wordmark">Rel<span style="font-style:italic;">i</span>c</span>
+    </div>
+  </div>
+
+  <!-- Dark -->
+  <div class="card dark">
+    <span class="label">On dark</span>
+    <div class="lockup">
+      <svg width="64" height="64" viewBox="0 0 64 64">
+        <rect x="6" y="38" width="52" height="6" rx="1.5" fill="var(--lapis-300)"/>
+        <rect x="6" y="46" width="52" height="6" rx="1.5" fill="var(--lapis-300)" opacity="0.65"/>
+        <rect x="6" y="54" width="52" height="6" rx="1.5" fill="var(--lapis-300)" opacity="0.4"/>
+        <circle cx="32" cy="22" r="11" fill="rgba(217, 196, 74, 0.22)"/>
+        <circle cx="32" cy="22" r="6.5" fill="var(--citron-300)" stroke="#E5E9F4" stroke-width="0.8"/>
+        <line x1="6" y1="34" x2="58" y2="34" stroke="#2C3656" stroke-width="0.8"/>
+      </svg>
+      <span class="wordmark">Rel<span style="font-style:italic;color:var(--citron-300);">i</span>c</span>
+    </div>
+  </div>
+
+  <!-- Lapis -->
+  <div class="card lapis">
+    <span class="label">On brand</span>
+    <div class="lockup">
+      <svg width="64" height="64" viewBox="0 0 64 64">
+        <rect x="6" y="38" width="52" height="6" rx="1.5" fill="white" opacity="0.95"/>
+        <rect x="6" y="46" width="52" height="6" rx="1.5" fill="white" opacity="0.6"/>
+        <rect x="6" y="54" width="52" height="6" rx="1.5" fill="white" opacity="0.35"/>
+        <circle cx="32" cy="22" r="11" fill="rgba(255,255,255,0.18)"/>
+        <circle cx="32" cy="22" r="6.5" fill="var(--citron-300)" stroke="white" stroke-width="0.9"/>
+        <line x1="6" y1="34" x2="58" y2="34" stroke="rgba(255,255,255,0.35)" stroke-width="0.8"/>
+      </svg>
+      <span class="wordmark">Rel<span style="font-style:italic;">i</span>c</span>
+    </div>
+  </div>
+
+  <!-- Mark only sizes -->
+  <div class="card">
+    <span class="label">Mark — sizes</span>
+    <div class="mark-only">
+      <svg width="96" height="96" viewBox="0 0 64 64">
+        <rect x="6" y="38" width="52" height="6" rx="1.5" fill="var(--lapis-600)"/>
+        <rect x="6" y="46" width="52" height="6" rx="1.5" fill="var(--lapis-600)" opacity="0.7"/>
+        <rect x="6" y="54" width="52" height="6" rx="1.5" fill="var(--lapis-600)" opacity="0.45"/>
+        <circle cx="32" cy="22" r="11" fill="var(--citron-100)"/>
+        <circle cx="32" cy="22" r="6.5" fill="var(--citron-500)" stroke="var(--ink-900)" stroke-width="1"/>
+        <line x1="6" y1="34" x2="58" y2="34" stroke="var(--ink-300)" stroke-width="0.8"/>
+      </svg>
+      <svg width="48" height="48" viewBox="0 0 64 64">
+        <rect x="6" y="38" width="52" height="6" rx="1.5" fill="var(--lapis-600)"/>
+        <rect x="6" y="46" width="52" height="6" rx="1.5" fill="var(--lapis-600)" opacity="0.7"/>
+        <rect x="6" y="54" width="52" height="6" rx="1.5" fill="var(--lapis-600)" opacity="0.45"/>
+        <circle cx="32" cy="22" r="11" fill="var(--citron-100)"/>
+        <circle cx="32" cy="22" r="6.5" fill="var(--citron-500)" stroke="var(--ink-900)" stroke-width="1"/>
+      </svg>
+      <svg width="24" height="24" viewBox="0 0 64 64">
+        <rect x="6" y="40" width="52" height="7" rx="1.5" fill="var(--lapis-600)"/>
+        <rect x="6" y="49" width="52" height="7" rx="1.5" fill="var(--lapis-600)" opacity="0.55"/>
+        <circle cx="32" cy="22" r="9" fill="var(--citron-500)" stroke="var(--ink-900)" stroke-width="1.5"/>
+      </svg>
+    </div>
+  </div>
+
+  <!-- Compact -->
+  <div class="card">
+    <span class="label">Compact / favicon</span>
+    <div class="row">
+      <div class="lockup small-lockup">
+        <svg width="32" height="32" viewBox="0 0 64 64">
+          <rect x="6" y="38" width="52" height="6" rx="1.5" fill="var(--lapis-600)"/>
+          <rect x="6" y="46" width="52" height="6" rx="1.5" fill="var(--lapis-600)" opacity="0.7"/>
+          <rect x="6" y="54" width="52" height="6" rx="1.5" fill="var(--lapis-600)" opacity="0.45"/>
+          <circle cx="32" cy="22" r="11" fill="var(--citron-100)"/>
+          <circle cx="32" cy="22" r="6.5" fill="var(--citron-500)" stroke="var(--ink-900)" stroke-width="1"/>
+        </svg>
+        <span class="wordmark">Rel<span style="font-style:italic;">i</span>c</span>
+      </div>
+      <div class="lockup tiny-lockup">
+        <svg width="20" height="20" viewBox="0 0 64 64">
+          <rect x="6" y="38" width="52" height="6" rx="1.5" fill="var(--lapis-600)"/>
+          <rect x="6" y="46" width="52" height="6" rx="1.5" fill="var(--lapis-600)" opacity="0.7"/>
+          <rect x="6" y="54" width="52" height="6" rx="1.5" fill="var(--lapis-600)" opacity="0.45"/>
+          <circle cx="32" cy="22" r="9" fill="var(--citron-500)" stroke="var(--ink-900)" stroke-width="1.6"/>
+        </svg>
+        <span class="wordmark">Rel<span style="font-style:italic;">i</span>c</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Construction -->
+  <div class="card">
+    <span class="label">Construction</span>
+    <svg width="240" height="240" viewBox="0 0 64 64">
+      <g stroke="var(--cobalt-500)" stroke-width="0.2" fill="none" opacity="0.5">
+        <line x1="0" y1="22" x2="64" y2="22"/>
+        <line x1="0" y1="34" x2="64" y2="34"/>
+        <line x1="0" y1="41" x2="64" y2="41"/>
+        <line x1="0" y1="49" x2="64" y2="49"/>
+        <line x1="0" y1="57" x2="64" y2="57"/>
+        <line x1="32" y1="0" x2="32" y2="64"/>
+        <line x1="6" y1="0" x2="6" y2="64"/>
+        <line x1="58" y1="0" x2="58" y2="64"/>
+        <circle cx="32" cy="22" r="11" stroke-dasharray="0.6 0.6"/>
+      </g>
+      <rect x="6" y="38" width="52" height="6" rx="1.5" fill="var(--lapis-600)"/>
+      <rect x="6" y="46" width="52" height="6" rx="1.5" fill="var(--lapis-600)" opacity="0.7"/>
+      <rect x="6" y="54" width="52" height="6" rx="1.5" fill="var(--lapis-600)" opacity="0.45"/>
+      <circle cx="32" cy="22" r="11" fill="var(--citron-100)"/>
+      <circle cx="32" cy="22" r="6.5" fill="var(--citron-500)" stroke="var(--ink-900)" stroke-width="1"/>
+      <line x1="6" y1="34" x2="58" y2="34" stroke="var(--ink-300)" stroke-width="0.8"/>
+    </svg>
+  </div>
+
+</div>
+</body>
+</html>
