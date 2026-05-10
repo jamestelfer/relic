@@ -150,6 +150,7 @@ func TestParseToolResult_ArrayContent(t *testing.T) {
 	assert.Equal(t, "toolu_42", tr.ToolUseID)
 	assert.Contains(t, tr.Content, "first text")
 	assert.Contains(t, tr.Content, "second text")
+	assert.Contains(t, tr.Content, "mcp__example__do")
 }
 
 // TestParseNoContent verifies that a message with empty content array is handled.

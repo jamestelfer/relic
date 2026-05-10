@@ -375,9 +375,11 @@ func decodeContent(raw jsontext.Value) []ContentBlock {
 
 // toolResultContent flattens a tool_result "content" field into a single
 // string. Claude Code emits this field as either a plain string or an array
-// of typed items; array items with `type:"text"` contribute their `.text`
-// value (joined with "\n\n" to preserve paragraph breaks), other item types
-// (e.g. `tool_reference`) are dropped.
+// of typed items. Recognised item types:
+//   - "text": contributes the .text value
+//   - "tool_reference": contributes the .tool_name value
+//
+// Items are joined with ", ".
 func toolResultContent(raw jsontext.Value) string {
 	if len(raw) == 0 {
 		return ""
@@ -390,17 +392,21 @@ func toolResultContent(raw jsontext.Value) string {
 		}
 	case '[':
 		var items []struct {
-			Type string `json:"type"`
-			Text string `json:"text"`
+			Type     string `json:"type"`
+			Text     string `json:"text"`
+			ToolName string `json:"tool_name"`
 		}
 		if err := json.Unmarshal([]byte(raw), &items); err == nil {
 			parts := make([]string, 0, len(items))
 			for _, it := range items {
-				if it.Type == "text" && it.Text != "" {
+				switch {
+				case it.Type == "text" && it.Text != "":
 					parts = append(parts, it.Text)
+				case it.Type == "tool_reference" && it.ToolName != "":
+					parts = append(parts, it.ToolName)
 				}
 			}
-			return strings.Join(parts, "\n\n")
+			return strings.Join(parts, ", ")
 		}
 	}
 	return ""
