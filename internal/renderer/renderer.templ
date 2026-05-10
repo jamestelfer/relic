@@ -90,7 +90,7 @@ templ railLegend() {
 
 templ railKbd() {
 	<div class="kbd">
-		<kbd>J</kbd> prev turn &nbsp; <kbd>K</kbd> next
+		<kbd>[</kbd> prev turn &nbsp; <kbd>]</kbd> next
 	</div>
 }
 
@@ -746,8 +746,8 @@ templ navigationScript() {
     var active = document.activeElement;
     var tag = active ? active.tagName : '';
     if (tag === "INPUT" || tag === "TEXTAREA" || (active && active.getAttribute("contenteditable") !== null)) return;
-    if (e.key === "j") currentIndex = Math.max(currentIndex - 1, 0);
-    else if (e.key === "k") currentIndex = Math.min(currentIndex + 1, turns.length - 1);
+    if (e.key === "[") currentIndex = Math.max(currentIndex - 1, 0);
+    else if (e.key === "]") currentIndex = Math.min(currentIndex + 1, turns.length - 1);
     else return;
     turns[currentIndex].scrollIntoView({ behavior: 'smooth', block: 'start' });
   });

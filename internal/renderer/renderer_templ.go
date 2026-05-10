@@ -305,7 +305,7 @@ func railKbd() templ.Component {
 			templ_7745c5c3_Var10 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 16, "<div class=\"kbd\"><kbd>J</kbd> prev turn &nbsp; <kbd>K</kbd> next</div>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 16, "<div class=\"kbd\"><kbd>[</kbd> prev turn &nbsp; <kbd>]</kbd> next</div>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -2970,8 +2970,8 @@ func navigationScript() templ.Component {
     var active = document.activeElement;
     var tag = active ? active.tagName : '';
     if (tag === "INPUT" || tag === "TEXTAREA" || (active && active.getAttribute("contenteditable") !== null)) return;
-    if (e.key === "j") currentIndex = Math.max(currentIndex - 1, 0);
-    else if (e.key === "k") currentIndex = Math.min(currentIndex + 1, turns.length - 1);
+    if (e.key === "[") currentIndex = Math.max(currentIndex - 1, 0);
+    else if (e.key === "]") currentIndex = Math.min(currentIndex + 1, turns.length - 1);
     else return;
     turns[currentIndex].scrollIntoView({ behavior: 'smooth', block: 'start' });
   });
