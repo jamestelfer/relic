@@ -53,7 +53,8 @@ func TestHighlight_UnknownLanguageName(t *testing.T) {
 func TestCSS(t *testing.T) {
 	css := highlight.CSS()
 	require.NotEmpty(t, css)
-	assert.Contains(t, css, "@media (prefers-color-scheme: dark)")
+	assert.Contains(t, css, ".term .chroma")
+	assert.NotContains(t, css, "@media (prefers-color-scheme: dark)")
 	assert.Contains(t, css, "background-color: var(--bg-code)")
 	snaps.MatchSnapshot(t, css)
 }

@@ -103,14 +103,21 @@ func CSS() string {
 func buildCSS() string {
 	var buf bytes.Buffer
 	_ = formatter.WriteCSS(&buf, styles.Get("github"))
-	buf.WriteString("@media (prefers-color-scheme: dark) {\n")
-	_ = formatter.WriteCSS(&buf, styles.Get("github-dark"))
-	buf.WriteString("}\n")
+
+	var darkBuf bytes.Buffer
+	_ = formatter.WriteCSS(&darkBuf, styles.Get("github-dark"))
+	darkCSS := strings.ReplaceAll(darkBuf.String(), ".chroma ", ".term .chroma ")
+	// The replacement above misses the bare ".chroma {" rule (no trailing space).
+	darkCSS = strings.ReplaceAll(darkCSS, ".chroma{", ".term .chroma{")
+	buf.WriteString(darkCSS)
+
 	buf.WriteString(structuralCSS)
 	return buf.String()
 }
 
 const structuralCSS = `.chroma { background-color: var(--bg-code); }
+.term .chroma { background-color: transparent; }
+.term .chroma .p { color: inherit; }
 pre.chroma {
   font-family: var(--font-mono);
   font-size: 0.875rem;
