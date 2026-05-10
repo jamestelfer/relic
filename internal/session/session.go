@@ -57,7 +57,7 @@ func (b *ToolCall) Arg() string {
 	switch b.Name {
 	case "Bash":
 		return inputString(b.Input, "description")
-	case "Read", "Write", "Edit":
+	case "Read", "Write", "Edit", "MultiEdit":
 		return inputString(b.Input, "file_path")
 	case "Grep":
 		return inputString(b.Input, "pattern")
@@ -398,7 +398,7 @@ func Transform(res parser.Result) Session {
 		for _, c := range msg.Content {
 			if tu, ok := c.(*parser.ToolUseBlock); ok {
 				switch tu.Name {
-				case "Read", "Write", "Edit":
+				case "Read", "Write", "Edit", "MultiEdit":
 					if p, ok := tu.Input["file_path"].(string); ok {
 						recordFile(p)
 					}

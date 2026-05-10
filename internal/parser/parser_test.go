@@ -237,9 +237,10 @@ func TestParseSkippedRecords_OmitsKnownBookkeeping(t *testing.T) {
 	assert.Equal(t, "user", res.Messages[0].Role)
 }
 
-// TestParseSkippedRecords_EmptyWhenAllHandled: a file with only known
-// top-level types produces no SkippedRecords.
-func TestParseSkippedRecords_EmptyWhenAllHandled(t *testing.T) {
+// TestParseSkippedRecords_OnlyUnknownTypesAreSkipped: known types (user,
+// assistant, system, custom-title, bookkeeping) pass through; only truly
+// unrecognised types surface as SkippedRecords.
+func TestParseSkippedRecords_OnlyUnknownTypesAreSkipped(t *testing.T) {
 	res, _, err := parser.Parse(openFixture(t, "fixture.jsonl"))
 	require.NoError(t, err)
 	// fixture.jsonl has: system(line 1), user/assistant (2-5), queue-operation (6).

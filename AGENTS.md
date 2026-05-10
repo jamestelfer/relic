@@ -10,9 +10,15 @@ shareable, syntax-highlighted HTML. It can write HTML to a file, stdout, or
 publish directly to a GitHub Gist via the `gh` CLI.
 
 The core principle is **self-contained, distributable HTML**: each rendered file
-is a single HTML document with all CSS, JS, fonts, and images inlined. No
-external dependencies, no network requests, works offline. This constraint
-applies to all rendering decisions — never reference external resources.
+is a single HTML document with all CSS, JS, and images inlined. No external
+dependencies, no network requests, works offline. This constraint applies to
+all rendering decisions — never reference external resources.
+
+**Exception — Google Fonts:** typography is loaded via a Google Fonts `@import`
+in the CSS. This is an intentional trade-off: the font payload is too large to
+inline, and Google Fonts is a reliable, high-availability CDN. The system font
+stack provides acceptable fallback when offline. Do not attempt to inline or
+bundle these fonts.
 
 Module: `github.com/jamestelfer/relic`  
 Language: Go 1.26 (`GOEXPERIMENT=jsonv2` — encoding/json/v2 is enabled everywhere)  

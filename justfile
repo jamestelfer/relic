@@ -22,7 +22,7 @@ fmt:
 build: generate
     #!/usr/bin/env bash
     set -euo pipefail
-    stamp="$(git log -1 --format=%cd --date=format:%Y%m%d)-$(git rev-parse --short HEAD)"
+    stamp="$(TZ=UTC0 git log -1 --format=%cd --date=format-local:%Y%m%d)-$(git rev-parse --short HEAD)"
     go build -ldflags "-X github.com/jamestelfer/relic/internal/renderer.Version=${stamp}" -o dist/ ./cmd/...
 
 # Lint

@@ -20,7 +20,11 @@ templ page(s session.Session, opts Options) {
 			<div class="layout">
 				<aside class="rail">
 					<details class="rail-wrap">
-						<summary class="rail-summary">{ fmt.Sprintf("Outline · %d turns", len(s.Turns)) }</summary>
+						if len(s.Turns) == 1 {
+							<summary class="rail-summary">Outline · 1 turn</summary>
+						} else {
+							<summary class="rail-summary">{ fmt.Sprintf("Outline · %d turns", len(s.Turns)) }</summary>
+						}
 						@railBrand()
 						@railOutline(s.Turns)
 						@railLegend()
@@ -756,7 +760,7 @@ templ navigationScript() {
   document.addEventListener('keydown', function(e) {
     var active = document.activeElement;
     var tag = active ? active.tagName : '';
-    if (tag === "INPUT" || tag === "TEXTAREA" || (active && active.getAttribute("contenteditable") !== null)) return;
+    if (tag === "INPUT" || tag === "TEXTAREA" || (active && active.isContentEditable)) return;
     if (e.key === "[") currentIndex = Math.max(currentIndex - 1, 0);
     else if (e.key === "]") currentIndex = Math.min(currentIndex + 1, turns.length - 1);
     else return;

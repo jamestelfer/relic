@@ -118,7 +118,7 @@ func styleComponent() templ.Component {
 
 func faviconLinkComponent() templ.Component {
 	return templ.ComponentFunc(func(_ context.Context, w io.Writer) error {
-		encoded := url.PathEscape(faviconSVG)
+		encoded := url.QueryEscape(faviconSVG)
 		_, err := fmt.Fprintf(w,
 			`<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%s">`,
 			encoded)
@@ -463,8 +463,9 @@ func truncateHookDetail(content string) string {
 	if i := strings.IndexByte(line, '\n'); i >= 0 {
 		line = line[:i]
 	}
-	if len(line) > 80 {
-		line = line[:80]
+	r := []rune(line)
+	if len(r) > 80 {
+		return string(r[:80])
 	}
 	return line
 }

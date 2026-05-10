@@ -450,3 +450,39 @@ func TestRender_CSSContainsDesignSystemComponents(t *testing.T) {
 	assert.Contains(t, out, ".image-card", "image card styles")
 	assert.Contains(t, out, "details.unknown-block", "unknown block styles")
 }
+
+func TestRender_HookInjection_UTF8NotCorrupted(t *testing.T) {
+	// 79 ASCII chars + a 3-byte UTF-8 rune (ä) at position 80.
+	// Byte-slicing at 80 would split the rune; rune-aware truncation must not.
+	content := strings.Repeat("a", 79) + "äbc"
+	s := session.Session{
+		Turns: []session.Turn{{Index: 1, Blocks: []session.Block{
+			&session.HookInjection{Content: content},
+		}}},
+	}
+	out := render(t, s, renderer.Options{Name: "test"})
+	assert.True(t, strings.ContainsRune(out, 'ä'),
+		"multi-byte rune at truncation boundary must not be corrupted")
+}
+
+func TestRender_OutlineSingularTurn(t *testing.T) {
+	s := session.Session{
+		Turns: []session.Turn{{Index: 1, Blocks: []session.Block{
+			&session.UserText{Text: "hello"},
+		}}},
+	}
+	out := render(t, s, renderer.Options{Name: "test"})
+	assert.Contains(t, out, "1 turn", "single turn should use singular form")
+	assert.NotContains(t, out, "1 turns", "single turn must not use plural form")
+}
+
+func TestRender_OutlinePluralTurns(t *testing.T) {
+	s := session.Session{
+		Turns: []session.Turn{
+			{Index: 1, Blocks: []session.Block{&session.UserText{Text: "first"}}},
+			{Index: 2, Blocks: []session.Block{&session.UserText{Text: "second"}}},
+		},
+	}
+	out := render(t, s, renderer.Options{Name: "test"})
+	assert.Contains(t, out, "2 turns", "multiple turns should use plural form")
+}

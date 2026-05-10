@@ -206,12 +206,12 @@ func TestToolCallArg_UnknownTool_NoString(t *testing.T) {
 	assert.Equal(t, "", c.Arg())
 }
 
-// TestTransformFilesTouched: union of file paths from Read/Write/Edit tool calls.
+// TestTransformFilesTouched: union of file paths from Read/Write/Edit/MultiEdit tool calls.
 func TestTransformFilesTouched(t *testing.T) {
 	res := parseFixture(t, "files_touched.jsonl")
 	s := session.Transform(res)
-	// Two unique paths across Read+Write+Edit; duplicates coalesced.
-	assert.Equal(t, []string{"foo.go", "bar.go"}, s.FilesTouched)
+	// Three unique paths across Read+Write+Edit+MultiEdit; duplicates coalesced.
+	assert.Equal(t, []string{"foo.go", "bar.go", "baz.go"}, s.FilesTouched)
 }
 
 // TestTransformEmbeddedName_LastCustomTitleWins: with multiple custom-title
