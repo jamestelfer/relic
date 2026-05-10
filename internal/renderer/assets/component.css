@@ -284,8 +284,8 @@ section.turn .turn-marker {
 .clamp .clamp-toggle::before {
   content: "";
   width: 8px; height: 8px;
-  border-right: 1.5px solid currentColor;
-  border-bottom: 1.5px solid currentColor;
+  border-right: 1.5px solid currentcolor;
+  border-bottom: 1.5px solid currentcolor;
   transform: rotate(45deg) translate(-1px, -1px);
   transition: transform 0.2s;
 }
@@ -302,6 +302,7 @@ section.turn .turn-marker {
 /* Blocks — hairline-ruled articles on the page background ------------------ */
 .block {
   --rule-color: var(--ink-300);
+
   border-left: 2px solid var(--rule-color);
   padding: 4px 0 4px 22px;
   margin: 18px 0;
@@ -503,7 +504,11 @@ details.thinking .clamp.is-open .clamp-body { max-height: none; }
   opacity: 0;
   transition: opacity 0.1s;
 }
-.block.assistant .body pre:hover .copy-btn { opacity: 1; }
+.block.assistant .body pre:hover .copy-btn,
+.block.assistant .body pre:focus-within .copy-btn,
+.copy-btn:focus-visible { opacity: 1; }
+.copy-btn:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
+@media (hover: none) { .copy-btn { opacity: 1; } }
 
 /* Tool card ---------------------------------------------------------------- */
 .tool-card {
@@ -700,7 +705,7 @@ details.thinking .clamp.is-open .clamp-body { max-height: none; }
   border-radius: var(--radius-md);
   font-family: var(--font-mono); font-size: 13px; line-height: 1.6;
   color: var(--fg-muted);
-  white-space: pre-wrap; word-break: break-word;
+  white-space: pre-wrap; overflow-wrap: anywhere; word-break: normal;
   overflow-x: auto;
 }
 .block.meta .body pre code { background: none; padding: 0; }
