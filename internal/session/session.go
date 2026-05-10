@@ -189,6 +189,16 @@ type HookInjection struct {
 func (b *HookInjection) BlockType() string { return "hook_injection" }
 func (b *HookInjection) sealedBlock()      {}
 
+// RequestInterrupted is a synthetic user message injected when the user
+// interrupts an in-progress assistant response.
+type RequestInterrupted struct {
+	Detail  string `json:"detail"`
+	LineNum int    `json:"line_num"`
+}
+
+func (b *RequestInterrupted) BlockType() string { return "request_interrupted" }
+func (b *RequestInterrupted) sealedBlock()      {}
+
 // SessionResult records the outcome of a session (success or error).
 type SessionResult struct {
 	Subtype    string  `json:"subtype"`
@@ -539,6 +549,8 @@ var localCommandStdoutRE = regexp.MustCompile(`(?s)<local-command-stdout>(.*?)</
 
 var localCommandCaveatRE = regexp.MustCompile(`(?s)<local-command-caveat>`)
 
+var requestInterruptedRE = regexp.MustCompile(`^\[Request interrupted by user(.*?)\]$`)
+
 var (
 	bashInputRE  = regexp.MustCompile(`(?s)<bash-input>(.*?)</bash-input>`)
 	bashStdoutRE = regexp.MustCompile(`(?s)<bash-stdout>(.*?)</bash-stdout>`)
@@ -625,7 +637,15 @@ func classifyUserMessage(msg parser.Message) []Block {
 		return []Block{}
 	}
 
-	// 3. isMeta fallback: unrecognized meta content is a hook injection.
+	// 3. Synthetic messages injected by the harness.
+	if m := requestInterruptedRE.FindStringSubmatch(strings.TrimSpace(content)); m != nil {
+		return []Block{&RequestInterrupted{
+			Detail:  "by user" + m[1],
+			LineNum: msg.LineNum,
+		}}
+	}
+
+	// 4. isMeta fallback: unrecognized meta content is a hook injection.
 	if msg.IsMeta {
 		return []Block{&HookInjection{
 			Content: content,

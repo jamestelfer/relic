@@ -179,6 +179,8 @@ templ blockComponent(block session.Block) {
 			@apiErrorBlock(b)
 		case *session.HookInjection:
 			@hookInjectionBlock(b)
+		case *session.RequestInterrupted:
+			@requestInterruptedBlock(b)
 		case *session.SessionResult:
 			@sessionResultBlock(b)
 		case *session.Raw:
@@ -476,6 +478,15 @@ templ apiErrorBlock(b *session.ApiError) {
 				}
 				<div class="msg">{ b.Message }</div>
 			</div>
+		</div>
+	</article>
+}
+
+templ requestInterruptedBlock(b *session.RequestInterrupted) {
+	<article class="block meta">
+		<div class="meta-bar">
+			<span>request_interrupted</span>
+			<span class="detail">{ b.Detail }</span>
 		</div>
 	</article>
 }
