@@ -127,15 +127,15 @@
   --accent-ink:   var(--citron-700);
 
   /* Roles — turn / block coloring */
-  --role-user-fg:       var(--teal-600);
-  --role-user-bg:       #E9F4F4;
-  --role-user-rule:     var(--teal-500);
+  --role-user-fg:       var(--lapis-700);
+  --role-user-bg:       var(--lapis-50);
+  --role-user-rule:     var(--lapis-600);
   --role-assistant-fg:  var(--ink-800);
   --role-assistant-bg:  var(--ink-0);
   --role-assistant-rule: var(--cobalt-500);
-  --role-tool-fg:       var(--lapis-700);
-  --role-tool-bg:       var(--lapis-50);
-  --role-tool-rule:     var(--lapis-600);
+  --role-tool-fg:       var(--teal-600);
+  --role-tool-bg:       #E9F4F4;
+  --role-tool-rule:     var(--teal-500);
   --role-thinking-fg:   var(--violet-600);
   --role-thinking-bg:   #F0EDFA;
   --role-thinking-rule: var(--violet-500);
@@ -184,15 +184,15 @@
     --accent-soft:  rgba(217, 196, 74, 0.18);
     --accent-ink:   var(--citron-300);
 
-    --role-user-fg:        #6FD9D6;
-    --role-user-bg:        rgba(31, 163, 160, 0.10);
-    --role-user-rule:      var(--teal-500);
+    --role-user-fg:        #C7D5FF;
+    --role-user-bg:        rgba(46, 91, 255, 0.10);
+    --role-user-rule:      var(--lapis-300);
     --role-assistant-fg:   #E8ECF6;
     --role-assistant-bg:   var(--ink-900);
     --role-assistant-rule: var(--cobalt-500);
-    --role-tool-fg:        #C7D5FF;
-    --role-tool-bg:        rgba(46, 91, 255, 0.10);
-    --role-tool-rule:      var(--lapis-300);
+    --role-tool-fg:        #6FD9D6;
+    --role-tool-bg:        rgba(31, 163, 160, 0.10);
+    --role-tool-rule:      var(--teal-500);
     --role-thinking-fg:    #B7A8F4;
     --role-thinking-bg:    rgba(110, 85, 212, 0.12);
     --role-thinking-rule:  var(--violet-500);
