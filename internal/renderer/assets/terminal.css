@@ -66,3 +66,22 @@
   .term-fg96 { color: #7DE8E5; }
   .term-fg97 { color: #FFFFFF; }
 }
+
+/* Theme toggle: data-theme overrides for terminal dark mode */
+html[data-theme="dark"] .term-fg30 { color: var(--ink-400); }
+html[data-theme="dark"] .term-fg31 { color: #FF6B6B; }
+html[data-theme="dark"] .term-fg32 { color: #6FD9D6; }
+html[data-theme="dark"] .term-fg33 { color: var(--citron-300); }
+html[data-theme="dark"] .term-fg34 { color: var(--cobalt-300); }
+html[data-theme="dark"] .term-fg35 { color: #B7A8F4; }
+html[data-theme="dark"] .term-fg36 { color: #6FD9D6; }
+html[data-theme="dark"] .term-fg37 { color: #E8ECF6; }
+
+html[data-theme="dark"] .term-fg90 { color: var(--ink-400); }
+html[data-theme="dark"] .term-fg91 { color: #FF8080; }
+html[data-theme="dark"] .term-fg92 { color: #7DE8E5; }
+html[data-theme="dark"] .term-fg93 { color: var(--citron-300); }
+html[data-theme="dark"] .term-fg94 { color: var(--cobalt-300); }
+html[data-theme="dark"] .term-fg95 { color: #C4B8F8; }
+html[data-theme="dark"] .term-fg96 { color: #7DE8E5; }
+html[data-theme="dark"] .term-fg97 { color: #FFFFFF; }

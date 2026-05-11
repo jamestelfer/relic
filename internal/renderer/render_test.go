@@ -486,3 +486,21 @@ func TestRender_OutlinePluralTurns(t *testing.T) {
 	out := render(t, s, renderer.Options{Name: "test"})
 	assert.Contains(t, out, "2 turns", "multiple turns should use plural form")
 }
+
+func TestRender_ThemeToggleButton(t *testing.T) {
+	out := render(t, session.Session{}, renderer.Options{Name: "test"})
+	assert.Contains(t, out, `class="theme-toggle"`, "toggle button must be present")
+	assert.Contains(t, out, `aria-label=`, "toggle button must have accessible label")
+}
+
+func TestRender_ThemeToggleScript(t *testing.T) {
+	out := render(t, session.Session{}, renderer.Options{Name: "test"})
+	assert.Contains(t, out, `data-theme`, "script must reference data-theme attribute")
+	assert.NotContains(t, out, "localStorage", "toggle must not persist state")
+}
+
+func TestRender_ThemeOverrideCSS(t *testing.T) {
+	out := render(t, session.Session{}, renderer.Options{Name: "test"})
+	assert.Contains(t, out, `[data-theme="dark"]`, "CSS must include dark override selector")
+	assert.Contains(t, out, `[data-theme="light"]`, "CSS must include light override selector")
+}

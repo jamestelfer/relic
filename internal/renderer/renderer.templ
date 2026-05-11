@@ -44,6 +44,7 @@ templ page(s session.Session, opts Options) {
 			@copyButtonScript()
 			@imageZoomScript()
 			@navigationScript()
+			@themeToggleScript()
 		</body>
 	</html>
 }
@@ -627,6 +628,7 @@ templ catalogEyebrow(s session.Session, opts Options) {
 			<span>·</span>
 			<span>{ catalogFilename(opts.FilePath) }</span>
 		}
+		<button class="theme-toggle" aria-label="Toggle light/dark theme">◑ theme</button>
 	</div>
 }
 
@@ -765,6 +767,30 @@ templ navigationScript() {
     else if (e.key === "]") currentIndex = Math.min(currentIndex + 1, turns.length - 1);
     else return;
     turns[currentIndex].scrollIntoView({ behavior: 'smooth', block: 'start' });
+  });
+})();
+</script>`)
+}
+
+templ themeToggleScript() {
+	@templ.Raw(`<script>
+(function() {
+  var btn = document.querySelector('.theme-toggle');
+  if (!btn) return;
+  var root = document.documentElement;
+  var states = ['auto', 'light', 'dark'];
+  var labels = { auto: '◑ auto', light: '☀ light', dark: '☾ dark' };
+  var current = 0;
+
+  btn.addEventListener('click', function() {
+    current = (current + 1) % states.length;
+    var mode = states[current];
+    if (mode === 'auto') {
+      root.removeAttribute('data-theme');
+    } else {
+      root.setAttribute('data-theme', mode);
+    }
+    btn.textContent = labels[mode];
   });
 })();
 </script>`)
