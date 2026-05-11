@@ -46,10 +46,7 @@
 .term-italic    { font-style: italic; }
 .term-underline { text-decoration: underline; }
 
-/* Dark-mode terminal palette — disabled; see
-   docs/session-fidelity.prd.md §Dark mode removal. Retained (commented)
-   so re-enabling is a one-block uncomment. */
-/*
+/* Dark-mode terminal palette */
 @media (prefers-color-scheme: dark) {
   .term-fg30 { color: var(--ink-400); }
   .term-fg31 { color: #FF6B6B; }
@@ -69,4 +66,3 @@
   .term-fg96 { color: #7DE8E5; }
   .term-fg97 { color: #FFFFFF; }
 }
-*/

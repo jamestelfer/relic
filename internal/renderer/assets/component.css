@@ -937,10 +937,7 @@ details.unknown-block summary::-webkit-details-marker { display: none; }
   .turn-meta, .session-head .catalog, .block .role { color: var(--ink-700); }
 }
 
-/* Dark-mode block/body/code/err overrides — disabled; see
-   docs/session-fidelity.prd.md §Dark mode removal. Retained (commented)
-   so re-enabling is a one-block uncomment. */
-/*
+/* Dark-mode block/body/code/err overrides */
 @media (prefers-color-scheme: dark) {
   :root {
     --role-thinking-text: #F0EBFF;
@@ -969,7 +966,6 @@ details.unknown-block summary::-webkit-details-marker { display: none; }
     color: var(--fg-on-dark);
   }
 }
-*/
 
 /* Narrow viewport: rail collapses into a <details> above the main column. */
 @media (max-width: 700px) {
