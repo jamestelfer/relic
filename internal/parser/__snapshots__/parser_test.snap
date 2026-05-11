@@ -8,6 +8,9 @@
         Content:   {
             &parser.TextBlock{Text:"Hello, can you help me write a Go function?"},
         },
+        LineNum:  2,
+        IsMeta:   false,
+        Envelope: parser.Envelope{},
     },
     {
         Role:      "assistant",
@@ -16,6 +19,9 @@
         Content:   {
             &parser.TextBlock{Text:"Sure! I can help you write a Go function. What would you like it to do?"},
         },
+        LineNum:  3,
+        IsMeta:   false,
+        Envelope: parser.Envelope{},
     },
     {
         Role:      "user",
@@ -24,6 +30,9 @@
         Content:   {
             &parser.TextBlock{Text:"Please write a function that adds two integers."},
         },
+        LineNum:  4,
+        IsMeta:   false,
+        Envelope: parser.Envelope{},
     },
     {
         Role:      "assistant",
@@ -32,6 +41,9 @@
         Content:   {
             &parser.TextBlock{Text:"Here is the function:\n\n```go\nfunc Add(a, b int) int {\n    return a + b\n}\n```"},
         },
+        LineNum:  5,
+        IsMeta:   false,
+        Envelope: parser.Envelope{},
     },
 }
 ---

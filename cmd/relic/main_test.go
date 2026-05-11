@@ -10,17 +10,10 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/gkampitakis/go-snaps/snaps"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/urfave/cli/v3"
 )
-
-func TestMain(m *testing.M) {
-	v := m.Run()
-	_, _ = snaps.Clean(m)
-	os.Exit(v)
-}
 
 // runFixture executes relic against testdata/fixture.jsonl and returns the HTML.
 func runFixture(t *testing.T, opts options) string {
@@ -39,180 +32,126 @@ func runFixture(t *testing.T, opts options) string {
 	return string(html)
 }
 
-// TestExecuteE2E is the tracer bullet: fixture JSONL in, snapshot the HTML out.
+// TestExecuteE2E is the tracer bullet: fixture JSONL in → valid HTML out.
 func TestExecuteE2E(t *testing.T) {
 	html := runFixture(t, options{})
-	snaps.MatchSnapshot(t, html)
+	assert.Contains(t, html, "<!doctype html")
+	assert.Contains(t, html, "</html>")
 }
 
-// TestTurnGrouping verifies that user turns are wrapped in sections with id="turn-N".
-func TestTurnGrouping(t *testing.T) {
-	html := runFixture(t, options{})
-	assert.Contains(t, html, `id="turn-1"`)
-	assert.Contains(t, html, `id="turn-2"`)
-	assert.Contains(t, html, `id="turn-3"`)
-	assert.NotContains(t, html, `id="turn-4"`, "only 3 user turns in fixture")
-}
+// TestExecute_DefaultOutputPath_CWD verifies that when no --output-path is set
+// the HTML file is written to CWD/<stem>.html (not next to the input) and the
+// absolute path is echoed to stdout on its own line.
+func TestExecute_DefaultOutputPath_CWD(t *testing.T) {
+	cwdBefore, err := os.Getwd()
+	require.NoError(t, err)
+	absFixture := filepath.Join(cwdBefore, "testdata/fixture.jsonl")
 
-// TestTOC verifies a table of contents is rendered with one entry per user turn.
-func TestTOC(t *testing.T) {
-	html := runFixture(t, options{})
-	assert.Contains(t, html, `href="#turn-1"`)
-	assert.Contains(t, html, `href="#turn-2"`)
-	assert.Contains(t, html, `href="#turn-3"`)
-	assert.Contains(t, html, "Hello, can you help me write a Go function?")
-}
-
-// TestPrevNext verifies prev/next navigation links on turn sections.
-func TestPrevNext(t *testing.T) {
-	html := runFixture(t, options{})
-	assert.NotContains(t, html, `href="#turn-0"`, "first turn must have no prev")
-	assert.Contains(t, html, `href="#turn-2"`, "turn 1 must have next")
-	assert.Contains(t, html, `href="#turn-1"`, "turn 2 must have prev")
-	assert.Contains(t, html, `href="#turn-3"`, "turn 2 must have next")
-	assert.NotContains(t, html, `href="#turn-4"`, "last turn must have no next")
-}
-
-// TestToolResultTurnGrouping verifies that user messages containing only tool_result
-// blocks are not counted as separate turns: they belong to the turn started by the
-// preceding human text message.
-func TestToolResultTurnGrouping(t *testing.T) {
-	html := runFixture(t, options{inputPath: "testdata/fixture_tool_turn.jsonl"})
-	// Fixture has exactly 2 human messages, so exactly 2 turns.
-	assert.Contains(t, html, `id="turn-1"`)
-	assert.Contains(t, html, `id="turn-2"`)
-	assert.NotContains(t, html, `id="turn-3"`, "tool-result user message must not create a new turn")
-	// Tool result message must still be rendered (role=tool).
-	assert.Contains(t, html, "hello", "tool result content must appear in output")
-	assert.Contains(t, html, `class="message message-tool"`, "tool result must render with role=tool")
-}
-
-// TestToolResultE2E verifies tool_result blocks render with ANSI converted and no raw escapes.
-func TestToolResultE2E(t *testing.T) {
 	tmp := t.TempDir()
-	outPath := filepath.Join(tmp, "out.html")
-	var logBuf bytes.Buffer
+	t.Chdir(tmp)
+	cwd, err := os.Getwd()
+	require.NoError(t, err)
+
+	var outBuf, logBuf bytes.Buffer
 	require.NoError(t, execute(options{
-		inputPath:  "testdata/fixture_tool_result.jsonl",
-		outputPath: outPath,
+		inputPath: absFixture,
+		stdout:    &outBuf,
 	}, &logBuf))
 
-	html, err := os.ReadFile(outPath)
-	require.NoError(t, err)
-	htmlStr := string(html)
+	outPath := filepath.Join(cwd, "fixture.html")
+	_, statErr := os.Stat(outPath)
+	require.NoError(t, statErr, "default output path must be CWD/<stem>.html")
 
-	assert.Contains(t, htmlStr, "tool-result")
-	assert.NotContains(t, htmlStr, "\x1b", "ANSI escape byte must be absent")
-	assert.Contains(t, htmlStr, "<span", "ANSI colour should produce <span>")
-	snaps.MatchSnapshot(t, htmlStr)
+	assert.Equal(t, outPath+"\n", outBuf.String(),
+		"stdout must echo the absolute output path followed by one newline")
 }
 
-// TestToolUseAndThinkingE2E verifies that tool_use and thinking blocks render
-// as collapsible <details> sections in the HTML output.
-func TestToolUseAndThinkingE2E(t *testing.T) {
+// TestExecute_DefaultOutputPath_Overwrites verifies that re-running the same
+// command overwrites the output file silently and exits 0.
+func TestExecute_DefaultOutputPath_Overwrites(t *testing.T) {
+	cwdBefore, err := os.Getwd()
+	require.NoError(t, err)
+	absFixture := filepath.Join(cwdBefore, "testdata/fixture.jsonl")
+
 	tmp := t.TempDir()
-	outPath := filepath.Join(tmp, "out.html")
-	var logBuf bytes.Buffer
-	require.NoError(t, execute(options{
-		inputPath:  "testdata/fixture_tool_use.jsonl",
-		outputPath: outPath,
-	}, &logBuf))
+	t.Chdir(tmp)
 
-	html, err := os.ReadFile(outPath)
-	require.NoError(t, err)
-	htmlStr := string(html)
-
-	// Fixture has 1 thinking + 2 tool_use = 3 <details>.
-	assert.Equal(t, 3, strings.Count(htmlStr, "<details"), "expected 3 <details> elements")
-	assert.Contains(t, htmlStr, "Internal reasoning")
-	assert.Contains(t, htmlStr, "echo hello world")
-	snaps.MatchSnapshot(t, htmlStr)
+	for i := range 2 {
+		var outBuf, logBuf bytes.Buffer
+		require.NoError(t, execute(options{
+			inputPath: absFixture,
+			stdout:    &outBuf,
+		}, &logBuf), "run %d", i)
+		assert.Empty(t, logBuf.String(), "run %d: stderr must be silent on success", i)
+	}
 }
 
-// TestMalformedLineE2E verifies that a session with a malformed line renders an
-// error callout in the HTML and exits 0. The slog warning goes to errOut.
-func TestMalformedLineE2E(t *testing.T) {
-	tmp := t.TempDir()
-	outPath := filepath.Join(tmp, "out.html")
-	var logBuf bytes.Buffer
-	require.NoError(t, execute(options{
-		inputPath:  "testdata/malformed.jsonl",
-		outputPath: outPath,
-	}, &logBuf))
-
-	html, err := os.ReadFile(outPath)
-	require.NoError(t, err)
-	htmlStr := string(html)
-
-	assert.Contains(t, htmlStr, "error-callout")
-	assert.Contains(t, htmlStr, "Parse error on line 2")
-	assert.True(t,
-		strings.Contains(logBuf.String(), "malformed") || strings.Contains(logBuf.String(), "line"),
-		"expected warning in log output, got: %q", logBuf.String(),
-	)
-	snaps.MatchSnapshot(t, htmlStr)
-}
-
-// TestMarkdownRendering verifies that text blocks are rendered through goldmark.
-func TestMarkdownRendering(t *testing.T) {
-	html := runFixture(t, options{})
-	assert.Contains(t, html, "<code", "expected <code> from Markdown code fence")
-	assert.Contains(t, html, "<pre", "expected <pre> from Markdown code fence")
-	assert.NotContains(t, html, "```go", "raw Markdown fence markers must not appear in output")
-}
-
-// TestCopyToClipboardScript verifies exactly one <script> tag is present.
-func TestCopyToClipboardScript(t *testing.T) {
-	html := runFixture(t, options{})
-	assert.Equal(t, 1, strings.Count(html, "<script"), "expected exactly 1 <script> tag")
-}
-
-func TestJKKeyboardNav(t *testing.T) {
-	html := runFixture(t, options{})
-	assert.Contains(t, html, `e.key === 'j'`, "expected JS keydown handler for j")
-	assert.Contains(t, html, `e.key === 'k'`, "expected JS keydown handler for k")
-	assert.Contains(t, html, "[J] next", "expected jk-nav label for next")
-	assert.Contains(t, html, "[K] prev", "expected jk-nav label for prev")
-	assert.Contains(t, html, ":target", "expected CSS :target rule for J/K navigation")
-}
-
-func TestSelfContained(t *testing.T) {
-	html := runFixture(t, options{})
-	assert.NotContains(t, html, "http://")
-	assert.NotContains(t, html, "https://")
-}
-
-// TestTimestamps verifies first message shows absolute timestamp; others show relative.
-func TestTimestamps(t *testing.T) {
-	html := runFixture(t, options{})
-	assert.Contains(t, html, "2025", "expected year 2025 in first message absolute timestamp")
-	assert.Contains(t, html, `title="`, "expected title= attribute for relative timestamp")
-}
-
-// TestSyntaxHighlightingCSS verifies Chroma CSS for light and dark themes is injected.
-func TestSyntaxHighlightingCSS(t *testing.T) {
-	html := runFixture(t, options{})
-	assert.Contains(t, html, "prefers-color-scheme")
-	assert.NotContains(t, html, `style="color:`, "must use class-based Chroma CSS, not inline styles")
-}
-
-// TestOutputFlag_Stdout verifies that outputPath="-" writes HTML to htmlOut.
+// TestOutputFlag_Stdout verifies that outputPath="-" writes HTML to stdout
+// with nothing after the final </html> closer (no path echo).
 func TestOutputFlag_Stdout(t *testing.T) {
 	var htmlBuf bytes.Buffer
 	var logBuf bytes.Buffer
 	require.NoError(t, execute(options{
 		inputPath:  "testdata/fixture.jsonl",
 		outputPath: "-",
-		htmlOut:    &htmlBuf,
+		stdout:     &htmlBuf,
 	}, &logBuf))
-	assert.Contains(t, htmlBuf.String(), "<!doctype html")
+	out := htmlBuf.String()
+	assert.Contains(t, out, "<!doctype html")
+	trailing := strings.TrimSpace(out[strings.LastIndex(out, "</html>")+len("</html>"):])
+	assert.Empty(t, trailing, "stdout must end with </html> — no path echo")
 }
 
-// TestNameFlag verifies that the name option overrides the session banner name.
+// TestNameFlag verifies that the name option appears in the rendered title.
 func TestNameFlag(t *testing.T) {
 	html := runFixture(t, options{name: "My Custom Session"})
 	assert.Contains(t, html, "My Custom Session")
-	snaps.MatchSnapshot(t, html)
+}
+
+// TestExecute_DebugFlag_EmitsDebugLogs verifies that setting opts.debug=true
+// switches the slog level to Debug, so debug-level messages reach stderr.
+func TestExecute_DebugFlag_EmitsDebugLogs(t *testing.T) {
+	base := options{
+		inputPath:  "testdata/fixture.jsonl",
+		outputPath: filepath.Join(t.TempDir(), "out.html"),
+	}
+
+	var silentErr bytes.Buffer
+	require.NoError(t, execute(base, &silentErr))
+
+	base.outputPath = filepath.Join(t.TempDir(), "out.html")
+	base.debug = true
+	var debugErr bytes.Buffer
+	require.NoError(t, execute(base, &debugErr))
+
+	assert.NotContains(t, silentErr.String(), "render complete",
+		"default level must suppress debug messages")
+	assert.Contains(t, debugErr.String(), "render complete",
+		"--debug must surface debug-level messages on stderr")
+}
+
+// TestCLI_DebugFlag verifies that --debug is accepted by the flag parser and
+// turns on debug logging end-to-end.
+func TestCLI_DebugFlag(t *testing.T) {
+	tmp := t.TempDir()
+	outPath := filepath.Join(tmp, "explicit.html")
+
+	var outBuf, errBuf bytes.Buffer
+	cmd := buildCLI(func(opts options, errOut io.Writer) error {
+		return execute(opts, errOut)
+	})
+	cmd.Writer = &outBuf
+	cmd.ErrWriter = &errBuf
+
+	err := cmd.Run(context.Background(), []string{
+		"relic",
+		"--debug",
+		"--output-path", outPath,
+		"testdata/fixture.jsonl",
+	})
+	require.NoError(t, err)
+	assert.Contains(t, errBuf.String(), "render complete",
+		"--debug CLI flag must enable debug-level logging to stderr")
 }
 
 // TestMissingFile_ExitCode verifies that a missing input file returns an error.
@@ -226,9 +165,8 @@ func TestMissingFile_ExitCode(t *testing.T) {
 }
 
 // TestCLI_OutputMode_Invalid verifies that --output <bad-value> via the CLI exits
-// non-zero and prints a message listing html, gist, and public-gist (R6).
+// non-zero and prints a message listing html, gist, and public-gist.
 func TestCLI_OutputMode_Invalid(t *testing.T) {
-	// Override OsExiter so cli.Exit doesn't call os.Exit in the test process.
 	origExiter := cli.OsExiter
 	defer func() { cli.OsExiter = origExiter }()
 	cli.OsExiter = func(int) {}
@@ -294,7 +232,7 @@ func TestCLI_OutputPath(t *testing.T) {
 	assert.Contains(t, string(html), "<!doctype html")
 }
 
-// TestCLI_Help verifies that the CLI --help output lists all three flags.
+// TestCLI_Help verifies that --help lists key flags.
 func TestCLI_Help(t *testing.T) {
 	var outBuf bytes.Buffer
 	cmd := buildCLI(func(opts options, errOut io.Writer) error {
@@ -305,12 +243,95 @@ func TestCLI_Help(t *testing.T) {
 	help := outBuf.String()
 	assert.Contains(t, help, "--output")
 	assert.Contains(t, help, "--output-path")
-	assert.Contains(t, help, "--theme")
 	assert.Contains(t, help, "--name")
 }
 
+// TestExecute_CustomTitle_SingleRecord: a fixture carrying one custom-title
+// record renders that text in the page title.
+func TestExecute_CustomTitle_SingleRecord(t *testing.T) {
+	html := runFixture(t, options{inputPath: "testdata/custom_title_single.jsonl"})
+	assert.Contains(t, html, "phase5 title")
+}
+
+// TestExecute_CustomTitle_LastRecordWins: when multiple custom-title records
+// appear, the last one in source order becomes the title.
+func TestExecute_CustomTitle_LastRecordWins(t *testing.T) {
+	html := runFixture(t, options{inputPath: "testdata/custom_title_multi.jsonl"})
+	assert.Contains(t, html, "<title>final")
+	assert.NotContains(t, html, "<title>first")
+}
+
+// TestExecute_CustomTitle_FilenameFallback: without any custom-title record,
+// the title falls back to the input-filename stem.
+func TestExecute_CustomTitle_FilenameFallback(t *testing.T) {
+	html := runFixture(t, options{inputPath: "testdata/custom_title_none.jsonl"})
+	assert.Contains(t, html, "custom_title_none")
+}
+
+// TestExecute_Debug_UnhandledContentBlock: `--debug` logs one line per
+// unrecognised content block (RawBlock), with line + type + role fields.
+func TestExecute_Debug_UnhandledContentBlock(t *testing.T) {
+	var logBuf bytes.Buffer
+	err := execute(options{
+		inputPath:  "testdata/unhandled_content.jsonl",
+		outputPath: filepath.Join(t.TempDir(), "out.html"),
+		debug:      true,
+	}, &logBuf)
+	require.NoError(t, err)
+
+	logs := logBuf.String()
+	assert.GreaterOrEqual(t, strings.Count(logs, "unhandled content block"), 1)
+	assert.Contains(t, logs, "type=custom_widget")
+	assert.Contains(t, logs, "role=assistant")
+	assert.Contains(t, logs, "line=2")
+}
+
+// TestExecute_NoDebug_UnhandledContentBlockSilent: without `--debug`, no
+// "unhandled" lines appear on stderr.
+func TestExecute_NoDebug_UnhandledContentBlockSilent(t *testing.T) {
+	var logBuf bytes.Buffer
+	err := execute(options{
+		inputPath:  "testdata/unhandled_content.jsonl",
+		outputPath: filepath.Join(t.TempDir(), "out.html"),
+	}, &logBuf)
+	require.NoError(t, err)
+
+	assert.NotContains(t, logBuf.String(), "unhandled")
+}
+
+// TestExecute_Debug_UnhandledTopLevelRecord: `--debug` logs one line per
+// top-level record whose `type` is not user/assistant/system/custom-title.
+func TestExecute_Debug_UnhandledTopLevelRecord(t *testing.T) {
+	var logBuf bytes.Buffer
+	err := execute(options{
+		inputPath:  "testdata/unhandled_top.jsonl",
+		outputPath: filepath.Join(t.TempDir(), "out.html"),
+		debug:      true,
+	}, &logBuf)
+	require.NoError(t, err)
+
+	logs := logBuf.String()
+	assert.GreaterOrEqual(t, strings.Count(logs, "unhandled top-level record"), 2)
+	assert.Contains(t, logs, "type=queue-operation")
+	assert.Contains(t, logs, "type=summary")
+	assert.Contains(t, logs, "line=2")
+	assert.Contains(t, logs, "line=3")
+}
+
+// TestExecute_NoDebug_UnhandledTopLevelRecordSilent: without `--debug`, no
+// "unhandled top-level record" lines appear.
+func TestExecute_NoDebug_UnhandledTopLevelRecordSilent(t *testing.T) {
+	var logBuf bytes.Buffer
+	err := execute(options{
+		inputPath:  "testdata/unhandled_top.jsonl",
+		outputPath: filepath.Join(t.TempDir(), "out.html"),
+	}, &logBuf)
+	require.NoError(t, err)
+	assert.NotContains(t, logBuf.String(), "unhandled")
+}
+
 // TestExecute_GistGhNotFound verifies that when gist publish fails with gh not found,
-// the error message mentions gh auth login (R13).
+// the error message mentions gh auth login.
 func TestExecute_GistGhNotFound(t *testing.T) {
 	stub := &stubGistRunner{
 		err: fmt.Errorf("gh CLI not found in PATH — install it and run `gh auth login`"),
@@ -319,7 +340,7 @@ func TestExecute_GistGhNotFound(t *testing.T) {
 	err := execute(options{
 		inputPath:  "testdata/fixture.jsonl",
 		outputMode: outputModeGist,
-		htmlOut:    &outBuf,
+		stdout:     &outBuf,
 		gistRunner: stub,
 	}, &logBuf)
 
@@ -328,7 +349,7 @@ func TestExecute_GistGhNotFound(t *testing.T) {
 }
 
 // TestExecute_GistFilename verifies that the gist filename is derived from the
-// session name (same logic as the local HTML filename), not the raw input path (R10).
+// session name (same logic as the local HTML filename), not the raw input path.
 func TestExecute_GistFilename(t *testing.T) {
 	stub := &stubGistRunner{
 		gistURL:    "https://gist.github.com/user/abc123",
@@ -338,7 +359,7 @@ func TestExecute_GistFilename(t *testing.T) {
 	err := execute(options{
 		inputPath:  "testdata/fixture.jsonl",
 		outputMode: outputModeGist,
-		htmlOut:    &outBuf,
+		stdout:     &outBuf,
 		gistRunner: stub,
 	}, &logBuf)
 
@@ -348,7 +369,7 @@ func TestExecute_GistFilename(t *testing.T) {
 }
 
 // TestExecute_PublicGistMode verifies that --output public-gist passes public=true
-// to the publisher (R5).
+// to the publisher.
 func TestExecute_PublicGistMode(t *testing.T) {
 	stub := &stubGistRunner{
 		gistURL:    "https://gist.github.com/user/abc123",
@@ -358,7 +379,7 @@ func TestExecute_PublicGistMode(t *testing.T) {
 	err := execute(options{
 		inputPath:  "testdata/fixture.jsonl",
 		outputMode: outputModePublicGist,
-		htmlOut:    &outBuf,
+		stdout:     &outBuf,
 		gistRunner: stub,
 	}, &logBuf)
 
@@ -367,7 +388,7 @@ func TestExecute_PublicGistMode(t *testing.T) {
 }
 
 // TestExecute_GistMode verifies that --output gist renders to memory, prints
-// Gist: and Preview: URLs to stdout, and writes no local .html file (R4, R7, R8, R10).
+// Gist: and Preview: URLs to stdout, and writes no local .html file.
 func TestExecute_GistMode(t *testing.T) {
 	tmp := t.TempDir()
 
@@ -375,7 +396,7 @@ func TestExecute_GistMode(t *testing.T) {
 	err := execute(options{
 		inputPath:  "testdata/fixture.jsonl",
 		outputMode: outputModeGist,
-		htmlOut:    &outBuf, // stdout in gist mode
+		stdout:     &outBuf,
 		gistRunner: &stubGistRunner{
 			gistURL:    "https://gist.github.com/user/abc123",
 			previewURL: "https://gisthost.github.io/?abc123/fixture.html",
@@ -390,7 +411,11 @@ func TestExecute_GistMode(t *testing.T) {
 	assert.Contains(t, out, "Preview:")
 	assert.Contains(t, out, "https://gisthost.github.io/?abc123/fixture.html")
 
-	// No .html file must be written anywhere in the working directory.
+	lines := strings.Split(strings.TrimRight(out, "\n"), "\n")
+	require.Len(t, lines, 2, "gist mode stdout must be exactly two lines (Gist / Preview)")
+	assert.True(t, strings.HasPrefix(lines[0], "Gist:"), "first line must start with Gist:")
+	assert.True(t, strings.HasPrefix(lines[1], "Preview:"), "second line must start with Preview:")
+
 	matches, _ := filepath.Glob(filepath.Join(tmp, "*.html"))
 	assert.Empty(t, matches, "gist mode must not write a local .html file")
 }
@@ -414,7 +439,7 @@ func (s *stubGistRunner) Publish(html []byte, filename string, public bool) (str
 }
 
 // TestOutputMode_Invalid verifies that an unrecognised --output mode returns an error
-// that lists all valid mode values (R6).
+// that lists all valid mode values.
 func TestOutputMode_Invalid(t *testing.T) {
 	var logBuf bytes.Buffer
 	err := execute(options{
@@ -429,7 +454,7 @@ func TestOutputMode_Invalid(t *testing.T) {
 }
 
 // TestOutputMode_HTMLExplicit verifies that --output html produces the same result
-// as the default (no --output flag), satisfying R1 and R3.
+// as the default (no --output flag).
 func TestOutputMode_HTMLExplicit(t *testing.T) {
 	tmp := t.TempDir()
 	outPath := filepath.Join(tmp, "out.html")
@@ -445,11 +470,10 @@ func TestOutputMode_HTMLExplicit(t *testing.T) {
 }
 
 // TestCLI_GistMode_PrintsURLs verifies that the CLI routes --output gist to execute
-// and the Gist:/Preview: lines appear on stdout (R8).
+// and the Gist:/Preview: lines appear on stdout.
 func TestCLI_GistMode_PrintsURLs(t *testing.T) {
 	var outBuf, errBuf bytes.Buffer
 	cmd := buildCLI(func(opts options, errOut io.Writer) error {
-		// Inject a stub publisher so no real gh call is made.
 		opts.gistRunner = &stubGistRunner{
 			gistURL:    "https://gist.github.com/user/testid",
 			previewURL: "https://gisthost.github.io/?testid/fixture.html",
@@ -474,8 +498,7 @@ func TestCLI_GistMode_PrintsURLs(t *testing.T) {
 }
 
 // TestCLI_OutputMode_GistAccepted verifies that --output gist and --output public-gist
-// are accepted by the flag parser without a parse error (structural, R1).
-// Gist logic is not yet wired, so a "not implemented" error is acceptable.
+// are accepted by the flag parser without a parse error.
 func TestCLI_OutputMode_GistAccepted(t *testing.T) {
 	for _, mode := range []string{"gist", "public-gist"} {
 		t.Run(mode, func(t *testing.T) {
@@ -495,24 +518,10 @@ func TestCLI_OutputMode_GistAccepted(t *testing.T) {
 				"--output", mode,
 				"testdata/fixture.jsonl",
 			})
-			// Must not be a parse / "unknown output mode" error.
-			// A "not implemented" error is acceptable at this phase.
 			if err != nil {
 				assert.NotContains(t, err.Error(), "unknown output mode",
 					"--output %q must be accepted by the flag parser", mode)
 			}
 		})
 	}
-}
-
-// TestCLI_UnknownTheme verifies that an unknown --theme value returns a user error.
-func TestCLI_UnknownTheme(t *testing.T) {
-	var logBuf bytes.Buffer
-	err := execute(options{
-		inputPath:  "testdata/fixture.jsonl",
-		outputPath: t.TempDir() + "/out.html",
-		theme:      "totally_unknown_theme_xyz",
-	}, &logBuf)
-	require.Error(t, err)
-	assert.Contains(t, err.Error(), "unknown theme")
 }

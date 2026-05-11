@@ -1,0 +1,996 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Relic — Component Reference</title>
+<link rel="stylesheet" href="../colors_and_type.css">
+<style>
+  body { padding: 56px 64px 120px; max-width: 1100px; margin: 0 auto; }
+
+  /* Page heading */
+  .page-eyebrow { margin: 0 0 6px; }
+  .page-title { font-family: var(--font-display); font-size: 44px; line-height: 1.1; letter-spacing: -0.015em; margin: 0 0 12px; font-weight: 400; }
+  .page-desc { color: var(--fg-muted); margin: 0 0 64px; max-width: 68ch; font-size: 15px; line-height: 1.6; }
+
+  /* Section groupings */
+  .section { margin: 64px 0; }
+  .section-label {
+    font-size: var(--text-xs); font-weight: 600;
+    letter-spacing: var(--tracking-wide); text-transform: uppercase;
+    color: var(--fg-muted);
+    padding-bottom: 16px;
+    border-bottom: 1px solid var(--rule);
+    margin-bottom: 32px;
+    display: flex; align-items: center; gap: 16px;
+  }
+  .section-label .tier-badge {
+    padding: 2px 8px; border-radius: 99px;
+    font-size: 10.5px; font-weight: 600;
+  }
+  .tier-conversation { background: var(--lapis-50); color: var(--lapis-700); }
+  .tier-action       { background: var(--role-tool-bg); color: var(--role-tool-fg); }
+  .tier-process      { background: var(--role-thinking-bg); color: var(--role-thinking-fg); }
+  .tier-meta         { background: var(--bg-sunk); color: var(--fg-muted); border: 1px solid var(--border); }
+
+  /* Component cards */
+  .comp-grid { display: flex; flex-direction: column; gap: 40px; }
+  .comp-item {}
+  .comp-name {
+    font-family: var(--font-mono); font-size: 11.5px;
+    font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase;
+    color: var(--fg-muted);
+    margin-bottom: 10px;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .comp-name .relevance {
+    font-weight: 400; color: var(--fg-subtle);
+    font-size: 10.5px;
+  }
+  .comp-name .rel-bar {
+    display: flex; gap: 2px; align-items: center;
+  }
+  .comp-name .rel-bar span {
+    width: 6px; height: 6px; border-radius: 1px;
+    background: var(--border);
+  }
+  .comp-name .rel-bar span.on { background: var(--lapis-600); }
+
+  /* Re-use all the render.html block styles inline via <link> above */
+
+  /* ---- block base (duplicated from render.html so this page stands alone) ---- */
+  .block {
+    --rule-color: var(--ink-300);
+    border-left: 2px solid var(--rule-color);
+    padding: 4px 0 4px 22px;
+    margin: 0;
+    position: relative;
+  }
+  .block .role {
+    display: flex; align-items: baseline; gap: 12px;
+    font-family: var(--font-mono); font-size: 11.5px; letter-spacing: 0.04em; text-transform: uppercase;
+    color: var(--fg-muted); margin-bottom: 8px;
+  }
+  .block .role .tag {
+    display: inline-block; padding: 1px 8px; border-radius: 3px;
+    background: var(--bg-sunk); color: var(--fg);
+    font-weight: 600;
+  }
+  .block .role time { color: var(--fg-subtle); font-style: normal; }
+
+  .block.conversation {
+    background: var(--bg-paper);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--rule-color);
+    border-radius: var(--radius-md);
+    padding: 18px 24px 20px;
+    box-shadow: var(--shadow-1);
+  }
+  .block.conversation .role { margin-bottom: 10px; }
+
+  .block.user { --rule-color: var(--teal-500); }
+  .block.user .role .tag { background: var(--teal-500); color: white; }
+  .block.user .body { font-family: var(--font-ui); font-size: 16px; line-height: 1.6; color: var(--fg); max-width: 70ch; font-weight: 450; }
+  .block.user .body p { margin: 0 0 0.7em; }
+  .block.user .body p:last-child { margin-bottom: 0; }
+  .block.user .body code { font-family: var(--font-mono); font-size: 0.88em; padding: 1.5px 6px; background: var(--bg-sunk); border-radius: 4px; color: var(--teal-600); }
+
+  .block.assistant { --rule-color: var(--cobalt-500); }
+  .block.assistant .role .tag { background: var(--cobalt-500); color: white; }
+  .block.assistant .body { max-width: 70ch; font-size: 15.5px; line-height: 1.65; }
+  .block.assistant .body p { margin: 0 0 0.85em; }
+  .block.assistant .body p:last-child { margin-bottom: 0; }
+  .block.assistant .body code { font-family: var(--font-mono); font-size: 0.9em; padding: 1.5px 6px; background: var(--bg-sunk); border-radius: 4px; }
+  .block.assistant .body strong { font-weight: 600; }
+
+  .block.tool { --rule-color: var(--lapis-600); }
+  .block.tool .role .tag { background: var(--lapis-600); color: white; }
+  .tool-card { background: var(--bg-paper); border: 1px solid var(--border); border-radius: var(--radius-md); overflow: hidden; box-shadow: var(--shadow-1); }
+  .tool-card .head { display: flex; align-items: center; gap: 12px; padding: 10px 14px; background: var(--bg-sunk); border-bottom: 1px solid var(--border); font-family: var(--font-mono); font-size: 12.5px; }
+  .tool-card .head .icon { width: 22px; height: 22px; border-radius: 4px; background: var(--lapis-600); color: white; display: grid; place-items: center; font-size: 12px; font-weight: 600; }
+  .tool-card .head .name { font-weight: 600; color: var(--ink-900); }
+  .tool-card .head .arg { color: var(--fg-muted); flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .tool-card .head .toggle { font-family: var(--font-mono); font-size: 11px; color: var(--fg-muted); padding: 2px 8px; border: 1px solid var(--border); border-radius: 4px; background: var(--bg-paper); }
+  .tool-card pre { margin: 0; padding: 14px 16px; font-family: var(--font-mono); font-size: 13px; line-height: 1.6; background: var(--bg-code); color: var(--fg); overflow: auto; }
+  .tool-card[data-tool="Bash"] .head .icon { background: var(--ink-700); }
+  .tool-card[data-tool="Read"] .head .icon { background: var(--lapis-600); }
+  .tool-card[data-tool="Write"] .head .icon { background: var(--lapis-600); }
+  .tool-card[data-tool="Edit"] .head .icon { background: var(--lapis-700); }
+  .tool-card[data-tool="MultiEdit"] .head .icon { background: var(--lapis-700); }
+  .tool-card[data-tool="Grep"] .head .icon { background: var(--citron-600); color: var(--ink-900); font-size: 10px; }
+  .tool-card[data-tool="Glob"] .head .icon { background: var(--citron-600); color: var(--ink-900); font-size: 10px; }
+  .tool-card[data-tool="LS"] .head .icon { background: var(--ink-500); font-size: 10px; }
+  .tool-card[data-tool="WebSearch"] .head .icon { background: var(--ink-600); }
+  .tool-card[data-tool="WebFetch"] .head .icon { background: var(--ink-600); }
+  .tool-card[data-tool="Task"] .head .icon { background: var(--ink-800); font-size: 11px; }
+  .tool-card[data-tool="TodoWrite"] .head .icon { background: oklch(0.52 0.14 145); }
+  .tool-card[data-tool="exit_plan_mode"] .head .icon { font-size: 13px; background: var(--lapis-700); }
+  .tool-card[data-tool^="mcp__"] .head .icon { background: var(--lapis-700); font-size: 9px; font-weight: 700; }
+
+  .block.tool-result { --rule-color: var(--ink-400); }
+  .term { background: var(--bg-terminal); color: var(--fg-on-dark); border-radius: var(--radius-md); overflow: hidden; font-family: var(--font-mono); font-size: 13px; line-height: 1.65; }
+  .term .chrome { display: flex; align-items: center; gap: 10px; padding: 8px 14px; border-bottom: 1px solid #1F2740; background: #050717; font-size: 11.5px; letter-spacing: 0.04em; text-transform: uppercase; color: #6E7891; }
+  .term .chrome .dots { display: flex; gap: 5px; }
+  .term .chrome .dots span { width: 9px; height: 9px; border-radius: 50%; background: #2C3656; }
+  .term pre { margin: 0; padding: 16px 18px; white-space: pre; overflow: auto; }
+  .term .ok    { color: #7ee787; }
+  .term .warn  { color: #f0e07a; }
+  .term .err   { color: #ff7b72; }
+  .term .dim   { color: #6E7891; }
+  .term .path  { color: #79c0ff; }
+  .term .prompt { color: var(--citron-300); }
+
+  .block.thinking { --rule-color: var(--violet-500); }
+  details.thinking { background: var(--role-thinking-bg); border-radius: var(--radius-md); padding: 14px 18px; }
+  details.thinking[open] { padding-bottom: 18px; }
+  details.thinking summary { list-style: none; cursor: pointer; font-family: var(--font-mono); font-size: 12px; color: var(--role-thinking-fg); letter-spacing: 0.04em; text-transform: uppercase; display: flex; align-items: center; gap: 10px; }
+  details.thinking summary::-webkit-details-marker { display: none; }
+  details.thinking summary::before { content: "▸"; font-size: 10px; transition: transform 0.15s; }
+  details.thinking[open] summary::before { transform: rotate(90deg); }
+  details.thinking .preview { font-family: var(--font-ui); font-style: italic; font-size: 14.5px; line-height: 1.65; color: var(--role-thinking-text, #2E1F5F); margin-top: 12px; max-width: 64ch; }
+
+  .block.meta { --rule-color: var(--ink-200); border-left: 1px dashed var(--rule-color); padding: 8px 0 8px 22px; }
+  .meta-bar { display: flex; align-items: center; gap: 12px; font-family: var(--font-mono); font-size: 11.5px; letter-spacing: 0.04em; text-transform: uppercase; color: var(--fg-subtle); }
+  .meta-bar .icon { font-size: 13px; }
+  .meta-bar .detail { color: var(--fg-muted); text-transform: none; letter-spacing: 0; }
+
+  .meta-separator { display: flex; align-items: center; gap: 16px; font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.04em; text-transform: uppercase; color: var(--fg-subtle); }
+  .meta-separator::before, .meta-separator::after { content: ""; flex: 1; height: 1px; background: repeating-linear-gradient(90deg, var(--ink-200) 0, var(--ink-200) 4px, transparent 4px, transparent 8px); }
+
+  .block.redacted-thinking { --rule-color: var(--ink-300); }
+  .redacted-note { display: flex; align-items: center; gap: 10px; padding: 10px 16px; background: var(--bg-sunk); border: 1px dashed var(--border); border-radius: var(--radius-md); font-family: var(--font-mono); font-size: 12px; color: var(--fg-subtle); letter-spacing: 0.02em; }
+
+  .block.slash-cmd { --rule-color: var(--ink-400); }
+  .slash-card { display: flex; align-items: center; gap: 10px; padding: 10px 16px; background: var(--bg-sunk); border: 1px solid var(--border); border-radius: var(--radius-md); font-family: var(--font-mono); font-size: 13px; color: var(--fg); }
+  .slash-card .slash { color: var(--fg-subtle); }
+  .slash-card .cmd { font-weight: 600; color: var(--lapis-600); }
+  .slash-card .args { color: var(--fg-muted); }
+
+  .block.cmd-output { --rule-color: var(--ink-300); }
+  .cmd-output-body { padding: 12px 16px; background: var(--bg-sunk); border: 1px solid var(--border); border-radius: var(--radius-md); font-family: var(--font-mono); font-size: 13px; line-height: 1.6; color: var(--fg-muted); white-space: pre-wrap; }
+
+  .find { display: inline-flex; align-items: center; gap: 6px; padding: 1px 8px; background: var(--accent-soft); color: var(--accent-ink); border: 1px solid var(--citron-300); border-radius: 999px; font-family: var(--font-mono); font-size: 11px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; }
+  .find::before { content: ""; width: 6px; height: 6px; background: var(--citron-500); border-radius: 50%; }
+
+  .block.error { --rule-color: var(--error-500); }
+  .err-callout { background: var(--error-bg); border-radius: var(--radius-md); padding: 14px 18px; font-family: var(--font-mono); font-size: 13px; color: var(--error-600); }
+  .err-callout strong { font-weight: 600; }
+  .err-callout .raw { display: block; margin-top: 8px; padding: 10px 12px; background: rgba(255,255,255,0.5); border-radius: 4px; color: var(--ink-700); font-size: 12px; white-space: pre-wrap; word-break: break-all; }
+
+  .block.api-error { --rule-color: var(--error-500); }
+  .api-error-card { display: flex; gap: 14px; align-items: flex-start; padding: 14px 18px; background: var(--error-bg); border: 1px solid color-mix(in oklch, var(--error-500) 30%, transparent); border-radius: var(--radius-md); font-size: 13.5px; }
+  .api-error-card .icon { flex-shrink: 0; width: 28px; height: 28px; border-radius: 6px; background: var(--error-500); color: white; display: grid; place-items: center; font-size: 14px; font-weight: 700; }
+  .api-error-card .content { flex: 1; min-width: 0; }
+  .api-error-card .etype { font-family: var(--font-mono); font-size: 11px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--error-600); margin-bottom: 4px; }
+  .api-error-card .msg { font-family: var(--font-ui); color: var(--fg); line-height: 1.55; }
+
+  pre.code { margin: 0; padding: 16px 18px; background: var(--bg-code); border-radius: var(--radius-md); font-family: var(--font-mono); font-size: 13px; line-height: 1.65; overflow: auto; border: 1px solid var(--border); }
+  pre.code .k, pre.code .kt { color: #cf222e; }
+  pre.code .nf { color: #6639ba; }
+  pre.code .nx { color: #1f2328; }
+  pre.code .s  { color: #0a3069; }
+  pre.code .c  { color: #57606a; font-style: italic; }
+
+  .pair-id { font-family: var(--font-mono); font-size: 11px; color: var(--fg-subtle); text-decoration: none; padding: 1px 6px; border: 1px solid var(--border); border-radius: 4px; background: var(--bg-paper); letter-spacing: 0.02em; }
+  .pair-id:hover { color: var(--brand); border-color: var(--brand); }
+
+  .todo-list { padding: 12px 16px; display: flex; flex-direction: column; gap: 6px; border-top: 1px solid var(--border); }
+  .todo-item { display: flex; align-items: center; gap: 10px; padding: 7px 10px; border-radius: var(--radius-sm); font-family: var(--font-ui); font-size: 13.5px; background: var(--bg-sunk); }
+  .todo-item .todo-check { width: 16px; height: 16px; border-radius: 4px; flex-shrink: 0; border: 1.5px solid var(--border); display: grid; place-items: center; }
+  .todo-item.completed .todo-check { background: oklch(0.52 0.14 145); border-color: oklch(0.52 0.14 145); }
+  .todo-item.completed .todo-check::after { content: "✓"; color: white; font-size: 10px; font-weight: 700; }
+  .todo-item.in-progress .todo-check { background: var(--cobalt-500); border-color: var(--cobalt-500); }
+  .todo-item.in-progress .todo-check::after { content: "·"; color: white; font-size: 18px; line-height: 0; margin-top: 2px; }
+  .todo-item .todo-text { flex: 1; line-height: 1.4; }
+  .todo-item.completed .todo-text { text-decoration: line-through; color: var(--fg-muted); }
+  .todo-item .todo-priority { font-family: var(--font-mono); font-size: 10px; padding: 1px 6px; border-radius: 99px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; }
+  .todo-item .todo-priority.high   { background: oklch(0.94 0.06 25); color: oklch(0.42 0.18 25); }
+  .todo-item .todo-priority.medium { background: oklch(0.94 0.05 75); color: oklch(0.42 0.14 75); }
+  .todo-item .todo-priority.low    { background: var(--bg-sunk); color: var(--fg-muted); border: 1px solid var(--border); }
+
+  .plan-body { padding: 16px 20px; font-family: var(--font-ui); font-size: 14px; line-height: 1.7; color: var(--fg); border-top: 1px solid var(--border); }
+  .plan-body h3 { font-family: var(--font-ui); font-size: 13px; font-weight: 700; letter-spacing: 0.03em; text-transform: uppercase; color: var(--fg-muted); margin: 16px 0 6px; }
+  .plan-body h3:first-child { margin-top: 0; }
+  .plan-body ol, .plan-body ul { margin: 0 0 12px; padding-left: 20px; }
+  .plan-body li { margin: 4px 0; }
+  .plan-body p { margin: 0 0 10px; }
+  .plan-body code { font-family: var(--font-mono); font-size: 0.88em; padding: 1px 5px; background: var(--bg-sunk); border-radius: 3px; }
+
+  .tool-card[data-tool^="mcp__"] .mcp-server { font-family: var(--font-mono); font-size: 10.5px; color: var(--fg-subtle); padding: 4px 14px 8px; border-bottom: 1px solid var(--border); background: var(--bg-paper); }
+  .tool-card[data-tool^="mcp__"] .mcp-server strong { color: var(--teal-600); }
+  .mcp-json { margin: 0; padding: 14px 16px; font-family: var(--font-mono); font-size: 12.5px; line-height: 1.65; background: var(--bg-code); color: var(--fg); overflow: auto; border-top: 1px solid var(--border); }
+  .mcp-json .jk { color: var(--lapis-600); }
+  .mcp-json .js { color: oklch(0.42 0.1 145); }
+  .mcp-json .jn { color: var(--cobalt-500); }
+  .mcp-json .jb { color: var(--violet-500); }
+
+  /* New block styles */
+  details.compact-summary { background: var(--bg-sunk); border: 1px dashed var(--border-strong); border-radius: var(--radius-md); overflow: hidden; }
+  details.compact-summary summary { list-style: none; cursor: pointer; display: flex; align-items: center; gap: 12px; padding: 10px 16px; font-family: var(--font-mono); font-size: 11.5px; letter-spacing: 0.04em; text-transform: uppercase; color: var(--fg-muted); }
+  details.compact-summary summary::-webkit-details-marker { display: none; }
+  details.compact-summary summary::before { content: "▸"; font-size: 10px; transition: transform 0.15s; flex-shrink: 0; }
+  details.compact-summary[open] summary::before { transform: rotate(90deg); }
+  .cs-label { font-weight: 600; color: var(--fg); }
+  .cs-meta { color: var(--fg-subtle); }
+  .cs-body { padding: 12px 18px 14px; border-top: 1px solid var(--border); font-family: var(--font-ui); font-size: 14px; line-height: 1.65; color: var(--fg-muted); }
+  .cs-body p { margin: 0 0 0.6em; }
+  .cs-body p:last-child { margin-bottom: 0; }
+  .cs-body code { font-family: var(--font-mono); font-size: 0.88em; padding: 1px 5px; background: var(--bg); border-radius: 3px; }
+
+  .task-delegation { border-top: 1px solid var(--border); padding: 12px 16px; background: var(--bg-paper); }
+  .task-meta { display: flex; gap: 8px; align-items: center; margin-bottom: 10px; }
+  .task-badge { display: inline-flex; align-items: center; padding: 2px 8px; background: var(--ink-800); color: var(--fg-on-dark); border-radius: 99px; font-family: var(--font-mono); font-size: 10.5px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; }
+  .task-type { font-family: var(--font-mono); font-size: 11px; color: var(--fg-subtle); }
+  .task-prompt { font-family: var(--font-ui); font-size: 13.5px; line-height: 1.6; color: var(--fg); }
+  .task-prompt code { font-family: var(--font-mono); font-size: 0.88em; padding: 1px 5px; background: var(--bg-sunk); border-radius: 3px; }
+
+  .diff-body { border-top: 1px solid var(--border); font-family: var(--font-mono); font-size: 12.5px; line-height: 1.6; background: var(--bg-code); }
+  .diff-meta { padding: 6px 16px; font-size: 11px; color: var(--fg-muted); background: var(--bg-sunk); border-bottom: 1px solid var(--border); }
+  .diff-line { display: flex; gap: 0; padding: 1px 0; white-space: pre; font-size: 12.5px; line-height: 1.55; }
+  .diff-line::before { content: " "; display: inline-block; width: 28px; flex-shrink: 0; text-align: center; font-weight: 700; color: var(--fg-subtle); padding: 0 6px 0 10px; border-right: 1px solid var(--border); margin-right: 12px; }
+  .diff-line.add { background: oklch(0.96 0.04 145); }
+  .diff-line.add::before { content: "+"; background: oklch(0.90 0.07 145); color: oklch(0.38 0.14 145); border-right-color: oklch(0.82 0.08 145); }
+  .diff-line.del { background: oklch(0.96 0.04 25); }
+  .diff-line.del::before { content: "−"; background: oklch(0.92 0.06 25); color: oklch(0.44 0.18 25); border-right-color: oklch(0.85 0.07 25); }
+  .diff-line.ctx::before { content: " "; }
+
+  .websearch-body { padding: 10px 14px; border-top: 1px solid var(--border); background: var(--bg-paper); display: flex; flex-direction: column; gap: 6px; }
+  .ws-query { display: flex; gap: 10px; align-items: baseline; font-family: var(--font-mono); font-size: 12.5px; }
+  .ws-label { flex-shrink: 0; font-size: 10.5px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--fg-subtle); width: 44px; }
+  .ws-text { color: var(--fg); line-height: 1.5; word-break: break-all; }
+
+  .block.image-block { --rule-color: var(--ink-400); }
+  .image-card { background: var(--bg-paper); border: 1px solid var(--border); border-radius: var(--radius-md); overflow: hidden; box-shadow: var(--shadow-1); }
+  .image-head { display: flex; align-items: center; justify-content: space-between; padding: 8px 14px; background: var(--bg-sunk); border-bottom: 1px solid var(--border); font-family: var(--font-mono); font-size: 11.5px; }
+  .image-meta { color: var(--fg-muted); }
+  .image-hint { color: var(--fg-subtle); font-size: 10.5px; }
+  .image-preview { display: block; max-width: 100%; max-height: 320px; object-fit: contain; cursor: zoom-in; background: var(--bg-sunk); }
+  .image-preview.expanded { max-height: none; cursor: zoom-out; }
+
+  .multimodal-images { margin-top: 8px; border-radius: var(--radius-md); overflow: hidden; border: 1px solid var(--border); }
+  .mm-image-wrap img { display: block; max-width: 100%; max-height: 320px; object-fit: contain; background: var(--bg-sunk); cursor: zoom-in; }
+  .mm-image-wrap img.expanded { max-height: none; cursor: zoom-out; }
+
+  .doc-placeholder { display: flex; gap: 12px; align-items: center; padding: 10px 16px; background: var(--bg-sunk); border: 1px dashed var(--border-strong); border-radius: var(--radius-md); font-family: var(--font-mono); font-size: 12.5px; }
+  .doc-icon { flex-shrink: 0; padding: 4px 7px; background: var(--ink-500); color: white; border-radius: var(--radius-xs); font-size: 10px; font-weight: 700; letter-spacing: 0.06em; }
+  .doc-info { display: flex; flex-direction: column; gap: 2px; }
+  .doc-title { font-weight: 600; color: var(--fg); }
+  .doc-note { font-size: 11px; color: var(--fg-subtle); }
+
+  details.unknown-block { background: var(--bg-sunk); border: 1px dashed var(--border); border-radius: var(--radius-md); overflow: hidden; }
+  details.unknown-block summary { list-style: none; cursor: pointer; display: flex; align-items: center; gap: 10px; padding: 8px 14px; font-family: var(--font-mono); font-size: 11.5px; letter-spacing: 0.04em; }
+  details.unknown-block summary::-webkit-details-marker { display: none; }
+  .ub-tag { font-size: 10.5px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--fg-muted); }
+  .ub-type { color: var(--fg); }
+
+  .session-result { padding: 20px 24px; border-radius: var(--radius-md); border: 1px solid var(--border); background: var(--bg-paper); box-shadow: var(--shadow-1); display: flex; gap: 18px; align-items: center; font-family: var(--font-mono); font-size: 12.5px; }
+  .session-result .sr-icon { width: 36px; height: 36px; border-radius: 8px; display: grid; place-items: center; font-size: 18px; flex-shrink: 0; }
+  .session-result.success .sr-icon { background: oklch(0.92 0.06 145); }
+  .session-result.error   .sr-icon { background: var(--error-bg); }
+  .session-result .sr-body { flex: 1; min-width: 0; }
+  .session-result .sr-label { font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; font-size: 11px; color: var(--fg-muted); margin-bottom: 6px; }
+  .session-result.success .sr-label { color: oklch(0.42 0.12 145); }
+  .session-result.error   .sr-label { color: var(--error-600); }
+  .session-result .sr-stats { display: flex; gap: 24px; flex-wrap: wrap; font-size: 12px; color: var(--fg); }
+  .session-result .sr-stats .stat { display: flex; flex-direction: column; gap: 2px; }
+  .session-result .sr-stats .stat-label { font-size: 10.5px; color: var(--fg-muted); text-transform: uppercase; letter-spacing: 0.05em; }
+  .session-result .sr-stats .stat-val { font-weight: 600; font-size: 14px; }
+
+  :root { --role-thinking-text: #2E1F5F; }
+  @media (prefers-color-scheme: dark) {
+    :root { --role-thinking-text: #F0EBFF; }
+    .block.conversation { background: var(--ink-900); border-color: #1F2740; }
+    .tool-card .head .name { color: var(--fg); }
+    .diff-line.add { background: oklch(0.22 0.06 145); }
+    .diff-line.add::before { background: oklch(0.28 0.10 145); color: oklch(0.72 0.15 145); border-right-color: oklch(0.32 0.08 145); }
+    .diff-line.del { background: oklch(0.20 0.05 25); }
+    .diff-line.del::before { background: oklch(0.26 0.09 25); color: oklch(0.70 0.18 25); border-right-color: oklch(0.30 0.07 25); }
+    .mcp-json .jk { color: #79c0ff; }
+    .mcp-json .js { color: #7ee787; }
+    .mcp-json .jn { color: #d2a8ff; }
+    .mcp-json .jb { color: #ff9a6c; }
+    pre.code { background: #0F1428; color: #E8ECF6; border-color: #1F2740; }
+    pre.code .k, pre.code .kt { color: #ff7b72; }
+    pre.code .nf { color: #d2a8ff; }
+    pre.code .nx { color: #E8ECF6; }
+    pre.code .s  { color: #a5d6ff; }
+    pre.code .c  { color: #8b949e; }
+  }
+
+  /* ---- table of component index ---- */
+  .toc-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 8px;
+    margin-bottom: 64px;
+  }
+  .toc-item {
+    padding: 8px 12px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    font-family: var(--font-mono); font-size: 11.5px;
+    color: var(--fg-muted);
+    text-decoration: none;
+    display: flex; align-items: center; gap: 8px;
+    transition: color 0.1s, border-color 0.1s;
+  }
+  .toc-item:hover { color: var(--brand); border-color: var(--brand); }
+  .toc-item .toc-dot {
+    width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0;
+  }
+  .toc-item .toc-label { color: var(--fg); font-weight: 600; }
+</style>
+</head>
+<body>
+
+<p class="eyebrow page-eyebrow">Component Reference</p>
+<h1 class="page-title">Relic blocks.</h1>
+<p class="page-desc">Every renderable block type in a single page. Four tiers: <strong>Conversation</strong> (full visual weight), <strong>Action</strong> (muted, collapsible), <strong>Process</strong> (internal reasoning), <strong>Meta</strong> (informational chrome). Relevance 1–10 from the taxonomy.</p>
+
+<!-- ── Quick index ────────────────────────────────── -->
+<div class="toc-grid">
+  <a class="toc-item" href="#c-user">         <span class="toc-dot" style="background:var(--teal-500)"></span>   <span class="toc-label">user</span> prompt </a>
+  <a class="toc-item" href="#c-assistant">    <span class="toc-dot" style="background:var(--cobalt-500)"></span> <span class="toc-label">assistant</span> text </a>
+  <a class="toc-item" href="#c-thinking">     <span class="toc-dot" style="background:var(--violet-500)"></span> <span class="toc-label">thinking</span> block </a>
+  <a class="toc-item" href="#c-redacted">     <span class="toc-dot" style="background:var(--ink-400)"></span>   <span class="toc-label">redacted_thinking</span> </a>
+  <a class="toc-item" href="#c-bash">         <span class="toc-dot" style="background:var(--ink-700)"></span>   <span class="toc-label">Bash</span> tool_use </a>
+  <a class="toc-item" href="#c-read">         <span class="toc-dot" style="background:var(--lapis-600)"></span>  <span class="toc-label">Read</span> tool_use </a>
+  <a class="toc-item" href="#c-write">        <span class="toc-dot" style="background:var(--lapis-600)"></span>  <span class="toc-label">Write</span> tool_use </a>
+  <a class="toc-item" href="#c-edit">         <span class="toc-dot" style="background:var(--lapis-700)"></span>  <span class="toc-label">Edit</span> diff </a>
+  <a class="toc-item" href="#c-grep">         <span class="toc-dot" style="background:var(--citron-600)"></span> <span class="toc-label">Grep / Glob</span> </a>
+  <a class="toc-item" href="#c-ls">           <span class="toc-dot" style="background:var(--ink-500)"></span>   <span class="toc-label">LS</span> </a>
+  <a class="toc-item" href="#c-websearch">    <span class="toc-dot" style="background:var(--ink-600)"></span>   <span class="toc-label">WebSearch</span> </a>
+  <a class="toc-item" href="#c-webfetch">     <span class="toc-dot" style="background:var(--ink-600)"></span>   <span class="toc-label">WebFetch</span> </a>
+  <a class="toc-item" href="#c-task">         <span class="toc-dot" style="background:var(--ink-800)"></span>   <span class="toc-label">Task</span> delegation </a>
+  <a class="toc-item" href="#c-todo">         <span class="toc-dot" style="background:oklch(0.52 0.14 145)"></span> <span class="toc-label">TodoWrite</span> </a>
+  <a class="toc-item" href="#c-plan">         <span class="toc-dot" style="background:var(--lapis-700)"></span>  <span class="toc-label">exit_plan_mode</span> </a>
+  <a class="toc-item" href="#c-mcp">          <span class="toc-dot" style="background:var(--lapis-700)"></span>  <span class="toc-label">MCP tool</span> </a>
+  <a class="toc-item" href="#c-tool-result">  <span class="toc-dot" style="background:var(--ink-400)"></span>   <span class="toc-label">tool_result</span> terminal </a>
+  <a class="toc-item" href="#c-tool-error">   <span class="toc-dot" style="background:var(--error-500)"></span>  <span class="toc-label">tool_result</span> is_error </a>
+  <a class="toc-item" href="#c-multimodal">   <span class="toc-dot" style="background:var(--ink-400)"></span>   <span class="toc-label">multimodal</span> result </a>
+  <a class="toc-item" href="#c-image">        <span class="toc-dot" style="background:var(--ink-400)"></span>   <span class="toc-label">image</span> block </a>
+  <a class="toc-item" href="#c-slash">        <span class="toc-dot" style="background:var(--ink-400)"></span>   <span class="toc-label">slash_command</span> </a>
+  <a class="toc-item" href="#c-cmd-out">      <span class="toc-dot" style="background:var(--ink-300)"></span>   <span class="toc-label">command_output</span> </a>
+  <a class="toc-item" href="#c-compact-sep">  <span class="toc-dot" style="background:var(--ink-200)"></span>   <span class="toc-label">compaction boundary</span> </a>
+  <a class="toc-item" href="#c-compact-sum">  <span class="toc-dot" style="background:var(--ink-300)"></span>   <span class="toc-label">compaction summary</span> </a>
+  <a class="toc-item" href="#c-hook">         <span class="toc-dot" style="background:var(--ink-200)"></span>   <span class="toc-label">hook_injection</span> </a>
+  <a class="toc-item" href="#c-api-error">    <span class="toc-dot" style="background:var(--error-500)"></span>  <span class="toc-label">api_error</span> </a>
+  <a class="toc-item" href="#c-parse-error">  <span class="toc-dot" style="background:var(--error-500)"></span>  <span class="toc-label">parse_error</span> </a>
+  <a class="toc-item" href="#c-find">         <span class="toc-dot" style="background:var(--citron-500)"></span> <span class="toc-label">find</span> pill </a>
+  <a class="toc-item" href="#c-doc">          <span class="toc-dot" style="background:var(--ink-300)"></span>   <span class="toc-label">document</span> placeholder </a>
+  <a class="toc-item" href="#c-attach">       <span class="toc-dot" style="background:var(--ink-200)"></span>   <span class="toc-label">attachment</span> placeholder </a>
+  <a class="toc-item" href="#c-unknown">      <span class="toc-dot" style="background:var(--ink-300)"></span>   <span class="toc-label">unknown block</span> </a>
+  <a class="toc-item" href="#c-session-result"><span class="toc-dot" style="background:oklch(0.52 0.14 145)"></span> <span class="toc-label">session_result</span> banner </a>
+</div>
+
+<!-- ============================================================
+     TIER 1: CONVERSATION
+     ============================================================ -->
+<div class="section">
+  <div class="section-label">Conversation tier <span class="tier-badge tier-conversation">full weight</span></div>
+  <div class="comp-grid">
+
+    <div class="comp-item" id="c-user">
+      <div class="comp-name">user prompt <span class="relevance">relevance 10</span></div>
+      <article class="block conversation user">
+        <div class="role"><span class="tag">user</span><time>14:22</time></div>
+        <div class="body">
+          <p>I want to refactor the parser. Right now everything comes out as a generic <code>Block</code> with a <code>Type</code> string field, and the renderer does <code>switch b.Type</code> in three different places.</p>
+        </div>
+      </article>
+    </div>
+
+    <div class="comp-item" id="c-assistant">
+      <div class="comp-name">assistant text <span class="relevance">relevance 10</span></div>
+      <article class="block conversation assistant">
+        <div class="role"><span class="tag">assistant</span><time>14:23 · 1m later</time></div>
+        <div class="body">
+          <p>Good cut. I'll define <code>parser.ContentBlock</code> as an interface, then concrete types: <strong>TextBlock</strong>, <strong>ToolUseBlock</strong>, <strong>ToolResultBlock</strong>, <strong>ThinkingBlock</strong>, <strong>RawBlock</strong>. <span class="find">match · ContentBlock</span></p>
+        </div>
+      </article>
+    </div>
+
+  </div>
+</div>
+
+<!-- ============================================================
+     TIER 2: PROCESS
+     ============================================================ -->
+<div class="section">
+  <div class="section-label">Process tier <span class="tier-badge tier-process">internal reasoning</span></div>
+  <div class="comp-grid">
+
+    <div class="comp-item" id="c-thinking">
+      <div class="comp-name">thinking block <span class="relevance">relevance 7</span></div>
+      <article class="block thinking">
+        <div class="role">
+          <span class="tag" style="background:var(--violet-500);color:white;">thinking</span>
+          <time>14:48</time>
+        </div>
+        <details class="thinking" open>
+          <summary>Internal reasoning · 8 lines</summary>
+          <div class="preview">The cleanest cut is a type switch in <code>contentBlock</code> dispatching to one templ component per kind. Tool_result keeps its ANSI pass; tool_use gets Chroma; thinking gets a collapsed details. Raw blocks fall through to a debug pre.</div>
+        </details>
+      </article>
+    </div>
+
+    <div class="comp-item" id="c-redacted">
+      <div class="comp-name">redacted_thinking <span class="relevance">relevance 4</span></div>
+      <article class="block redacted-thinking">
+        <div class="role">
+          <span class="tag" style="background:var(--ink-400);color:white;">thinking</span>
+          <time>15:08</time>
+        </div>
+        <div class="redacted-note">
+          <span>🔒</span>
+          <span>Redacted reasoning — content unavailable</span>
+        </div>
+      </article>
+    </div>
+
+  </div>
+</div>
+
+<!-- ============================================================
+     TIER 3: ACTION — tool_use
+     ============================================================ -->
+<div class="section">
+  <div class="section-label">Action tier — tool_use <span class="tier-badge tier-action">call half</span></div>
+  <div class="comp-grid">
+
+    <div class="comp-item" id="c-bash">
+      <div class="comp-name">Bash <span class="relevance">relevance 10</span></div>
+      <article class="block tool">
+        <div class="role"><span class="tag">tool_use</span><a class="pair-id" href="#c-tool-result">tu_bash ↓</a><time>14:24</time></div>
+        <div class="tool-card" data-tool="Bash">
+          <div class="head">
+            <span class="icon">$</span>
+            <span class="name">Bash</span>
+            <span class="arg">just generate &amp;&amp; just test ./internal/renderer/...</span>
+          </div>
+        </div>
+      </article>
+    </div>
+
+    <div class="comp-item" id="c-read">
+      <div class="comp-name">Read <span class="relevance">relevance 9</span></div>
+      <article class="block tool">
+        <div class="role"><span class="tag">tool_use</span><span class="pair-id">tu_read</span><time>14:49</time></div>
+        <div class="tool-card" data-tool="Read">
+          <div class="head">
+            <span class="icon">R</span>
+            <span class="name">Read</span>
+            <span class="arg">internal/renderer/render.go</span>
+            <span class="toggle">238 lines</span>
+          </div>
+        </div>
+      </article>
+    </div>
+
+    <div class="comp-item" id="c-write">
+      <div class="comp-name">Write <span class="relevance">relevance 9</span></div>
+      <article class="block tool">
+        <div class="role"><span class="tag">tool_use</span><span class="pair-id">tu_write</span><time>14:52</time></div>
+        <div class="tool-card" data-tool="Write">
+          <div class="head">
+            <span class="icon">W</span>
+            <span class="name">Write</span>
+            <span class="arg">internal/renderer/blocks.go</span>
+            <span class="toggle">+84  −0</span>
+          </div>
+          <pre class="code"><span class="k">package</span> renderer
+
+<span class="k">import</span> <span class="s">"github.com/jamestelfer/relic/internal/parser"</span>
+
+<span class="c">// toolIcon returns the single-letter icon for a tool card.</span>
+<span class="k">func</span> <span class="nf">toolIcon</span>(name <span class="k">string</span>) <span class="k">string</span> {
+  icons := map[<span class="k">string</span>]<span class="k">string</span>{<span class="s">"Bash"</span>: <span class="s">"$"</span>, <span class="s">"Read"</span>: <span class="s">"R"</span>, <span class="s">"Write"</span>: <span class="s">"W"</span>}
+  <span class="k">if</span> v, ok := icons[name]; ok { <span class="k">return</span> v }
+  <span class="k">return</span> <span class="s">"⚙"</span>
+}</pre>
+        </div>
+      </article>
+    </div>
+
+    <div class="comp-item" id="c-edit">
+      <div class="comp-name">Edit — diff view <span class="relevance">relevance 9</span></div>
+      <article class="block tool">
+        <div class="role"><span class="tag">tool_use</span><span class="pair-id">tu_edit</span><time>14:50</time></div>
+        <div class="tool-card" data-tool="Edit">
+          <div class="head">
+            <span class="icon">E</span>
+            <span class="name">Edit</span>
+            <span class="arg">internal/renderer/renderer.templ</span>
+            <span class="toggle">+5  −3</span>
+          </div>
+          <div class="diff-body">
+            <div class="diff-hunk">
+              <div class="diff-meta">@@ -88,7 +88,9 @@ templ toolUseBlock(b *parser.ToolUseBlock, theme string) {</div>
+              <div class="diff-line ctx">  case "Bash":</div>
+              <div class="diff-line ctx">    @bashBlock(b, theme)</div>
+              <div class="diff-line del">  case "Read", "Write":</div>
+              <div class="diff-line del">    @fileBlock(b, theme)</div>
+              <div class="diff-line del">  case "Edit":</div>
+              <div class="diff-line add">  case "Read":</div>
+              <div class="diff-line add">    @readBlock(b, theme)</div>
+              <div class="diff-line add">  case "Write":</div>
+              <div class="diff-line add">    @writeBlock(b, theme)</div>
+              <div class="diff-line add">  case "Edit", "MultiEdit":</div>
+              <div class="diff-line ctx">    @editBlock(b, theme)</div>
+            </div>
+          </div>
+        </div>
+      </article>
+    </div>
+
+    <div class="comp-item" id="c-grep">
+      <div class="comp-name">Grep / Glob <span class="relevance">relevance 6</span></div>
+      <article class="block tool">
+        <div class="role"><span class="tag">tool_use</span><span class="pair-id">tu_grep</span><time>14:36</time></div>
+        <div class="tool-card" data-tool="Grep">
+          <div class="head">
+            <span class="icon">G</span>
+            <span class="name">Grep</span>
+            <span class="arg">ContentBlock across internal/</span>
+          </div>
+        </div>
+      </article>
+    </div>
+
+    <div class="comp-item" id="c-ls">
+      <div class="comp-name">LS <span class="relevance">relevance 5</span></div>
+      <article class="block tool">
+        <div class="role"><span class="tag">tool_use</span><span class="pair-id">tu_ls</span><time>14:40</time></div>
+        <div class="tool-card" data-tool="LS">
+          <div class="head">
+            <span class="icon" style="font-size:10px;">LS</span>
+            <span class="name">LS</span>
+            <span class="arg">internal/renderer/</span>
+          </div>
+        </div>
+      </article>
+    </div>
+
+    <div class="comp-item" id="c-websearch">
+      <div class="comp-name">WebSearch <span class="relevance">relevance 6</span></div>
+      <article class="block tool">
+        <div class="role"><span class="tag">tool_use</span><span class="pair-id">tu_ws</span><time>16:00</time></div>
+        <div class="tool-card" data-tool="WebSearch">
+          <div class="head">
+            <span class="icon">↗</span>
+            <span class="name">WebSearch</span>
+            <span class="arg">go-snaps snapshot testing update flag</span>
+          </div>
+          <div class="websearch-body">
+            <div class="ws-query"><span class="ws-label">query</span><span class="ws-text">go-snaps snapshot testing update flag</span></div>
+          </div>
+        </div>
+      </article>
+    </div>
+
+    <div class="comp-item" id="c-webfetch">
+      <div class="comp-name">WebFetch <span class="relevance">relevance 6</span></div>
+      <article class="block tool">
+        <div class="role"><span class="tag">tool_use</span><span class="pair-id">tu_wf</span><time>16:01</time></div>
+        <div class="tool-card" data-tool="WebFetch">
+          <div class="head">
+            <span class="icon">↗</span>
+            <span class="name">WebFetch</span>
+            <span class="arg">github.com/gkampitakis/go-snaps</span>
+          </div>
+          <div class="websearch-body">
+            <div class="ws-query"><span class="ws-label">url</span><span class="ws-text">https://github.com/gkampitakis/go-snaps</span></div>
+            <div class="ws-query"><span class="ws-label">prompt</span><span class="ws-text">How do I accept updated snapshots?</span></div>
+          </div>
+        </div>
+      </article>
+    </div>
+
+    <div class="comp-item" id="c-task">
+      <div class="comp-name">Task — delegation boundary <span class="relevance">relevance 7</span></div>
+      <article class="block tool">
+        <div class="role"><span class="tag">tool_use</span><span class="pair-id">tu_task</span><time>15:56</time></div>
+        <div class="tool-card" data-tool="Task">
+          <div class="head">
+            <span class="icon" style="font-size:10px;">▶▶</span>
+            <span class="name">Task</span>
+            <span class="arg">Audit remaining block types</span>
+          </div>
+          <div class="task-delegation">
+            <div class="task-meta">
+              <span class="task-badge">sub-agent</span>
+              <span class="task-type">claude-sonnet-4-6</span>
+            </div>
+            <div class="task-prompt">Find every block type in the taxonomy not yet in the render fixture. Return a ranked list, highest-relevance first.</div>
+          </div>
+        </div>
+      </article>
+    </div>
+
+    <div class="comp-item" id="c-todo">
+      <div class="comp-name">TodoWrite — checklist <span class="relevance">relevance 5</span></div>
+      <article class="block tool">
+        <div class="role"><span class="tag">tool_use</span><span class="pair-id">tu_todo</span><time>15:39</time></div>
+        <div class="tool-card" data-tool="TodoWrite">
+          <div class="head">
+            <span class="icon">✓</span>
+            <span class="name">TodoWrite</span>
+            <span class="arg">Update todos (3 items)</span>
+          </div>
+          <div class="todo-list">
+            <div class="todo-item completed">
+              <div class="todo-check"></div>
+              <span class="todo-text">exit_plan_mode block rendering</span>
+              <span class="todo-priority high">high</span>
+            </div>
+            <div class="todo-item in-progress">
+              <div class="todo-check"></div>
+              <span class="todo-text">API error callout styling</span>
+              <span class="todo-priority high">high</span>
+            </div>
+            <div class="todo-item">
+              <div class="todo-check"></div>
+              <span class="todo-text">Session result banner</span>
+              <span class="todo-priority medium">medium</span>
+            </div>
+          </div>
+        </div>
+      </article>
+    </div>
+
+    <div class="comp-item" id="c-plan">
+      <div class="comp-name">exit_plan_mode — plan body <span class="relevance">relevance 5</span></div>
+      <article class="block tool">
+        <div class="role"><span class="tag">tool_use</span><span class="pair-id">tu_plan</span><time>15:38</time></div>
+        <div class="tool-card" data-tool="exit_plan_mode">
+          <div class="head">
+            <span class="icon">▶</span>
+            <span class="name">exit_plan_mode</span>
+            <span class="arg">Submit plan</span>
+          </div>
+          <div class="plan-body">
+            <h3>Plan</h3>
+            <ol>
+              <li>Add <code>exit_plan_mode</code> block — render plan Markdown inside tool card.</li>
+              <li>Wire API error callout — meta tier, error border + icon.</li>
+              <li>Add session result banner for headless mode output.</li>
+            </ol>
+          </div>
+        </div>
+      </article>
+    </div>
+
+    <div class="comp-item" id="c-mcp">
+      <div class="comp-name">MCP tool <span class="relevance">relevance 5</span></div>
+      <article class="block tool">
+        <div class="role"><span class="tag">tool_use</span><span class="pair-id">tu_mcp</span><time>15:41</time></div>
+        <div class="tool-card" data-tool="mcp__github__create_issue">
+          <div class="head">
+            <span class="icon" style="font-size:9px;">MCP</span>
+            <span class="name">github / create_issue</span>
+            <span class="arg">relic: session result banner</span>
+          </div>
+          <div class="mcp-server">MCP server: <strong>github</strong> · tool: <strong>create_issue</strong></div>
+          <pre class="mcp-json"><span class="jk">"owner"</span>: <span class="js">"jamestelfer"</span>,
+<span class="jk">"repo"</span>:  <span class="js">"relic"</span>,
+<span class="jk">"title"</span>: <span class="js">"feat: session result banner"</span></pre>
+        </div>
+      </article>
+    </div>
+
+  </div>
+</div>
+
+<!-- ============================================================
+     TIER 3: ACTION — tool_result
+     ============================================================ -->
+<div class="section">
+  <div class="section-label">Action tier — tool_result <span class="tier-badge tier-action">response half</span></div>
+  <div class="comp-grid">
+
+    <div class="comp-item" id="c-tool-result">
+      <div class="comp-name">tool_result — terminal output <span class="relevance">relevance 9</span></div>
+      <article class="block tool-result">
+        <div class="role">
+          <span class="tag">tool_result</span>
+          <a class="pair-id" href="#c-bash">↑ tu_bash</a>
+        </div>
+        <div class="term">
+          <div class="chrome">
+            <span class="dots"><span></span><span></span><span></span></span>
+            <span class="label">Bash · exit 0 · 0.42s</span>
+          </div>
+<pre><span class="prompt">$</span> just test ./internal/renderer/...
+<span class="ok">✓</span> go test  <span class="path">./internal/renderer</span>
+  <span class="dim">--- PASS: TestRender_Fixture (0.04s)</span>
+<span class="ok">PASS</span>
+ok  <span class="path">github.com/jamestelfer/relic/internal/renderer</span>  <span class="dim">0.42s</span></pre>
+        </div>
+      </article>
+    </div>
+
+    <div class="comp-item" id="c-tool-error">
+      <div class="comp-name">tool_result — is_error <span class="relevance">relevance 9</span></div>
+      <article class="block tool-result">
+        <div class="role">
+          <span class="tag" style="background:var(--error-500);color:white;">tool_result</span>
+          <span class="pair-id">↑ tu_err</span>
+        </div>
+        <div class="term">
+          <div class="chrome" style="background:#1A0000; border-color:#3A1010;">
+            <span class="dots">
+              <span style="background:#FF5F57;"></span>
+              <span style="background:#3A1010;"></span>
+              <span style="background:#3A1010;"></span>
+            </span>
+            <span class="label" style="color:#FF8080;">Bash · exit 1 · is_error</span>
+          </div>
+          <pre><span class="err">./internal/renderer/renderer.templ:92:5: undefined: editBlock</span></pre>
+        </div>
+      </article>
+    </div>
+
+    <div class="comp-item" id="c-multimodal">
+      <div class="comp-name">tool_result — multimodal (text + image) <span class="relevance">relevance 5</span></div>
+      <article class="block tool-result">
+        <div class="role">
+          <span class="tag">tool_result</span>
+          <span class="pair-id">↑ tu_mm</span>
+        </div>
+        <div class="term">
+          <div class="chrome">
+            <span class="dots"><span></span><span></span><span></span></span>
+            <span class="label">Read · multimodal · text + image</span>
+          </div>
+          <pre><span class="dim">File read. Content follows as image block.</span></pre>
+        </div>
+        <div class="multimodal-images">
+          <div class="mm-image-wrap">
+            <img src="../screenshots/dark-thinking.png" alt="screenshot" loading="lazy">
+          </div>
+        </div>
+      </article>
+    </div>
+
+  </div>
+</div>
+
+<!-- ============================================================
+     TIER 3: ACTION — other action blocks
+     ============================================================ -->
+<div class="section">
+  <div class="section-label">Action tier — slash commands &amp; images <span class="tier-badge tier-action">action</span></div>
+  <div class="comp-grid">
+
+    <div class="comp-item" id="c-slash">
+      <div class="comp-name">slash_command — call half <span class="relevance">relevance 5</span></div>
+      <article class="block slash-cmd">
+        <div class="role">
+          <span class="tag" style="background:var(--ink-500);color:white;">command</span>
+          <time>14:33</time>
+        </div>
+        <div class="slash-card">
+          <span class="slash">/</span><span class="cmd">compact</span>
+          <span class="args">— free up context before the next change</span>
+        </div>
+      </article>
+    </div>
+
+    <div class="comp-item" id="c-cmd-out">
+      <div class="comp-name">command_output — response half <span class="relevance">relevance 5</span></div>
+      <article class="block cmd-output">
+        <div class="role"><span class="tag">output</span></div>
+        <div class="cmd-output-body">Context compacted: 38k → 16k tokens. Conversation summary preserved.</div>
+      </article>
+    </div>
+
+    <div class="comp-item" id="c-image">
+      <div class="comp-name">image block <span class="relevance">relevance 5</span></div>
+      <article class="block image-block">
+        <div class="role">
+          <span class="tag" style="background:var(--ink-500);color:white;">image</span>
+          <time>16:03</time>
+        </div>
+        <div class="image-card">
+          <div class="image-head">
+            <span class="image-meta">PNG · 1440 × 900 · 284 KB</span>
+            <span class="image-hint">click to expand</span>
+          </div>
+          <img class="image-preview" src="../screenshots/dark-thinking.png" alt="screenshot" loading="lazy">
+        </div>
+      </article>
+    </div>
+
+  </div>
+</div>
+
+<!-- ============================================================
+     TIER 4: META
+     ============================================================ -->
+<div class="section">
+  <div class="section-label">Meta tier <span class="tier-badge tier-meta">informational chrome</span></div>
+  <div class="comp-grid">
+
+    <div class="comp-item" id="c-compact-sep">
+      <div class="comp-name">compaction boundary — separator <span class="relevance">relevance 5</span></div>
+      <div class="meta-separator">Context compacted · auto · 42k → 18k tokens</div>
+    </div>
+
+    <div class="comp-item" id="c-compact-sum">
+      <div class="comp-name">compaction summary — collapsible <span class="relevance">relevance 6</span></div>
+      <article class="block meta">
+        <details class="compact-summary">
+          <summary>
+            <span class="cs-label">Context summary</span>
+            <span class="cs-meta">manual · 84k → 22k tokens</span>
+          </summary>
+          <div class="cs-body">
+            <p>The session covers a full refactor of the Relic parser from a stringly-typed <code>Block{Type string}</code> to a typed interface hierarchy. Key decisions: discriminated union via Go type switch; ANSI-to-HTML conversion pipeline for tool results; Chroma for syntax highlighting.</p>
+          </div>
+        </details>
+      </article>
+    </div>
+
+    <div class="comp-item" id="c-hook">
+      <div class="comp-name">hook_injection — system note <span class="relevance">relevance 3</span></div>
+      <article class="block meta">
+        <div class="meta-bar">
+          <span class="icon">⚙</span>
+          <span>hook_injection</span>
+          <span class="detail">PreToolUse · Bash · allowed</span>
+        </div>
+      </article>
+    </div>
+
+    <div class="comp-item" id="c-api-error">
+      <div class="comp-name">api_error callout <span class="relevance">relevance 4</span></div>
+      <article class="block api-error">
+        <div class="role">
+          <span class="tag" style="background:var(--error-500);color:white;">api_error</span>
+          <time>15:43</time>
+        </div>
+        <div class="api-error-card">
+          <div class="icon">!</div>
+          <div class="content">
+            <div class="etype">rate_limit</div>
+            <div class="msg">Rate limit exceeded for claude-sonnet-4-6. Retry after 30s.</div>
+          </div>
+        </div>
+      </article>
+    </div>
+
+    <div class="comp-item" id="c-parse-error">
+      <div class="comp-name">parse_error callout <span class="relevance">relevance 3</span></div>
+      <article class="block error">
+        <div class="role">
+          <span class="tag" style="background:var(--error-500);color:white;">parse_error</span>
+        </div>
+        <div class="err-callout">
+          <strong>Parse error</strong> at line 847
+          <span class="raw">unexpected end of JSON input: {"type":"assistant","message":{"id":"msg_01"...</span>
+        </div>
+      </article>
+    </div>
+
+    <div class="comp-item" id="c-doc">
+      <div class="comp-name">document placeholder <span class="relevance">relevance 3</span></div>
+      <article class="block meta">
+        <div class="doc-placeholder">
+          <span class="doc-icon">PDF</span>
+          <div class="doc-info">
+            <span class="doc-title">architecture-notes.pdf</span>
+            <span class="doc-note">document · binary content not rendered</span>
+          </div>
+        </div>
+      </article>
+    </div>
+
+    <div class="comp-item" id="c-attach">
+      <div class="comp-name">attachment placeholder <span class="relevance">relevance 2</span></div>
+      <article class="block meta">
+        <div class="meta-bar">
+          <span class="icon">⊕</span>
+          <span>attachment</span>
+          <span class="detail">file attached at session start · content not available in JSONL</span>
+        </div>
+      </article>
+    </div>
+
+    <div class="comp-item" id="c-unknown">
+      <div class="comp-name">unknown block — forward-compat <span class="relevance">relevance 4</span></div>
+      <article class="block meta">
+        <details class="unknown-block">
+          <summary>
+            <span class="ub-tag">unknown block</span>
+            <span class="ub-type">server_tool_use</span>
+          </summary>
+          <pre class="mcp-json" style="margin:0; border-top:1px solid var(--border); border-radius:0 0 var(--radius-md) var(--radius-md);">{
+  <span class="jk">"type"</span>: <span class="js">"server_tool_use"</span>,
+  <span class="jk">"id"</span>: <span class="js">"srvtool_01ABC"</span>,
+  <span class="jk">"name"</span>: <span class="js">"web_search"</span>
+}</pre>
+        </details>
+      </article>
+    </div>
+
+  </div>
+</div>
+
+<!-- ============================================================
+     MISC PRIMITIVES
+     ============================================================ -->
+<div class="section">
+  <div class="section-label">Primitives &amp; banners</div>
+  <div class="comp-grid">
+
+    <div class="comp-item" id="c-find">
+      <div class="comp-name">find pill — citron accent</div>
+      <p style="font-family:var(--font-ui); font-size:15px; line-height:1.65; margin:0;">
+        The dispatcher is now a single <code>switch</code> — no more string discriminators. <span class="find">match · contentBlock</span>
+      </p>
+    </div>
+
+    <div class="comp-item" id="c-session-result">
+      <div class="comp-name">session_result banner — success <span class="relevance">relevance 2</span></div>
+      <div class="session-result success">
+        <div class="sr-icon">✓</div>
+        <div class="sr-body">
+          <div class="sr-label">Session complete</div>
+          <div class="sr-stats">
+            <div class="stat"><span class="stat-label">Duration</span><span class="stat-val">1h 22m</span></div>
+            <div class="stat"><span class="stat-label">Turns</span><span class="stat-val">7</span></div>
+            <div class="stat"><span class="stat-label">Cost</span><span class="stat-val">$0.84</span></div>
+            <div class="stat"><span class="stat-label">Tool calls</span><span class="stat-val">14</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="comp-item">
+      <div class="comp-name">session_result banner — error</div>
+      <div class="session-result error">
+        <div class="sr-icon">✗</div>
+        <div class="sr-body">
+          <div class="sr-label">Error — max turns reached</div>
+          <div class="sr-stats">
+            <div class="stat"><span class="stat-label">Turns</span><span class="stat-val">20</span></div>
+            <div class="stat"><span class="stat-label">Cost</span><span class="stat-val">$1.42</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+  // Image zoom
+  document.addEventListener("click", (e) => {
+    const img = e.target.closest(".image-preview, .mm-image-wrap img");
+    if (!img) return;
+    img.classList.toggle("expanded");
+    const hint = img.closest(".image-card") && img.closest(".image-card").querySelector(".image-hint");
+    if (hint) hint.textContent = img.classList.contains("expanded") ? "click to collapse" : "click to expand";
+  });
+</script>
+</body>
+</html>

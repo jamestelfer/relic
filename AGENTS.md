@@ -9,11 +9,30 @@
 shareable, syntax-highlighted HTML. It can write HTML to a file, stdout, or
 publish directly to a GitHub Gist via the `gh` CLI.
 
+The core principle is **self-contained, distributable HTML**: each rendered file
+is a single HTML document with all CSS, JS, and images inlined. No external
+dependencies, no network requests, works offline. This constraint applies to
+all rendering decisions — never reference external resources.
+
+**Exception — Google Fonts:** typography is loaded via a Google Fonts `@import`
+in the CSS. This is an intentional trade-off: the font payload is too large to
+inline, and Google Fonts is a reliable, high-availability CDN. The system font
+stack provides acceptable fallback when offline. Do not attempt to inline or
+bundle these fonts.
+
 Module: `github.com/jamestelfer/relic`  
 Language: Go 1.26 (`GOEXPERIMENT=jsonv2` — encoding/json/v2 is enabled everywhere)  
 Task runner: `just` (see `justfile` for all targets)
 
 ## Key commands
+
+**Always use `just` for building and testing.** Do not use `go build`, `go test`,
+or `go run` directly — the `justfile` sets `GOEXPERIMENT=jsonv2` and runs
+prerequisite steps (like templ generation) that are required for correct builds.
+Running `go` commands directly will fail with missing import errors.
+
+To run the `relic` CLI, build first with `just build` then use `dist/relic`.
+Do not use `go run`.
 
 | Intent | Command |
 |---|---|
@@ -33,19 +52,30 @@ Task runner: `just` (see `justfile` for all targets)
 > templates. The `justfile` targets handle this automatically; run it manually
 > if you edit a `.templ` file.
 
-All `go` commands run under `GOEXPERIMENT=jsonv2` (set by the `justfile`).
+## Architecture
 
-## Package structure
+The data pipeline flows in three stages:
 
-```
-cmd/relic/          CLI entrypoint (urfave/cli/v3), options wiring, execute()
-internal/parser/    Decodes Claude Code JSONL → typed Go structs
-internal/renderer/  Renders parsed messages to HTML (templ + goldmark + chroma)
-internal/highlight/ Syntax highlighting via Chroma
-internal/picker/    Interactive JSONL file picker (charmbracelet/huh)
-internal/gist/      Publishes HTML to GitHub Gist via gh CLI
-internal/ansi/      ANSI escape handling utilities
-```
+1. **parser** (`internal/parser/`) — decodes Claude Code JSONL into a flat
+   sequence of typed Go structs (`TextBlock`, `ToolUseBlock`,
+   `ToolResultBlock`, etc). This layer is purely structural: it maps JSON
+   shapes to Go types without interpreting semantics.
+
+2. **session** (`internal/session/`) — transforms parser output into
+   render-ready blocks. This is where domain logic lives: a detection cascade
+   in `classifyUserMessage()` routes synthetic user messages (hook injections,
+   bash I/O, local commands, request interruptions) into specialised block
+   types. All block types implement the sealed `Block` interface. Messages are
+   grouped into turns (human-initiated conversation units).
+
+3. **renderer** (`internal/renderer/`) — maps each `Block` to a templ
+   component and produces the final self-contained HTML document. CSS, JS,
+   fonts, and images are all inlined. `blockComponent()` is the central
+   dispatch from block type to templ template.
+
+Supporting packages: `internal/highlight/` (Chroma syntax highlighting),
+`internal/gist/` (GitHub Gist publishing), `internal/picker/` (interactive
+file selection), `internal/ansi/` (ANSI escape handling).
 
 ## Testing conventions
 
@@ -62,4 +92,16 @@ internal/ansi/      ANSI escape handling utilities
 - just 1.49.0
 - templ is a **Go tool dependency** (`go.mod` `tool` directive); no separate
   install needed — use `go tool templ`.
+
+## Library documentation (context7)
+
+When using APIs from these libraries, look up current documentation via the
+context7 MCP using the library IDs below:
+
+| Library | context7 ID |
+|---|---|
+| templ (HTML templating) | `/a-h/templ` |
+| Chroma (syntax highlighting) | `/alecthomas/chroma` |
+| goldmark (Markdown parsing) | `/yuin/goldmark` |
+| urfave/cli v3 (CLI framework) | `/urfave/cli` |
 

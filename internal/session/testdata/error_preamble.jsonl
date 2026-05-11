@@ -1,0 +1,3 @@
+not valid json at all
+{"type":"user","timestamp":"2025-01-15T10:00:01.000Z","message":{"role":"user","content":"After error"}}
+{"type":"assistant","message":{"role":"assistant","content":[{"type":"text","text":"Response"}]}}

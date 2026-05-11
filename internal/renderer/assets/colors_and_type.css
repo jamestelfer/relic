@@ -1,0 +1,234 @@
+/* =============================================================
+   Relic — design tokens
+   Single source of truth for colors and typography.
+   ============================================================= */
+
+/* ---------- Fonts ----------------------------------------------
+   Display: Instrument Serif — quiet, scholarly, archaeological.
+   UI:      Geist — clean, neutral, engineer-friendly.
+   Mono:    JetBrains Mono — programming ligatures, terminal-ready.
+   --------------------------------------------------------------- */
+@import url("https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@400;500;600;700&family=JetBrains+Mono:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap");
+
+:root {
+  /* Display + UI + mono stacks */
+  --font-display: "Instrument Serif", "Iowan Old Style", "Palatino", Georgia, serif;
+  --font-ui: "Geist", -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", "SF Mono", "Menlo", "Consolas", ui-monospace, monospace;
+
+  /* ---------- Type scale (UI / body) ---------- */
+  --text-xs:   12px;  /* metadata, captions */
+  --text-sm:   13px;  /* secondary UI */
+  --text-base: 15px;  /* body */
+  --text-md:   17px;  /* emphasized body */
+  --text-lg:   20px;  /* small heading */
+  --text-xl:   24px;  /* section heading */
+  --text-2xl:  32px;  /* page heading */
+  --text-3xl:  44px;  /* display */
+  --text-4xl:  64px;  /* hero display */
+
+  --leading-tight:  1.15;
+  --leading-snug:   1.35;
+  --leading-normal: 1.55;
+  --leading-loose:  1.75;
+
+  --tracking-tight:  -0.015em;
+  --tracking-normal: 0;
+  --tracking-wide:   0.04em;   /* small caps / eyebrow */
+
+  /* ============================================================
+     COLOR — Blue-leaning palette, no autumn tones.
+     A single citron accent reserved for "find / match / hit".
+     ============================================================ */
+
+  /* Ink (cool, bluish-gray neutrals) -------------------------- */
+  --ink-0:    #FFFFFF;
+  --ink-50:   #F4F6FA;  /* paper */
+  --ink-100:  #E8ECF3;
+  --ink-200:  #D2D7E2;
+  --ink-300:  #B0B7C7;
+  --ink-400:  #828BA0;
+  --ink-500:  #5C657A;
+  --ink-600:  #3F4759;
+  --ink-700:  #2A3142;
+  --ink-800:  #1A1F2E;
+  --ink-900:  #0E1220;
+  --ink-950:  #07091A;
+
+  /* Lapis — primary deep blue (the Relic blue) ---------------- */
+  --lapis-50:  #EAF0FF;
+  --lapis-100: #D2DEFF;
+  --lapis-200: #A4BCFF;
+  --lapis-300: #7193F4;
+  --lapis-400: #486DDD;
+  --lapis-500: #2C50C2;
+  --lapis-600: #1B3A8C;  /* anchor */
+  --lapis-700: #142C6B;
+  --lapis-800: #0E1F4D;
+  --lapis-900: #08143A;
+
+  /* Cobalt — bright, electric blue for highlights ------------- */
+  --cobalt-300: #6E8BFF;
+  --cobalt-400: #4D6FFF;
+  --cobalt-500: #2E5BFF;  /* anchor */
+  --cobalt-600: #1F47D9;
+  --cobalt-700: #1736A6;
+
+  /* Citron — accent: matches / finds / "value uncovered" ------ */
+  --citron-100: #FFF7C9;
+  --citron-300: #F2E07A;
+  --citron-500: #D9C44A;  /* anchor */
+  --citron-600: #B8A323;
+  --citron-700: #8C7A14;
+
+  /* Semantic ---------------------------------------------------
+     Tool palette: stays in-family (blue / teal / violet) so the
+     UI never feels "warm". Only error breaks family. */
+  --teal-500:   #1FA3A0;  /* tool / file ops */
+  --teal-600:   #16807E;
+  --violet-500: #6E55D4;  /* thinking / reasoning */
+  --violet-600: #5740B8;
+  --slate-500:  #5C657A;  /* neutral tool / shell */
+  --error-500:  #D93838;  /* parse error / failure */
+  --error-600:  #B62A2A;
+  --error-bg:   #FBE9E9;
+
+  /* ============================================================
+     SEMANTIC TOKENS (light mode default)
+     ============================================================ */
+
+  /* Surfaces */
+  --bg:           var(--ink-50);
+  --bg-paper:     var(--ink-0);
+  --bg-sunk:      var(--ink-100);
+  --bg-code:      #F7F8FB;
+  --bg-terminal:  var(--ink-900);
+
+  /* Text */
+  --fg:           var(--ink-900);
+  --fg-muted:     var(--ink-500);
+  --fg-subtle:    var(--ink-400);
+  --fg-on-dark:   #E5E9F4;
+  --fg-on-lapis:  #FFFFFF;
+
+  /* Lines */
+  --border:        var(--ink-200);
+  --border-strong: var(--ink-300);
+  --rule:          var(--ink-100);
+
+  /* Brand / link */
+  --brand:        var(--lapis-600);
+  --brand-hover:  var(--lapis-700);
+  --link:         var(--cobalt-600);
+
+  /* Accent (citron — used sparingly: matches, "found") */
+  --accent:       var(--citron-500);
+  --accent-soft:  var(--citron-100);
+  --accent-ink:   var(--citron-700);
+
+  /* Roles — turn / block coloring */
+  --role-user-fg:       var(--teal-600);
+  --role-user-bg:       #E9F4F4;
+  --role-user-rule:     var(--teal-500);
+  --role-assistant-fg:  var(--ink-800);
+  --role-assistant-bg:  var(--ink-0);
+  --role-assistant-rule: var(--cobalt-500);
+  --role-tool-fg:       var(--lapis-700);
+  --role-tool-bg:       var(--lapis-50);
+  --role-tool-rule:     var(--lapis-600);
+  --role-thinking-fg:   var(--violet-600);
+  --role-thinking-bg:   #F0EDFA;
+  --role-thinking-rule: var(--violet-500);
+
+  /* Scale: radii, shadow, spacing */
+  --radius-xs:  3px;
+  --radius-sm:  5px;
+  --radius-md:  8px;
+  --radius-lg:  12px;
+  --radius-xl:  16px;
+
+  --shadow-1: 0 1px 0 rgba(14, 18, 32, 0.04), 0 1px 2px rgba(14, 18, 32, 0.06);
+  --shadow-2: 0 1px 0 rgba(14, 18, 32, 0.04), 0 4px 12px rgba(14, 18, 32, 0.08);
+  --shadow-3: 0 2px 0 rgba(14, 18, 32, 0.04), 0 12px 32px rgba(14, 18, 32, 0.12);
+
+  /* Reading column (Relic is a reading document) */
+  --measure: 72ch;
+}
+
+/* ============================================================
+   DARK MODE — disabled; see docs/session-fidelity.prd.md §Dark mode removal.
+   Retained (commented) so re-enabling is a one-block uncomment.
+   ============================================================ */
+/*
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg:          var(--ink-950);
+    --bg-paper:    var(--ink-900);
+    --bg-sunk:     #050717;
+    --bg-code:     #0F1428;
+    --bg-terminal: #05071A;
+
+    --fg:          #E8ECF6;
+    --fg-muted:    #A2ABC2;
+    --fg-subtle:   #6E7891;
+
+    --border:        #1F2740;
+    --border-strong: #2C3656;
+    --rule:          #131A30;
+
+    --brand:        var(--lapis-300);
+    --brand-hover:  var(--lapis-200);
+    --link:         var(--cobalt-300);
+
+    --accent:       var(--citron-300);
+    --accent-soft:  rgba(217, 196, 74, 0.18);
+    --accent-ink:   var(--citron-300);
+
+    --role-user-fg:        #6FD9D6;
+    --role-user-bg:        rgba(31, 163, 160, 0.10);
+    --role-user-rule:      var(--teal-500);
+    --role-assistant-fg:   #E8ECF6;
+    --role-assistant-bg:   var(--ink-900);
+    --role-assistant-rule: var(--cobalt-500);
+    --role-tool-fg:        #C7D5FF;
+    --role-tool-bg:        rgba(46, 91, 255, 0.10);
+    --role-tool-rule:      var(--lapis-300);
+    --role-thinking-fg:    #B7A8F4;
+    --role-thinking-bg:    rgba(110, 85, 212, 0.12);
+    --role-thinking-rule:  var(--violet-500);
+
+    --error-bg: rgba(217, 56, 56, 0.12);
+
+    --shadow-1: 0 1px 0 rgba(0,0,0,0.5), 0 1px 2px rgba(0,0,0,0.4);
+    --shadow-2: 0 1px 0 rgba(0,0,0,0.5), 0 4px 12px rgba(0,0,0,0.4);
+    --shadow-3: 0 2px 0 rgba(0,0,0,0.5), 0 12px 32px rgba(0,0,0,0.5);
+  }
+}
+*/
+
+/* ============================================================
+   Base resets used by preview & UI kit pages
+   ============================================================ */
+html, body {
+  margin: 0;
+  padding: 0;
+  background: var(--bg);
+  color: var(--fg);
+  font-family: var(--font-ui);
+  font-size: var(--text-base);
+  line-height: var(--leading-normal);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+* { box-sizing: border-box; }
+
+a { color: var(--link); text-decoration-thickness: 1px; text-underline-offset: 2px; }
+
+/* Display class shortcuts */
+.display     { font-family: var(--font-display); font-weight: 400; letter-spacing: var(--tracking-tight); line-height: var(--leading-tight); }
+.display-i   { font-family: var(--font-display); font-style: italic; }
+.ui          { font-family: var(--font-ui); }
+.mono        { font-family: var(--font-mono); font-variant-ligatures: contextual common-ligatures; }
+.eyebrow     { font-family: var(--font-ui); font-size: var(--text-xs); font-weight: 600; letter-spacing: var(--tracking-wide); text-transform: uppercase; color: var(--fg-muted); }
+.cataloged   { font-family: var(--font-mono); font-size: var(--text-xs); letter-spacing: 0.02em; color: var(--fg-muted); }

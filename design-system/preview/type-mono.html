@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Type — Mono / Code</title>
+<link rel="stylesheet" href="../colors_and_type.css">
+<style>
+  body { padding: 64px; max-width: 980px; margin: 0 auto; }
+  .row { padding: 28px 0; border-bottom: 1px solid var(--rule); }
+  .row:last-child { border: 0; }
+  .meta { font-size: var(--text-xs); color: var(--fg-muted); font-family: var(--font-mono); margin-bottom: 10px; }
+  pre { font-family: var(--font-mono); font-size: 14px; line-height: 1.6; margin: 0; padding: 18px 22px; background: var(--bg-code); border: 1px solid var(--border); border-radius: var(--radius-md); overflow: auto; tab-size: 2; }
+  pre.terminal { background: var(--bg-terminal); color: var(--fg-on-dark); border: 0; }
+  .lig { font-family: var(--font-mono); font-size: 18px; letter-spacing: 0; font-feature-settings: "calt" on, "liga" on; }
+  h1.eyebrow { margin: 0 0 32px; }
+  .prompt { color: var(--citron-300); }
+</style>
+</head>
+<body>
+  <h1 class="eyebrow">Mono · JetBrains Mono</h1>
+
+  <div class="row">
+    <div class="meta">Code (light surface) · 14 / 1.6</div>
+<pre><span style="color:var(--lapis-600)">func</span> <span style="color:var(--violet-600)">groupTurns</span>(msgs []parser.Message) []Turn {
+  <span style="color:var(--lapis-600)">var</span> turns []Turn
+  <span style="color:var(--lapis-600)">var</span> current *Turn
+  <span style="color:var(--lapis-600)">for</span> _, m := <span style="color:var(--lapis-600)">range</span> msgs {
+    <span style="color:var(--ink-500); font-style:italic">// new turn on real human input</span>
+    <span style="color:var(--lapis-600)">if</span> m.Role == <span style="color:var(--teal-600)">"user"</span> &amp;&amp; messageRole(m) == <span style="color:var(--teal-600)">"user"</span> {
+      <span style="color:var(--lapis-600)">if</span> current != <span style="color:var(--lapis-600)">nil</span> { turns = append(turns, *current) }
+      current = &amp;Turn{Index: len(turns)+1, Messages: []parser.Message{m}}
+    }
+  }
+  <span style="color:var(--lapis-600)">return</span> turns
+}</pre>
+  </div>
+
+  <div class="row">
+    <div class="meta">Terminal · ANSI output</div>
+<pre class="terminal"><span class="prompt">$</span> just verify
+<span style="color:#7ee787">✓</span> generate     templ generated 1 file
+<span style="color:#7ee787">✓</span> fmt          formatted 14 files
+<span style="color:#7ee787">✓</span> lint         no issues
+<span style="color:#7ee787">✓</span> test         <span style="color:#a2abc2">14 tests · 0.42s</span>
+<span style="color:#f0883e">!</span> snapshot     1 changed — run <span style="color:#79c0ff">just update-snaps</span> to accept</pre>
+  </div>
+
+  <div class="row">
+    <div class="meta">Programming ligatures · 18 / contextual + common</div>
+    <div class="lig">=&gt;  -&gt;  !=  ==  &lt;=  &gt;=  &amp;&amp;  ||  /*  */  ::  ...  &lt;&lt;  &gt;&gt;</div>
+  </div>
+
+  <div class="row">
+    <div class="meta">Inline · cataloged labels</div>
+    <p class="ui" style="font-size:15px;">Relic groups records into <span class="cataloged" style="background:var(--bg-sunk);padding:2px 6px;border-radius:4px;">Turn</span> structs, where each turn opens with a real <span class="cataloged" style="background:var(--lapis-50);color:var(--lapis-700);padding:2px 6px;border-radius:4px;">user</span> message and may carry any number of <span class="cataloged" style="background:var(--role-tool-bg);color:var(--role-tool-fg);padding:2px 6px;border-radius:4px;">tool_use</span> / <span class="cataloged" style="background:var(--role-thinking-bg);color:var(--role-thinking-fg);padding:2px 6px;border-radius:4px;">thinking</span> blocks.</p>
+  </div>
+</body>
+</html>

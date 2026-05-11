@@ -1,0 +1,4 @@
+{"type":"user","timestamp":"2025-01-15T10:00:01.000Z","message":{"role":"user","content":"First question"}}
+{"type":"assistant","timestamp":"2025-01-15T10:00:05.000Z","message":{"role":"assistant","content":[{"type":"text","text":"First answer"}]}}
+{"type":"user","timestamp":"2025-01-15T10:01:00.000Z","message":{"role":"user","content":[{"type":"text","text":"Second question"}]}}
+{"type":"assistant","timestamp":"2025-01-15T10:01:10.000Z","message":{"role":"assistant","content":[{"type":"text","text":"Second answer"}]}}

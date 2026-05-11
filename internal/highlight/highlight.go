@@ -1,21 +1,41 @@
 // Package highlight wraps Chroma to provide syntax highlighting for code blocks.
-// It produces class-based HTML (no inline styles) and generates both a light
-// (github) and dark (github-dark) CSS rule set for injection into <head>.
+// It produces class-based HTML (no inline styles) and generates a CSS rule set
+// from an embedded style definition for injection into <head>.
 package highlight
 
 import (
 	"bytes"
+	"embed"
 	"fmt"
 	"html/template"
+	"strings"
 	"sync"
 
+	"github.com/alecthomas/chroma/v2"
 	chromahtml "github.com/alecthomas/chroma/v2/formatters/html"
 	"github.com/alecthomas/chroma/v2/lexers"
 	"github.com/alecthomas/chroma/v2/styles"
+	"github.com/sergi/go-diff/diffmatchpatch"
 )
+
+//go:embed userbashsession.xml
+var userBashSessionFS embed.FS
+
+func init() {
+	lexer, err := chroma.NewXMLLexer(userBashSessionFS, "userbashsession.xml")
+	if err != nil {
+		panic("highlight: failed to load userbashsession lexer: " + err.Error())
+	}
+	lexers.Register(lexer)
+}
 
 // formatter is the shared Chroma HTML formatter configured for class-based output.
 var formatter = chromahtml.New(chromahtml.WithClasses(true))
+
+// Style returns the Chroma style used for all highlighting (github light theme).
+func Style() *chroma.Style {
+	return styles.Get("github")
+}
 
 // css is the cached CSS string generated once on first call to CSS().
 var (
@@ -23,26 +43,15 @@ var (
 	cssCache string
 )
 
-// Highlight returns code syntax-highlighted as HTML for the given language and theme.
-// lang may be a Chroma language name (e.g. "go", "bash", "python") or a file
-// extension with or without leading dot (e.g. ".go", "go").
-// theme is a Chroma style name (e.g. "github", "monokai"); empty defaults to "github".
-//
-// If lang is empty or not recognised, the code is returned wrapped in a plain
-// <pre><code> block without error.
-func Highlight(code, lang, theme string) (template.HTML, error) {
-	var lexer = lexers.Get(lang)
+// ByFilename returns code syntax-highlighted as HTML, picking the Chroma lexer
+// from the filename (e.g. "main.go" → Go, "config.toml" → TOML). When no lexer
+// matches the filename, the code is returned wrapped in a plain
+// <pre><code>…</code></pre> block with the content HTML-escaped. Output is
+// class-based (no inline style=).
+func ByFilename(code, filename string) (template.HTML, error) {
+	lexer := lexers.Match(filename)
 	if lexer == nil {
-		// Fall back to plain pre/code block.
-		return template.HTML(fmt.Sprintf("<pre><code>%s</code></pre>", template.HTMLEscapeString(code))), nil
-	}
-
-	style, ok := styles.Registry[theme]
-	if !ok || style == nil {
-		style, ok = styles.Registry["github"]
-		if !ok || style == nil {
-			style = styles.Fallback
-		}
+		return template.HTML(fmt.Sprintf("<pre><code>%s</code></pre>", template.HTMLEscapeString(code))), nil //nolint:gosec
 	}
 
 	iterator, err := lexer.Tokenise(nil, code)
@@ -51,21 +60,39 @@ func Highlight(code, lang, theme string) (template.HTML, error) {
 	}
 
 	var buf bytes.Buffer
-	if err := formatter.Format(&buf, style, iterator); err != nil {
+	if err := formatter.Format(&buf, Style(), iterator); err != nil {
 		return "", fmt.Errorf("highlight format: %w", err)
 	}
 	return template.HTML(buf.String()), nil //nolint:gosec
 }
 
-// ValidateTheme returns true if name is a known Chroma style.
-func ValidateTheme(name string) bool {
-	_, ok := styles.Registry[name]
-	return ok
+// Highlight returns code syntax-highlighted as HTML for the given language.
+// lang may be a Chroma language name (e.g. "go", "bash", "python") or a file
+// extension with or without leading dot (e.g. ".go", "go").
+// The theme parameter is ignored (the embedded style is always used).
+//
+// If lang is empty or not recognised, the code is returned wrapped in a plain
+// <pre><code> block without error.
+func Highlight(code, lang, _ string) (template.HTML, error) {
+	var lexer = lexers.Get(lang)
+	if lexer == nil {
+		return template.HTML(fmt.Sprintf("<pre><code>%s</code></pre>", template.HTMLEscapeString(code))), nil
+	}
+
+	iterator, err := lexer.Tokenise(nil, code)
+	if err != nil {
+		return "", fmt.Errorf("highlight tokenise: %w", err)
+	}
+
+	var buf bytes.Buffer
+	if err := formatter.Format(&buf, Style(), iterator); err != nil {
+		return "", fmt.Errorf("highlight format: %w", err)
+	}
+	return template.HTML(buf.String()), nil //nolint:gosec
 }
 
-// CSS returns the combined Chroma CSS for the github (light) and github-dark
-// themes. The dark theme rules are wrapped in a prefers-color-scheme media query.
-// The result is computed once and cached.
+// CSS returns the Chroma CSS for the embedded style. The result is computed
+// once and cached.
 func CSS() string {
 	cssOnce.Do(func() {
 		cssCache = buildCSS()
@@ -73,27 +100,90 @@ func CSS() string {
 	return cssCache
 }
 
-// buildCSS generates the combined light + dark Chroma CSS.
 func buildCSS() string {
 	var buf bytes.Buffer
-
-	// Light theme — no media query wrapper.
-	lightStyle := styles.Get("github")
-	if lightStyle == nil {
-		lightStyle = styles.Fallback
-	}
-	_ = formatter.WriteCSS(&buf, lightStyle)
-
-	// Dark theme — inside prefers-color-scheme: dark.
-	darkStyle := styles.Get("github-dark")
-	if darkStyle == nil {
-		darkStyle = lightStyle
-	}
+	_ = formatter.WriteCSS(&buf, styles.Get("github"))
 
 	var darkBuf bytes.Buffer
-	_ = formatter.WriteCSS(&darkBuf, darkStyle)
+	_ = formatter.WriteCSS(&darkBuf, styles.Get("github-dark"))
+	darkCSS := strings.ReplaceAll(darkBuf.String(), ".chroma ", ".term .chroma ")
+	// The replacement above misses the bare ".chroma {" rule (no trailing space).
+	darkCSS = strings.ReplaceAll(darkCSS, ".chroma{", ".term .chroma{")
+	buf.WriteString(darkCSS)
 
-	fmt.Fprintf(&buf, "\n@media (prefers-color-scheme: dark) {\n%s\n}\n", darkBuf.String())
-
+	buf.WriteString(structuralCSS)
 	return buf.String()
+}
+
+const structuralCSS = `.chroma { background-color: var(--bg-code); }
+.term .chroma { background-color: transparent; }
+.term .chroma .p { color: inherit; }
+pre.chroma {
+  font-family: var(--font-mono);
+  font-size: 0.875rem;
+  line-height: 1.5;
+  margin: 0;
+  padding: 1rem;
+  border-radius: 0;
+  overflow-x: auto;
+}
+`
+
+// Diff computes a unified diff between oldText and newText and returns it
+// highlighted as HTML using Chroma's Diff lexer. Returns empty if the texts
+// are identical. The filename parameter is unused but kept for API symmetry.
+func Diff(oldText, newText, _ string) template.HTML {
+	if oldText == newText {
+		return ""
+	}
+
+	dmp := diffmatchpatch.New()
+	a, b, c := dmp.DiffLinesToChars(oldText, newText)
+	diffs := dmp.DiffMain(a, b, false)
+	diffs = dmp.DiffCharsToLines(diffs, c)
+	diffs = dmp.DiffCleanupSemantic(diffs)
+
+	unified := buildUnifiedDiff(diffs)
+	if unified == "" {
+		return ""
+	}
+
+	lexer := lexers.Get("diff")
+	if lexer == nil {
+		return template.HTML(fmt.Sprintf("<pre><code>%s</code></pre>", template.HTMLEscapeString(unified)))
+	}
+
+	iterator, err := lexer.Tokenise(nil, unified)
+	if err != nil {
+		return template.HTML(fmt.Sprintf("<pre><code>%s</code></pre>", template.HTMLEscapeString(unified)))
+	}
+
+	var buf bytes.Buffer
+	if err := formatter.Format(&buf, Style(), iterator); err != nil {
+		return template.HTML(fmt.Sprintf("<pre><code>%s</code></pre>", template.HTMLEscapeString(unified)))
+	}
+	return template.HTML(buf.String()) //nolint:gosec
+}
+
+func buildUnifiedDiff(diffs []diffmatchpatch.Diff) string {
+	var b strings.Builder
+	for _, d := range diffs {
+		lines := strings.Split(d.Text, "\n")
+		if len(lines) > 0 && lines[len(lines)-1] == "" {
+			lines = lines[:len(lines)-1]
+		}
+		for _, line := range lines {
+			switch d.Type {
+			case diffmatchpatch.DiffDelete:
+				b.WriteByte('-')
+			case diffmatchpatch.DiffInsert:
+				b.WriteByte('+')
+			default:
+				b.WriteByte(' ')
+			}
+			b.WriteString(line)
+			b.WriteByte('\n')
+		}
+	}
+	return b.String()
 }

@@ -1,0 +1,6 @@
+{"type":"attachment","timestamp":"2025-01-15T10:00:01.000Z","id":"att-1"}
+{"type":"permission-mode","timestamp":"2025-01-15T10:00:02.000Z","mode":"default"}
+{"type":"last-prompt","timestamp":"2025-01-15T10:00:03.000Z","prompt":"hi"}
+{"type":"file-history-snapshot","timestamp":"2025-01-15T10:00:04.000Z"}
+{"type":"agent-name","timestamp":"2025-01-15T10:00:05.000Z","name":"primary"}
+{"type":"user","timestamp":"2025-01-15T10:00:06.000Z","message":{"role":"user","content":"hi"}}

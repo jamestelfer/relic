@@ -26,7 +26,8 @@ func openFixture(t *testing.T, name string) *os.File {
 
 // TestParseFixture is the tracer bullet: parse the fixture and snapshot the result.
 func TestParseFixture(t *testing.T) {
-	msgs, _, err := parser.Parse(openFixture(t, "fixture.jsonl"))
+	res, _, err := parser.Parse(openFixture(t, "fixture.jsonl"))
+	msgs := res.Messages
 	require.NoError(t, err)
 
 	// Only user and assistant records are returned; system/queue-operation are filtered.
@@ -41,7 +42,8 @@ func TestParseFixture(t *testing.T) {
 
 // TestParseTextBlock verifies that assistant text blocks are decoded as TextBlock.
 func TestParseTextBlock(t *testing.T) {
-	msgs, _, err := parser.Parse(openFixture(t, "fixture.jsonl"))
+	res, _, err := parser.Parse(openFixture(t, "fixture.jsonl"))
+	msgs := res.Messages
 	require.NoError(t, err)
 
 	// msgs[1] is the first assistant reply — content is [{"type":"text","text":"Sure!..."}]
@@ -55,7 +57,8 @@ func TestParseTextBlock(t *testing.T) {
 
 // TestParseStringContent verifies that a plain-string user content becomes a TextBlock.
 func TestParseStringContent(t *testing.T) {
-	msgs, _, err := parser.Parse(openFixture(t, "fixture.jsonl"))
+	res, _, err := parser.Parse(openFixture(t, "fixture.jsonl"))
+	msgs := res.Messages
 	require.NoError(t, err)
 
 	// msgs[0] is the first user message — content is a plain string in the fixture.
@@ -67,7 +70,8 @@ func TestParseStringContent(t *testing.T) {
 
 // TestParseRawBlock verifies that unknown content block types become RawBlock.
 func TestParseRawBlock(t *testing.T) {
-	msgs, _, err := parser.Parse(openFixture(t, "unknown_block.jsonl"))
+	res, _, err := parser.Parse(openFixture(t, "unknown_block.jsonl"))
+	msgs := res.Messages
 	require.NoError(t, err)
 
 	require.Len(t, msgs, 1)
@@ -82,20 +86,21 @@ func TestParseRawBlock(t *testing.T) {
 // TestParseMalformedLine verifies that a malformed JSONL line produces a ParseError
 // with the correct line number while remaining valid messages are still returned.
 func TestParseMalformedLine(t *testing.T) {
-	msgs, parseErrs, err := parser.Parse(openFixture(t, "malformed.jsonl"))
+	res, parseErrs, err := parser.Parse(openFixture(t, "malformed.jsonl"))
 	require.NoError(t, err, "Parse should not return a terminal error")
 	require.Len(t, parseErrs, 1)
 	assert.Equal(t, 2, parseErrs[0].Line)
 	assert.NotEmpty(t, parseErrs[0].Raw)
 	assert.Error(t, parseErrs[0].Err)
-	assert.NotEmpty(t, msgs, "valid messages from non-malformed lines should still be returned")
+	assert.NotEmpty(t, res.Messages, "valid messages from non-malformed lines should still be returned")
 
 	snaps.MatchSnapshot(t, parseErrs[0].Line)
 }
 
 // TestParseToolResultBlock verifies that tool_result content blocks are decoded correctly.
 func TestParseToolResultBlock(t *testing.T) {
-	msgs, _, err := parser.Parse(openFixture(t, "tool_result.jsonl"))
+	res, _, err := parser.Parse(openFixture(t, "tool_result.jsonl"))
+	msgs := res.Messages
 	require.NoError(t, err)
 
 	require.Len(t, msgs, 1)
@@ -110,7 +115,8 @@ func TestParseToolResultBlock(t *testing.T) {
 
 // TestParseToolUseBlock verifies that tool_use content blocks are decoded as ToolUseBlock.
 func TestParseToolUseBlock(t *testing.T) {
-	msgs, _, err := parser.Parse(openFixture(t, "tool_thinking.jsonl"))
+	res, _, err := parser.Parse(openFixture(t, "tool_thinking.jsonl"))
+	msgs := res.Messages
 	require.NoError(t, err)
 
 	require.Len(t, msgs, 1)
@@ -127,11 +133,250 @@ func TestParseToolUseBlock(t *testing.T) {
 	snaps.MatchSnapshot(t, msgs[0].Content)
 }
 
+// TestParseToolResult_ArrayContent: tool_result blocks whose "content" field
+// is an array of typed items (e.g. [{"type":"text","text":"..."}]) decode to
+// a ToolResultBlock with the concatenated text, not a RawBlock. Real Claude
+// Code sessions emit array-form content for MCP tool output.
+func TestParseToolResult_ArrayContent(t *testing.T) {
+	res, _, err := parser.Parse(openFixture(t, "tool_result_array.jsonl"))
+	require.NoError(t, err)
+
+	require.Len(t, res.Messages, 1)
+	require.Len(t, res.Messages[0].Content, 1)
+
+	tr, ok := res.Messages[0].Content[0].(*parser.ToolResultBlock)
+	require.True(t, ok, "array-form content must still decode to ToolResultBlock, got %T",
+		res.Messages[0].Content[0])
+	assert.Equal(t, "toolu_42", tr.ToolUseID)
+	assert.Contains(t, tr.Content, "first text")
+	assert.Contains(t, tr.Content, "second text")
+	assert.Contains(t, tr.Content, "mcp__example__do")
+}
+
 // TestParseNoContent verifies that a message with empty content array is handled.
 func TestParseNoContent(t *testing.T) {
-	msgs, _, err := parser.Parse(openFixture(t, "empty_content.jsonl"))
+	res, _, err := parser.Parse(openFixture(t, "empty_content.jsonl"))
+	msgs := res.Messages
 	require.NoError(t, err)
 
 	require.Len(t, msgs, 1)
 	assert.Empty(t, msgs[0].Content)
+}
+
+// TestParseCustomTitleSingle verifies that a custom-title top-level record
+// is exposed via Result.CustomTitles with Text and 1-indexed LineNum.
+func TestParseCustomTitleSingle(t *testing.T) {
+	res, _, err := parser.Parse(openFixture(t, "custom_title_single.jsonl"))
+	require.NoError(t, err)
+
+	require.Len(t, res.CustomTitles, 1)
+	assert.Equal(t, "phase5 title", res.CustomTitles[0].Text)
+	assert.Equal(t, 1, res.CustomTitles[0].LineNum)
+	assert.Empty(t, res.Messages, "custom-title is not a message")
+}
+
+// TestParseSystemRecords verifies that top-level type:"system" records are
+// emitted via Result.SystemRecords carrying Subtype, Content (if present),
+// and 1-indexed LineNum in source order.
+func TestParseSystemRecords(t *testing.T) {
+	res, _, err := parser.Parse(openFixture(t, "system_records.jsonl"))
+	require.NoError(t, err)
+
+	require.Len(t, res.SystemRecords, 3)
+
+	assert.Equal(t, "local_command", res.SystemRecords[0].Subtype)
+	assert.Contains(t, res.SystemRecords[0].Content, "<command-name>/focus")
+	assert.Equal(t, 2, res.SystemRecords[0].LineNum)
+
+	assert.Equal(t, "turn_duration", res.SystemRecords[1].Subtype)
+	assert.Equal(t, 3, res.SystemRecords[1].LineNum)
+
+	assert.Equal(t, "away_summary", res.SystemRecords[2].Subtype)
+	assert.Equal(t, "user stepped away", res.SystemRecords[2].Content)
+	assert.Equal(t, 4, res.SystemRecords[2].LineNum)
+
+	// The interleaved user message on line 1 comes through unaffected.
+	require.Len(t, res.Messages, 1)
+	assert.Equal(t, 1, res.Messages[0].LineNum)
+}
+
+// TestParseSkippedRecords verifies that top-level records whose "type" is
+// not user/assistant/system/custom-title are exposed via Result.SkippedRecords
+// with their original Type and 1-indexed LineNum preserved in source order.
+func TestParseSkippedRecords(t *testing.T) {
+	res, _, err := parser.Parse(openFixture(t, "skipped_records.jsonl"))
+	require.NoError(t, err)
+
+	require.Len(t, res.SkippedRecords, 2)
+	assert.Equal(t, "queue-operation", res.SkippedRecords[0].Type)
+	assert.Equal(t, 2, res.SkippedRecords[0].LineNum)
+	assert.Equal(t, "summary", res.SkippedRecords[1].Type)
+	assert.Equal(t, 3, res.SkippedRecords[1].LineNum)
+
+	// Valid messages still flow through.
+	require.Len(t, res.Messages, 2)
+	assert.Equal(t, 1, res.Messages[0].LineNum)
+	assert.Equal(t, 4, res.Messages[1].LineNum)
+}
+
+// TestParseSkippedRecords_OmitsKnownBookkeeping: top-level types emitted
+// by Claude Code for its own bookkeeping (attachment, permission-mode,
+// last-prompt, file-history-snapshot, agent-name) carry no renderable data
+// and must not surface as SkippedRecords. The list is discovered from real
+// sessions and extended here per the Phase 7 replan trigger in
+// docs/session-fidelity.plan.md.
+func TestParseSkippedRecords_OmitsKnownBookkeeping(t *testing.T) {
+	res, _, err := parser.Parse(openFixture(t, "bookkeeping.jsonl"))
+	require.NoError(t, err)
+
+	// All bookkeeping types silently dropped.
+	assert.Empty(t, res.SkippedRecords,
+		"known Claude Code bookkeeping types must not appear as unhandled")
+	// The user message still comes through.
+	require.Len(t, res.Messages, 1)
+	assert.Equal(t, "user", res.Messages[0].Role)
+}
+
+// TestParseSkippedRecords_OnlyUnknownTypesAreSkipped: known types (user,
+// assistant, system, custom-title, bookkeeping) pass through; only truly
+// unrecognised types surface as SkippedRecords.
+func TestParseSkippedRecords_OnlyUnknownTypesAreSkipped(t *testing.T) {
+	res, _, err := parser.Parse(openFixture(t, "fixture.jsonl"))
+	require.NoError(t, err)
+	// fixture.jsonl has: system(line 1), user/assistant (2-5), queue-operation (6).
+	// queue-operation is the only skipped one.
+	require.Len(t, res.SkippedRecords, 1)
+	assert.Equal(t, "queue-operation", res.SkippedRecords[0].Type)
+	assert.Equal(t, 6, res.SkippedRecords[0].LineNum)
+}
+
+// TestParseIsMeta verifies that the top-level "isMeta" boolean is surfaced
+// on parser.Message. Default (key absent) is false.
+func TestParseIsMeta(t *testing.T) {
+	res, _, err := parser.Parse(openFixture(t, "meta_user.jsonl"))
+	require.NoError(t, err)
+
+	require.Len(t, res.Messages, 3)
+	assert.False(t, res.Messages[0].IsMeta, "explicit isMeta:false")
+	assert.True(t, res.Messages[1].IsMeta, "explicit isMeta:true")
+	assert.False(t, res.Messages[2].IsMeta, "missing isMeta key defaults to false")
+}
+
+// TestParseCustomTitleMulti verifies that multiple custom-title records are
+// emitted in source order with their 1-indexed LineNum values intact.
+func TestParseCustomTitleMulti(t *testing.T) {
+	res, _, err := parser.Parse(openFixture(t, "custom_title_multi.jsonl"))
+	require.NoError(t, err)
+
+	require.Len(t, res.CustomTitles, 3)
+	assert.Equal(t, "first", res.CustomTitles[0].Text)
+	assert.Equal(t, 1, res.CustomTitles[0].LineNum)
+	assert.Equal(t, "second", res.CustomTitles[1].Text)
+	assert.Equal(t, 3, res.CustomTitles[1].LineNum)
+	assert.Equal(t, "third", res.CustomTitles[2].Text)
+	assert.Equal(t, 4, res.CustomTitles[2].LineNum)
+
+	// The interleaved user message on line 2 comes through unaffected.
+	require.Len(t, res.Messages, 1)
+	assert.Equal(t, 2, res.Messages[0].LineNum)
+}
+
+// TestParseEnvelope_IsSidechain: JSONL line with isSidechain:true populates Envelope.
+func TestParseEnvelope_IsSidechain(t *testing.T) {
+	res, _, err := parser.Parse(openFixture(t, "envelope.jsonl"))
+	require.NoError(t, err)
+
+	require.Len(t, res.Messages, 4)
+	env := res.Messages[0].Envelope
+	assert.True(t, env.IsSidechain)
+	assert.Equal(t, "1.0.42", env.Version)
+	assert.Equal(t, "/home/user/project", env.Cwd)
+	assert.Equal(t, "main", env.GitBranch)
+	assert.Equal(t, "abc123", env.Slug)
+}
+
+// TestParseEnvelope_OtherFlags: isCompactSummary and isApiErrorMessage populate Envelope.
+func TestParseEnvelope_OtherFlags(t *testing.T) {
+	res, _, err := parser.Parse(openFixture(t, "envelope.jsonl"))
+	require.NoError(t, err)
+
+	require.Len(t, res.Messages, 4)
+	assert.True(t, res.Messages[1].Envelope.IsCompactSummary)
+	assert.True(t, res.Messages[2].Envelope.IsApiErrorMessage)
+}
+
+// TestParseRedactedThinking verifies that {"type":"redacted_thinking","data":"..."}
+// content blocks are decoded as RedactedThinkingBlock.
+func TestParseRedactedThinking(t *testing.T) {
+	res, _, err := parser.Parse(openFixture(t, "redacted_thinking.jsonl"))
+	require.NoError(t, err)
+
+	require.Len(t, res.Messages, 1)
+	require.Len(t, res.Messages[0].Content, 2)
+
+	require.IsType(t, (*parser.ThinkingBlock)(nil), res.Messages[0].Content[0])
+	require.IsType(t, (*parser.RedactedThinkingBlock)(nil), res.Messages[0].Content[1])
+	rb := res.Messages[0].Content[1].(*parser.RedactedThinkingBlock)
+	assert.Equal(t, "abc123", rb.Data)
+}
+
+// TestParseEnvelope_MissingFields: absent envelope fields produce zero-value, no error.
+func TestParseEnvelope_MissingFields(t *testing.T) {
+	res, _, err := parser.Parse(openFixture(t, "envelope.jsonl"))
+	require.NoError(t, err)
+
+	// Line 4 has no envelope fields.
+	env := res.Messages[3].Envelope
+	assert.False(t, env.IsSidechain)
+	assert.False(t, env.IsCompactSummary)
+	assert.False(t, env.IsApiErrorMessage)
+	assert.False(t, env.IsMeta)
+	assert.Empty(t, env.Version)
+	assert.Empty(t, env.Cwd)
+	assert.Empty(t, env.GitBranch)
+	assert.Empty(t, env.Slug)
+}
+
+// TestParseResultRecords: top-level type:"result" records are emitted via
+// Result.ResultRecords with subtype, duration, turns, cost, and error fields.
+func TestParseResultRecords(t *testing.T) {
+	res, _, err := parser.Parse(openFixture(t, "result_record.jsonl"))
+	require.NoError(t, err)
+
+	// User message still flows through.
+	require.Len(t, res.Messages, 1)
+
+	require.Len(t, res.ResultRecords, 2)
+
+	r0 := res.ResultRecords[0]
+	assert.Equal(t, "success", r0.Subtype)
+	assert.Equal(t, 5000, r0.DurationMS)
+	assert.Equal(t, 3, r0.NumTurns)
+	assert.InDelta(t, 0.42, r0.CostUSD, 0.001)
+	assert.Empty(t, r0.Error)
+	assert.Equal(t, 2, r0.LineNum)
+
+	r1 := res.ResultRecords[1]
+	assert.Equal(t, "error", r1.Subtype)
+	assert.Equal(t, "max turns reached", r1.Error)
+	assert.Equal(t, 12000, r1.DurationMS)
+	assert.Equal(t, 20, r1.NumTurns)
+	assert.InDelta(t, 1.42, r1.CostUSD, 0.001)
+	assert.Equal(t, 3, r1.LineNum)
+
+	// Result records must not appear as SkippedRecords.
+	assert.Empty(t, res.SkippedRecords)
+}
+
+func TestParseImageBlock(t *testing.T) {
+	res, _, err := parser.Parse(openFixture(t, "image_block.jsonl"))
+	require.NoError(t, err)
+
+	require.Len(t, res.Messages, 1)
+	require.Len(t, res.Messages[0].Content, 1)
+	require.IsType(t, (*parser.ImageBlock)(nil), res.Messages[0].Content[0])
+
+	img := res.Messages[0].Content[0].(*parser.ImageBlock)
+	assert.Equal(t, "image/png", img.MediaType)
+	assert.Equal(t, "iVBORw0KGgo=", img.Base64)
 }

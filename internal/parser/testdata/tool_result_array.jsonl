@@ -1,0 +1,1 @@
+{"type":"user","timestamp":"2025-01-15T10:00:01.000Z","message":{"role":"user","content":[{"type":"tool_result","tool_use_id":"toolu_42","content":[{"type":"text","text":"first text"},{"type":"tool_reference","tool_name":"mcp__example__do"},{"type":"text","text":"second text"}]}]}}

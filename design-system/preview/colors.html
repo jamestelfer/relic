@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Color</title>
+<link rel="stylesheet" href="../colors_and_type.css">
+<style>
+  body { padding: 56px; max-width: 1100px; margin: 0 auto; }
+  h1.eyebrow { margin: 0 0 8px; }
+  h2 { font-family: var(--font-display); font-size: 32px; margin: 0 0 4px; letter-spacing: -0.015em; line-height: 1.1; }
+  .desc { color: var(--fg-muted); margin: 0 0 24px; max-width: 60ch; }
+  .ramp { display: grid; grid-template-columns: repeat(11, 1fr); gap: 0; border-radius: var(--radius-md); overflow: hidden; border: 1px solid var(--border); margin-bottom: 32px; }
+  .swatch { aspect-ratio: 1/1.1; padding: 10px; display: flex; flex-direction: column; justify-content: space-between; font-family: var(--font-mono); font-size: 11px; line-height: 1.2; }
+  .swatch .step { font-weight: 600; }
+  .swatch .hex { opacity: 0.7; letter-spacing: 0.02em; }
+  .roles { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-top: 8px; }
+  .role { padding: 18px; border-radius: var(--radius-md); border: 1px solid; }
+  .role .label { font-family: var(--font-mono); font-size: 11px; opacity: 0.7; margin-bottom: 4px; letter-spacing: 0.02em; }
+  .role .name { font-family: var(--font-display); font-size: 22px; line-height: 1.1; letter-spacing: -0.01em; }
+  .section { margin: 56px 0; }
+</style>
+</head>
+<body>
+
+<div class="section">
+  <h1 class="eyebrow">Palette</h1>
+  <h2>Lapis &amp; Cobalt — the Relic blues.</h2>
+  <p class="desc">A deep, considered blue with an electric counterpart. Lapis anchors brand and links; cobalt is reserved for highlight and selection.</p>
+
+  <div class="ramp" id="lapis"></div>
+  <div class="ramp" id="cobalt"></div>
+</div>
+
+<div class="section">
+  <h2 style="font-family:var(--font-display);">Citron — the find.</h2>
+  <p class="desc">A single warm accent, used sparingly for matches, hits, and the moment value is uncovered. Never a background color.</p>
+  <div class="ramp" id="citron"></div>
+</div>
+
+<div class="section">
+  <h2 style="font-family:var(--font-display);">Ink — cool, bluish‑gray neutrals.</h2>
+  <p class="desc">Twelve‑step paper-to-night ramp. Surfaces and text live here; nothing warm.</p>
+  <div class="ramp" id="ink"></div>
+</div>
+
+<div class="section">
+  <h1 class="eyebrow">Roles</h1>
+  <h2 style="font-family:var(--font-display);">Turn coloring.</h2>
+  <p class="desc">Each block kind gets a hairline‑rule color and a faint tint. Keeps families separated without shouting.</p>
+  <div class="roles">
+    <div class="role" style="border-color: var(--role-user-rule); background: var(--role-user-bg); color: var(--role-user-fg);"><div class="label">user</div><div class="name">Your prompt</div></div>
+    <div class="role" style="border-color: var(--role-assistant-rule); background: var(--role-assistant-bg); color: var(--role-assistant-fg);"><div class="label">assistant</div><div class="name">Claude reply</div></div>
+    <div class="role" style="border-color: var(--role-tool-rule); background: var(--role-tool-bg); color: var(--role-tool-fg);"><div class="label">tool_use / tool_result</div><div class="name">Bash · Read · Edit</div></div>
+    <div class="role" style="border-color: var(--role-thinking-rule); background: var(--role-thinking-bg); color: var(--role-thinking-fg);"><div class="label">thinking</div><div class="name">Internal reasoning</div></div>
+  </div>
+</div>
+
+<script>
+  const ramps = {
+    lapis: ['50','100','200','300','400','500','600','700','800','900'],
+    cobalt: ['300','400','500','600','700'],
+    citron: ['100','300','500','600','700'],
+    ink: ['0','50','100','200','300','400','500','600','700','800','900','950']
+  };
+  const cs = getComputedStyle(document.documentElement);
+  for (const [name, steps] of Object.entries(ramps)) {
+    const el = document.getElementById(name);
+    el.style.gridTemplateColumns = `repeat(${steps.length}, 1fr)`;
+    for (const s of steps) {
+      const v = cs.getPropertyValue(`--${name}-${s}`).trim();
+      const lum = parseInt(s, 10);
+      const fg = (name === 'ink' && lum <= 200) || (name === 'citron' && lum <= 300) || (name !== 'ink' && lum <= 200) ? 'var(--ink-900)' : 'white';
+      const div = document.createElement('div');
+      div.className = 'swatch';
+      div.style.background = v;
+      div.style.color = fg;
+      div.innerHTML = `<span class="step">${name} ${s}</span><span class="hex">${v}</span>`;
+      el.appendChild(div);
+    }
+  }
+</script>
+</body>
+</html>
