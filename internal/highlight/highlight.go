@@ -9,7 +9,6 @@ import (
 	"fmt"
 	"html/template"
 	"strings"
-	"sync"
 
 	"github.com/alecthomas/chroma/v2"
 	chromahtml "github.com/alecthomas/chroma/v2/formatters/html"
@@ -36,12 +35,6 @@ var formatter = chromahtml.New(chromahtml.WithClasses(true))
 func Style() *chroma.Style {
 	return styles.Get("github")
 }
-
-// css is the cached CSS string generated once on first call to CSS().
-var (
-	cssOnce  sync.Once
-	cssCache string
-)
 
 // ByFilename returns code syntax-highlighted as HTML, picking the Chroma lexer
 // from the filename (e.g. "main.go" → Go, "config.toml" → TOML). When no lexer
@@ -90,44 +83,6 @@ func Highlight(code, lang, _ string) (template.HTML, error) {
 	}
 	return template.HTML(buf.String()), nil //nolint:gosec
 }
-
-// CSS returns the Chroma CSS for the embedded style. The result is computed
-// once and cached.
-func CSS() string {
-	cssOnce.Do(func() {
-		cssCache = buildCSS()
-	})
-	return cssCache
-}
-
-func buildCSS() string {
-	var buf bytes.Buffer
-	_ = formatter.WriteCSS(&buf, styles.Get("github"))
-
-	var darkBuf bytes.Buffer
-	_ = formatter.WriteCSS(&darkBuf, styles.Get("github-dark"))
-	darkCSS := strings.ReplaceAll(darkBuf.String(), ".chroma ", ".term .chroma ")
-	// The replacement above misses the bare ".chroma {" rule (no trailing space).
-	darkCSS = strings.ReplaceAll(darkCSS, ".chroma{", ".term .chroma{")
-	buf.WriteString(darkCSS)
-
-	buf.WriteString(structuralCSS)
-	return buf.String()
-}
-
-const structuralCSS = `.chroma { background-color: var(--bg-code); }
-.term .chroma { background-color: transparent; }
-.term .chroma .p { color: inherit; }
-pre.chroma {
-  font-family: var(--font-mono);
-  font-size: 0.875rem;
-  line-height: 1.5;
-  margin: 0;
-  padding: 1rem;
-  border-radius: 0;
-  overflow-x: auto;
-}
-`
 
 // Diff computes a unified diff between oldText and newText and returns it
 // highlighted as HTML using Chroma's Diff lexer. Returns empty if the texts

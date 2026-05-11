@@ -1,20 +1,12 @@
 package highlight_test
 
 import (
-	"os"
 	"testing"
 
-	"github.com/gkampitakis/go-snaps/snaps"
 	"github.com/jamestelfer/relic/internal/highlight"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
-
-func TestMain(m *testing.M) {
-	v := m.Run()
-	_, _ = snaps.Clean(m)
-	os.Exit(v)
-}
 
 // TestHighlight_KnownLanguage verifies that a known language produces non-empty HTML
 // with Chroma token spans and that angle brackets in code are HTML-escaped.
@@ -46,17 +38,6 @@ func TestHighlight_UnknownLanguageName(t *testing.T) {
 	out, err := highlight.Highlight("hello world", "xyz_totally_unknown_language", "")
 	require.NoError(t, err)
 	assert.Contains(t, string(out), "<pre")
-}
-
-// TestCSS verifies that CSS() returns non-empty CSS containing both light and
-// dark theme rules, plus structural overrides.
-func TestCSS(t *testing.T) {
-	css := highlight.CSS()
-	require.NotEmpty(t, css)
-	assert.Contains(t, css, ".term .chroma")
-	assert.NotContains(t, css, "@media (prefers-color-scheme: dark)")
-	assert.Contains(t, css, "background-color: var(--bg-code)")
-	snaps.MatchSnapshot(t, css)
 }
 
 func TestStyle_LoadedFromEmbed(t *testing.T) {
