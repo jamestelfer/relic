@@ -757,6 +757,52 @@ func TestRender_GlobEnrichment_Truncated(t *testing.T) {
 	assert.Contains(t, out, "100 files (truncated)", "chrome label: truncated glob")
 }
 
+func TestRender_AgentEnrichment(t *testing.T) {
+	linkedID := "toolu_agent"
+	s := session.Session{
+		Turns: []session.Turn{{Index: 1, Blocks: []session.Block{
+			&session.ToolResult{
+				ToolUseID: linkedID, Content: "done", LinkedCallID: &linkedID, LinkedCallName: "Agent",
+				Enrichment: &session.AgentEnrichment{AgentType: "general-purpose", Status: "completed", DurationMs: 45000, TokenCount: 12500, ToolUseCount: 8},
+			},
+		}}},
+	}
+	out := render(t, s, renderer.Options{Name: "test"})
+	assert.Contains(t, out, "general-purpose", "chrome label: agent type")
+	assert.Contains(t, out, "45s", "chrome label: duration")
+	assert.Contains(t, out, "12.5k tokens", "chrome label: token count")
+}
+
+func TestRender_AgentEnrichment_SubSecond(t *testing.T) {
+	linkedID := "toolu_agent_s"
+	s := session.Session{
+		Turns: []session.Turn{{Index: 1, Blocks: []session.Block{
+			&session.ToolResult{
+				ToolUseID: linkedID, Content: "done", LinkedCallID: &linkedID, LinkedCallName: "Agent",
+				Enrichment: &session.AgentEnrichment{AgentType: "Explore", Status: "completed", DurationMs: 500, TokenCount: 800},
+			},
+		}}},
+	}
+	out := render(t, s, renderer.Options{Name: "test"})
+	assert.Contains(t, out, "&lt;1s", "chrome label: sub-second duration")
+	assert.Contains(t, out, "800 tokens", "chrome label: exact token count under 1000")
+}
+
+func TestRender_AgentEnrichment_Minutes(t *testing.T) {
+	linkedID := "toolu_agent_m"
+	s := session.Session{
+		Turns: []session.Turn{{Index: 1, Blocks: []session.Block{
+			&session.ToolResult{
+				ToolUseID: linkedID, Content: "done", LinkedCallID: &linkedID, LinkedCallName: "Agent",
+				Enrichment: &session.AgentEnrichment{AgentType: "code-reviewer", Status: "completed", DurationMs: 125000, TokenCount: 1000},
+			},
+		}}},
+	}
+	out := render(t, s, renderer.Options{Name: "test"})
+	assert.Contains(t, out, "2m 5s", "chrome label: minutes+seconds")
+	assert.Contains(t, out, "1.0k tokens", "chrome label: exactly 1000 tokens")
+}
+
 func TestRender_ToolResult_NoEnrichment_Unchanged(t *testing.T) {
 	linkedID := "toolu_no_enr"
 	s := session.Session{

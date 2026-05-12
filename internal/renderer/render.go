@@ -314,6 +314,8 @@ func termLabel(r *session.ToolResult) string {
 		return grepLabel(name, e)
 	case *session.GlobEnrichment:
 		return globLabel(e)
+	case *session.AgentEnrichment:
+		return agentLabel(e)
 	}
 
 	return name
@@ -364,6 +366,28 @@ func globLabel(e *session.GlobEnrichment) string {
 		return fmt.Sprintf("%d files (truncated)", e.NumFiles)
 	}
 	return fmt.Sprintf("%d files", e.NumFiles)
+}
+
+func agentLabel(e *session.AgentEnrichment) string {
+	return fmt.Sprintf("%s · %s · %s tokens", e.AgentType, formatAgentDuration(e.DurationMs), formatTokens(e.TokenCount))
+}
+
+func formatAgentDuration(ms int) string {
+	if ms < 1000 {
+		return "<1s"
+	}
+	s := ms / 1000
+	if s < 60 {
+		return fmt.Sprintf("%ds", s)
+	}
+	return fmt.Sprintf("%dm %ds", s/60, s%60)
+}
+
+func formatTokens(n int) string {
+	if n < 1000 {
+		return fmt.Sprintf("%d", n)
+	}
+	return fmt.Sprintf("%.1fk", float64(n)/1000)
 }
 
 func formatOffset(d time.Duration) string {

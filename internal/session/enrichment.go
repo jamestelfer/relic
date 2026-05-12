@@ -59,6 +59,17 @@ type GlobEnrichment struct {
 
 func (e *GlobEnrichment) enrichmentType() string { return "glob" }
 
+// AgentEnrichment holds structured data from a completed Agent tool result.
+type AgentEnrichment struct {
+	AgentType    string
+	Status       string
+	DurationMs   int
+	TokenCount   int
+	ToolUseCount int
+}
+
+func (e *AgentEnrichment) enrichmentType() string { return "agent" }
+
 // interpretEnrichment interprets a raw toolUseResult value based on the tool
 // name and produces a typed ToolEnrichment value. Returns nil when the raw value
 // is not a map (string/array/nil produce no enrichment) or the tool name is
@@ -82,6 +93,8 @@ func interpretEnrichment(toolName string, raw any, callInput map[string]any) Too
 		return interpretGrep(m)
 	case "Glob":
 		return interpretGlob(m)
+	case "Agent":
+		return interpretAgent(m)
 	default:
 		return nil
 	}
@@ -158,6 +171,21 @@ func interpretGrep(m map[string]any) *GrepEnrichment {
 		NumFiles:   intFromAny(m["numFiles"]),
 		NumLines:   intFromAny(m["numLines"]),
 		NumMatches: intFromAny(m["numMatches"]),
+	}
+}
+
+func interpretAgent(m map[string]any) *AgentEnrichment {
+	status, _ := m["status"].(string)
+	if status != "completed" {
+		return nil
+	}
+	agentType, _ := m["agentType"].(string)
+	return &AgentEnrichment{
+		AgentType:    agentType,
+		Status:       status,
+		DurationMs:   intFromAny(m["totalDurationMs"]),
+		TokenCount:   intFromAny(m["totalTokens"]),
+		ToolUseCount: intFromAny(m["totalToolUseCount"]),
 	}
 }
 

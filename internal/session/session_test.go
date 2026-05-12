@@ -1212,6 +1212,102 @@ func TestTransformGrepEnrichment_NoMode(t *testing.T) {
 	assert.Nil(t, result.Enrichment, "malformed grep result should produce nil enrichment")
 }
 
+// TestTransformAgentEnrichment: completed Agent tool result produces AgentEnrichment
+// with agent type, status, duration, token count, and tool use count.
+func TestTransformAgentEnrichment(t *testing.T) {
+	ts := time.Date(2025, 1, 15, 10, 0, 0, 0, time.UTC)
+	res := parser.Result{
+		Messages: []parser.Message{
+			{Role: "user", Timestamp: &ts, LineNum: 1,
+				Content: []parser.ContentBlock{&parser.TextBlock{Text: "research this"}}},
+			{Role: "assistant", Timestamp: &ts, LineNum: 2,
+				Content: []parser.ContentBlock{&parser.ToolUseBlock{ID: "toolu_01", Name: "Agent", Input: map[string]any{"prompt": "find it"}}}},
+			{Role: "user", Timestamp: &ts, LineNum: 3,
+				Envelope: parser.Envelope{ToolUseResult: map[string]any{
+					"status":            "completed",
+					"agentId":           "a573d391f7b0477b8",
+					"agentType":         "general-purpose",
+					"prompt":            "find it",
+					"totalDurationMs":   float64(45000),
+					"totalTokens":       float64(12500),
+					"totalToolUseCount": float64(8),
+				}},
+				Content: []parser.ContentBlock{&parser.ToolResultBlock{ToolUseID: "toolu_01", Content: "done"}}},
+		},
+	}
+	s := session.Transform(res)
+	var result *session.ToolResult
+	for _, b := range s.Turns[0].Blocks {
+		if tr, ok := b.(*session.ToolResult); ok {
+			result = tr
+		}
+	}
+	require.NotNil(t, result)
+	require.NotNil(t, result.Enrichment)
+	a, ok := result.Enrichment.(*session.AgentEnrichment)
+	require.True(t, ok, "expected *AgentEnrichment, got %T", result.Enrichment)
+	assert.Equal(t, "general-purpose", a.AgentType)
+	assert.Equal(t, "completed", a.Status)
+	assert.Equal(t, 45000, a.DurationMs)
+	assert.Equal(t, 12500, a.TokenCount)
+	assert.Equal(t, 8, a.ToolUseCount)
+}
+
+// TestTransformAgentEnrichment_AsyncLaunch: async Agent produces nil enrichment.
+func TestTransformAgentEnrichment_AsyncLaunch(t *testing.T) {
+	ts := time.Date(2025, 1, 15, 10, 0, 0, 0, time.UTC)
+	res := parser.Result{
+		Messages: []parser.Message{
+			{Role: "user", Timestamp: &ts, LineNum: 1,
+				Content: []parser.ContentBlock{&parser.TextBlock{Text: "go"}}},
+			{Role: "assistant", Timestamp: &ts, LineNum: 2,
+				Content: []parser.ContentBlock{&parser.ToolUseBlock{ID: "toolu_01", Name: "Agent", Input: map[string]any{}}}},
+			{Role: "user", Timestamp: &ts, LineNum: 3,
+				Envelope: parser.Envelope{ToolUseResult: map[string]any{
+					"isAsync":     true,
+					"status":      "async_launched",
+					"agentId":     "abc123",
+					"description": "background task",
+				}},
+				Content: []parser.ContentBlock{&parser.ToolResultBlock{ToolUseID: "toolu_01", Content: "launched"}}},
+		},
+	}
+	s := session.Transform(res)
+	var result *session.ToolResult
+	for _, b := range s.Turns[0].Blocks {
+		if tr, ok := b.(*session.ToolResult); ok {
+			result = tr
+		}
+	}
+	require.NotNil(t, result)
+	assert.Nil(t, result.Enrichment, "async agent should produce nil enrichment")
+}
+
+// TestTransformAgentEnrichment_StringError: string-type Agent result produces nil enrichment.
+func TestTransformAgentEnrichment_StringError(t *testing.T) {
+	ts := time.Date(2025, 1, 15, 10, 0, 0, 0, time.UTC)
+	res := parser.Result{
+		Messages: []parser.Message{
+			{Role: "user", Timestamp: &ts, LineNum: 1,
+				Content: []parser.ContentBlock{&parser.TextBlock{Text: "go"}}},
+			{Role: "assistant", Timestamp: &ts, LineNum: 2,
+				Content: []parser.ContentBlock{&parser.ToolUseBlock{ID: "toolu_01", Name: "Agent", Input: map[string]any{}}}},
+			{Role: "user", Timestamp: &ts, LineNum: 3,
+				Envelope: parser.Envelope{ToolUseResult: "Error: agent failed"},
+				Content:  []parser.ContentBlock{&parser.ToolResultBlock{ToolUseID: "toolu_01", Content: "error"}}},
+		},
+	}
+	s := session.Transform(res)
+	var result *session.ToolResult
+	for _, b := range s.Turns[0].Blocks {
+		if tr, ok := b.(*session.ToolResult); ok {
+			result = tr
+		}
+	}
+	require.NotNil(t, result)
+	assert.Nil(t, result.Enrichment, "string agent error should produce nil enrichment")
+}
+
 // TestTransformRedactedThinking: RedactedThinkingBlock maps to *session.RedactedThinking.
 func TestTransformRedactedThinking(t *testing.T) {
 	res := parseFixture(t, "redacted_thinking.jsonl")
