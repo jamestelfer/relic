@@ -469,7 +469,7 @@ details.thinking .preview {
   font-style: italic;
   font-size: 14.5px;
   line-height: 1.65;
-  color: var(--role-thinking-text, #3F2A7A);
+  color: var(--role-thinking-text);
   margin-top: 12px;
   max-width: 64ch;
   font-weight: 400;
@@ -481,8 +481,6 @@ details.thinking .preview {
    here so the expanded body beats the 3.3em cap set for thinking. */
 details.thinking .clamp .clamp-body { max-height: 3.3em; }
 details.thinking .clamp.is-open .clamp-body { max-height: none; }
-:root { --role-thinking-text: light-dark(#2E1F5F, #F0EBFF); }
-
 /* Error -------------------------------------------------------- */
 .block.error { --rule-color: var(--error-500); }
 .err-callout {

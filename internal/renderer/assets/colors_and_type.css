@@ -91,7 +91,6 @@
   --slate-500:  #5C657A;  /* neutral tool / shell */
   --error-500:  #D93838;  /* parse error / failure */
   --error-600:  #B62A2A;
-  --error-bg:   #FBE9E9;
 
   /* ============================================================
      SEMANTIC TOKENS — light-dark(light, dark)
@@ -139,6 +138,7 @@
   --role-thinking-fg:    light-dark(var(--violet-600), #B7A8F4);
   --role-thinking-bg:    light-dark(#F0EDFA, rgba(110, 85, 212, 0.12));
   --role-thinking-rule:  var(--violet-500);
+  --role-thinking-text:  light-dark(#2E1F5F, #F0EBFF);
 
   --error-bg: light-dark(#FBE9E9, rgba(217, 56, 56, 0.12));
 
