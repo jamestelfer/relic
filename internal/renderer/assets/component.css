@@ -178,6 +178,7 @@ aside.rail {
   line-height: 1.4;
 }
 .theme-toggle:hover { color: var(--fg); border-color: var(--border-strong); }
+.theme-toggle:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; color: var(--fg); border-color: var(--border-strong); }
 .session-head h1 {
   font-family: var(--font-display);
   font-size: 48px;
