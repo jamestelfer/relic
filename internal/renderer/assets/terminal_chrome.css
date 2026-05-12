@@ -1,0 +1,37 @@
+/* Terminal chrome: always renders on a dark background regardless of theme.
+   Colors here are intentionally hard-coded, not wrapped in light-dark(). */
+.term {
+  background: var(--bg-terminal);
+  color: var(--fg-on-dark);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  line-height: 1.65;
+}
+.term .chrome {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 14px;
+  border-bottom: 1px solid #1F2740;
+  background: #050717;
+  font-size: 11.5px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #6E7891;
+}
+.term .chrome .dots { display: flex; gap: 5px; }
+.term .chrome .dots span {
+  width: 9px; height: 9px;
+  border-radius: 50%;
+  background: #2C3656;
+}
+.term .chrome .label { font-family: var(--font-mono); }
+.term pre {
+  margin: 0;
+  padding: 16px 18px;
+  white-space: pre;
+  overflow: auto;
+}

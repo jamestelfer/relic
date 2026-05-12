@@ -91,54 +91,67 @@
   --slate-500:  #5C657A;  /* neutral tool / shell */
   --error-500:  #D93838;  /* parse error / failure */
   --error-600:  #B62A2A;
-  --error-bg:   #FBE9E9;
 
   /* ============================================================
-     SEMANTIC TOKENS (light mode default)
+     SEMANTIC TOKENS — light-dark(light, dark)
      ============================================================ */
 
   /* Surfaces */
-  --bg:           var(--ink-50);
-  --bg-paper:     var(--ink-0);
-  --bg-sunk:      var(--ink-100);
-  --bg-code:      #F7F8FB;
-  --bg-terminal:  var(--ink-900);
+  --bg:           light-dark(var(--ink-50), var(--ink-950));
+  --bg-paper:     light-dark(var(--ink-0), var(--ink-900));
+  --bg-sunk:      light-dark(var(--ink-100), #050717);
+  --bg-code:      light-dark(#F7F8FB, #0F1428);
+  --bg-terminal:  light-dark(var(--ink-900), #05071A);
 
   /* Text */
-  --fg:           var(--ink-900);
-  --fg-muted:     var(--ink-500);
-  --fg-subtle:    var(--ink-400);
+  --fg:           light-dark(var(--ink-900), #E8ECF6);
+  --fg-muted:     light-dark(var(--ink-500), #A2ABC2);
+  --fg-subtle:    light-dark(var(--ink-400), #6E7891);
   --fg-on-dark:   #E5E9F4;
   --fg-on-lapis:  #FFFFFF;
 
   /* Lines */
-  --border:        var(--ink-200);
-  --border-strong: var(--ink-300);
-  --rule:          var(--ink-100);
+  --border:        light-dark(var(--ink-200), #1F2740);
+  --border-strong: light-dark(var(--ink-300), #2C3656);
+  --rule:          light-dark(var(--ink-100), #131A30);
 
   /* Brand / link */
-  --brand:        var(--lapis-600);
-  --brand-hover:  var(--lapis-700);
-  --link:         var(--cobalt-600);
+  --brand:        light-dark(var(--lapis-600), var(--lapis-300));
+  --brand-hover:  light-dark(var(--lapis-700), var(--lapis-200));
+  --link:         light-dark(var(--cobalt-600), var(--cobalt-300));
 
   /* Accent (citron — used sparingly: matches, "found") */
-  --accent:       var(--citron-500);
-  --accent-soft:  var(--citron-100);
-  --accent-ink:   var(--citron-700);
+  --accent:       light-dark(var(--citron-500), var(--citron-300));
+  --accent-soft:  light-dark(var(--citron-100), rgba(217, 196, 74, 0.18));
+  --accent-ink:   light-dark(var(--citron-700), var(--citron-300));
 
   /* Roles — turn / block coloring */
-  --role-user-fg:       var(--teal-600);
-  --role-user-bg:       #E9F4F4;
-  --role-user-rule:     var(--teal-500);
-  --role-assistant-fg:  var(--ink-800);
-  --role-assistant-bg:  var(--ink-0);
+  --role-user-fg:        light-dark(var(--lapis-700), #C7D5FF);
+  --role-user-bg:        light-dark(var(--lapis-50), rgba(46, 91, 255, 0.10));
+  --role-user-rule:      light-dark(var(--lapis-600), var(--lapis-300));
+  --role-assistant-fg:   light-dark(var(--ink-800), #E8ECF6);
+  --role-assistant-bg:   light-dark(var(--ink-0), var(--ink-900));
   --role-assistant-rule: var(--cobalt-500);
-  --role-tool-fg:       var(--lapis-700);
-  --role-tool-bg:       var(--lapis-50);
-  --role-tool-rule:     var(--lapis-600);
-  --role-thinking-fg:   var(--violet-600);
-  --role-thinking-bg:   #F0EDFA;
-  --role-thinking-rule: var(--violet-500);
+  --role-tool-fg:        light-dark(var(--teal-600), #6FD9D6);
+  --role-tool-bg:        light-dark(#E9F4F4, rgba(31, 163, 160, 0.10));
+  --role-tool-rule:      var(--teal-500);
+  --role-thinking-fg:    light-dark(var(--violet-600), #B7A8F4);
+  --role-thinking-bg:    light-dark(#F0EDFA, rgba(110, 85, 212, 0.12));
+  --role-thinking-rule:  var(--violet-500);
+  --role-thinking-text:  light-dark(#2E1F5F, #F0EBFF);
+
+  --error-bg: light-dark(#FBE9E9, rgba(217, 56, 56, 0.12));
+
+  /* Status — success (green), danger (red), warning (amber) */
+  --success-bg:     light-dark(oklch(0.94 0.04 145), oklch(0.20 0.04 145));
+  --success-fg:     light-dark(oklch(0.42 0.12 145), oklch(0.75 0.12 145));
+  --success-solid:  oklch(0.52 0.14 145);
+  --success-border: light-dark(oklch(0.82 0.08 145), oklch(0.30 0.06 145));
+  --danger-bg:      light-dark(oklch(0.94 0.06 25), oklch(0.20 0.04 25));
+  --danger-fg:      light-dark(oklch(0.42 0.18 25), oklch(0.72 0.14 25));
+  --danger-border:  light-dark(oklch(0.85 0.07 25), oklch(0.30 0.05 25));
+  --warning-bg:     light-dark(oklch(0.94 0.05 75), oklch(0.22 0.04 75));
+  --warning-fg:     light-dark(oklch(0.42 0.14 75), oklch(0.72 0.10 75));
 
   /* Scale: radii, shadow, spacing */
   --radius-xs:  3px;
@@ -147,64 +160,16 @@
   --radius-lg:  12px;
   --radius-xl:  16px;
 
-  --shadow-1: 0 1px 0 rgba(14, 18, 32, 0.04), 0 1px 2px rgba(14, 18, 32, 0.06);
-  --shadow-2: 0 1px 0 rgba(14, 18, 32, 0.04), 0 4px 12px rgba(14, 18, 32, 0.08);
-  --shadow-3: 0 2px 0 rgba(14, 18, 32, 0.04), 0 12px 32px rgba(14, 18, 32, 0.12);
+  --shadow-1: 0 1px 0 light-dark(rgba(14, 18, 32, 0.04), rgba(0,0,0,0.5)),
+              0 1px 2px light-dark(rgba(14, 18, 32, 0.06), rgba(0,0,0,0.4));
+  --shadow-2: 0 1px 0 light-dark(rgba(14, 18, 32, 0.04), rgba(0,0,0,0.5)),
+              0 4px 12px light-dark(rgba(14, 18, 32, 0.08), rgba(0,0,0,0.4));
+  --shadow-3: 0 2px 0 light-dark(rgba(14, 18, 32, 0.04), rgba(0,0,0,0.5)),
+              0 12px 32px light-dark(rgba(14, 18, 32, 0.12), rgba(0,0,0,0.5));
 
   /* Reading column (Relic is a reading document) */
   --measure: 72ch;
 }
-
-/* ============================================================
-   DARK MODE — disabled; see docs/session-fidelity.prd.md §Dark mode removal.
-   Retained (commented) so re-enabling is a one-block uncomment.
-   ============================================================ */
-/*
-@media (prefers-color-scheme: dark) {
-  :root {
-    --bg:          var(--ink-950);
-    --bg-paper:    var(--ink-900);
-    --bg-sunk:     #050717;
-    --bg-code:     #0F1428;
-    --bg-terminal: #05071A;
-
-    --fg:          #E8ECF6;
-    --fg-muted:    #A2ABC2;
-    --fg-subtle:   #6E7891;
-
-    --border:        #1F2740;
-    --border-strong: #2C3656;
-    --rule:          #131A30;
-
-    --brand:        var(--lapis-300);
-    --brand-hover:  var(--lapis-200);
-    --link:         var(--cobalt-300);
-
-    --accent:       var(--citron-300);
-    --accent-soft:  rgba(217, 196, 74, 0.18);
-    --accent-ink:   var(--citron-300);
-
-    --role-user-fg:        #6FD9D6;
-    --role-user-bg:        rgba(31, 163, 160, 0.10);
-    --role-user-rule:      var(--teal-500);
-    --role-assistant-fg:   #E8ECF6;
-    --role-assistant-bg:   var(--ink-900);
-    --role-assistant-rule: var(--cobalt-500);
-    --role-tool-fg:        #C7D5FF;
-    --role-tool-bg:        rgba(46, 91, 255, 0.10);
-    --role-tool-rule:      var(--lapis-300);
-    --role-thinking-fg:    #B7A8F4;
-    --role-thinking-bg:    rgba(110, 85, 212, 0.12);
-    --role-thinking-rule:  var(--violet-500);
-
-    --error-bg: rgba(217, 56, 56, 0.12);
-
-    --shadow-1: 0 1px 0 rgba(0,0,0,0.5), 0 1px 2px rgba(0,0,0,0.4);
-    --shadow-2: 0 1px 0 rgba(0,0,0,0.5), 0 4px 12px rgba(0,0,0,0.4);
-    --shadow-3: 0 2px 0 rgba(0,0,0,0.5), 0 12px 32px rgba(0,0,0,0.5);
-  }
-}
-*/
 
 /* ============================================================
    Base resets used by preview & UI kit pages

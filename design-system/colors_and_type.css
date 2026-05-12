@@ -93,6 +93,17 @@
   --error-600:  #B62A2A;
   --error-bg:   #FBE9E9;
 
+  /* Status — success (green hue 145), danger (red hue 25), warning (amber hue 75) */
+  --success-bg:     oklch(0.94 0.04 145);
+  --success-fg:     oklch(0.42 0.12 145);
+  --success-solid:  oklch(0.52 0.14 145);
+  --success-border: oklch(0.82 0.08 145);
+  --danger-bg:      oklch(0.94 0.06 25);
+  --danger-fg:      oklch(0.42 0.18 25);
+  --danger-border:  oklch(0.85 0.07 25);
+  --warning-bg:     oklch(0.94 0.05 75);
+  --warning-fg:     oklch(0.42 0.14 75);
+
   /* ============================================================
      SEMANTIC TOKENS (light mode default)
      ============================================================ */
@@ -198,6 +209,15 @@
     --role-thinking-rule:  var(--violet-500);
 
     --error-bg: rgba(217, 56, 56, 0.12);
+
+    --success-bg:     oklch(0.20 0.04 145);
+    --success-fg:     oklch(0.75 0.12 145);
+    --success-border: oklch(0.30 0.06 145);
+    --danger-bg:      oklch(0.20 0.04 25);
+    --danger-fg:      oklch(0.72 0.14 25);
+    --danger-border:  oklch(0.30 0.05 25);
+    --warning-bg:     oklch(0.22 0.04 75);
+    --warning-fg:     oklch(0.72 0.10 75);
 
     --shadow-1: 0 1px 0 rgba(0,0,0,0.5), 0 1px 2px rgba(0,0,0,0.4);
     --shadow-2: 0 1px 0 rgba(0,0,0,0.5), 0 4px 12px rgba(0,0,0,0.4);

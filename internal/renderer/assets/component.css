@@ -91,7 +91,7 @@ aside.rail {
 .rail ol li.active { font-weight: 500; }
 .rail ol li.active::before {
   background: var(--lapis-600);
-  color: white;
+  color: var(--fg-on-lapis);
   border-color: var(--lapis-700);
 }
 .rail ol li.active::after {
@@ -121,7 +121,7 @@ aside.rail {
   border-radius: 50%;
   margin-right: 6px;
   vertical-align: 1px;
-  background: var(--ink-300);
+  background: var(--border-strong);
 }
 .rail .legend dt.user::before  { background: var(--teal-500); }
 .rail .legend dt.asst::before  { background: var(--cobalt-500); }
@@ -163,6 +163,22 @@ aside.rail {
   background: var(--citron-500);
   border-radius: 50%;
 }
+.theme-toggle {
+  margin-left: auto;
+  background: var(--bg-sunk);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 3px 10px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--fg-muted);
+  cursor: pointer;
+  line-height: 1.4;
+}
+.theme-toggle:hover { color: var(--fg); border-color: var(--border-strong); }
+.theme-toggle:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; color: var(--fg); border-color: var(--border-strong); }
 .session-head h1 {
   font-family: var(--font-display);
   font-size: 48px;
@@ -171,7 +187,7 @@ aside.rail {
   margin: 0 0 32px;
   max-width: 28ch;
   font-weight: 400;
-  color: var(--ink-900);
+  color: var(--fg);
   /* Safety net for very long titles — clamp to 3 lines. */
   display: -webkit-box;
   -webkit-line-clamp: 3;
@@ -301,7 +317,7 @@ section.turn .turn-marker {
 
 /* Blocks — hairline-ruled articles on the page background ------------------ */
 .block {
-  --rule-color: var(--ink-300);
+  --rule-color: var(--border-strong);
 
   border-left: 2px solid var(--rule-color);
   padding: 4px 0 4px 22px;
@@ -345,7 +361,7 @@ section.turn .turn-marker {
 
 /* User ---------------------------------------------------------- */
 .block.user { --rule-color: var(--teal-500); }
-.block.user .role .tag { background: var(--teal-500); color: white; }
+.block.user .role .tag { background: var(--teal-500); color: var(--fg-on-dark); }
 .block.user .body {
   font-family: var(--font-ui);
   font-size: 16px;
@@ -360,24 +376,27 @@ section.turn .turn-marker {
   font-family: var(--font-mono);
   font-size: 0.88em;
   padding: 1.5px 6px;
-  background: var(--bg-sunk);
+  background: light-dark(var(--bg-sunk), rgba(46, 91, 255, 0.22));
   border-radius: 4px;
-  color: var(--teal-600);
+  color: light-dark(var(--teal-600), #B7CBFF);
 }
 
 /* Assistant ----------------------------------------------------- */
 .block.assistant { --rule-color: var(--cobalt-500); }
-.block.assistant .role .tag { background: var(--cobalt-500); color: white; }
+.block.assistant .role .tag { background: var(--cobalt-500); color: var(--fg-on-dark); }
 .block.assistant .body { max-width: 70ch; font-size: 15.5px; line-height: 1.65; }
 .block.assistant .body p { margin: 0 0 0.85em; }
 .block.assistant .body p:first-child { margin-top: 0; }
 .block.assistant .body p:last-child { margin-bottom: 0; }
-.block.assistant .body code {
+.block.assistant .body code,
+.block.error .body code,
+details.thinking .preview code {
   font-family: var(--font-mono);
   font-size: 0.9em;
   padding: 1.5px 6px;
-  background: var(--bg-sunk);
+  background: light-dark(var(--bg-sunk), rgba(255, 255, 255, 0.08));
   border-radius: 4px;
+  color: light-dark(currentColor, #E8ECF6);
 }
 .block.assistant .body strong { font-weight: 600; }
 .block.assistant .body h1,
@@ -409,14 +428,14 @@ section.turn .turn-marker {
 
 /* Tool --------------------------------------------------------- */
 .block.tool { --rule-color: var(--lapis-600); }
-.block.tool .role .tag { background: var(--lapis-600); color: white; }
-.block.tool-result { --rule-color: var(--ink-400); }
+.block.tool .role .tag { background: var(--lapis-600); color: var(--fg-on-lapis); }
+.block.tool-result { --rule-color: var(--border-strong); }
 
 /* User Bash (! command) ---------------------------------------- */
 .block.user-bash { --rule-color: var(--teal-500); }
-.block.user-bash .role .tag { background: var(--teal-500); color: white; }
+.block.user-bash .role .tag { background: var(--teal-500); color: var(--fg-on-dark); }
 .block.user-bash-result { --rule-color: var(--teal-500); }
-.block.user-bash-result .role .tag { background: var(--teal-500); color: white; }
+.block.user-bash-result .role .tag { background: var(--teal-500); color: var(--fg-on-dark); }
 .tool-card[data-tool="UserBash"] .head .icon { background: var(--teal-500); }
 
 /* Thinking ----------------------------------------------------- */
@@ -451,7 +470,7 @@ details.thinking .preview {
   font-style: italic;
   font-size: 14.5px;
   line-height: 1.65;
-  color: var(--role-thinking-text, #3F2A7A);
+  color: var(--role-thinking-text);
   margin-top: 12px;
   max-width: 64ch;
   font-weight: 400;
@@ -463,8 +482,6 @@ details.thinking .preview {
    here so the expanded body beats the 3.3em cap set for thinking. */
 details.thinking .clamp .clamp-body { max-height: 3.3em; }
 details.thinking .clamp.is-open .clamp-body { max-height: none; }
-:root { --role-thinking-text: #2E1F5F; }
-
 /* Error -------------------------------------------------------- */
 .block.error { --rule-color: var(--error-500); }
 .err-callout {
@@ -473,16 +490,16 @@ details.thinking .clamp.is-open .clamp-body { max-height: none; }
   padding: 14px 18px;
   font-family: var(--font-mono);
   font-size: 13px;
-  color: var(--error-600);
+  color: light-dark(var(--error-600), #ff8d8d);
 }
 .err-callout strong { font-weight: 600; }
 .err-callout .raw {
   display: block;
   margin-top: 8px;
   padding: 10px 12px;
-  background: rgba(255, 255, 255, 0.5);
+  background: light-dark(rgba(255, 255, 255, 0.5), rgba(0, 0, 0, 0.3));
   border-radius: 4px;
-  color: var(--ink-700);
+  color: light-dark(var(--ink-700), var(--fg-on-dark));
   font-size: 12px;
   white-space: pre-wrap;
   word-break: break-all;
@@ -532,11 +549,11 @@ details.thinking .clamp.is-open .clamp-body { max-height: none; }
   width: 22px; height: 22px;
   border-radius: 4px;
   background: var(--ink-500);
-  color: white;
+  color: var(--fg-on-dark);
   display: grid; place-items: center;
   font-size: 12px; font-weight: 600;
 }
-.tool-card .head .name { font-weight: 600; color: var(--ink-900); }
+.tool-card .head .name { font-weight: 600; color: var(--fg); }
 .tool-card .head .arg {
   color: var(--fg-muted);
   flex: 1;
@@ -571,45 +588,10 @@ details.thinking .clamp.is-open .clamp-body { max-height: none; }
 .tool-card[data-tool="WebSearch"]    .head .icon { background: var(--ink-600); }
 .tool-card[data-tool="WebFetch"]     .head .icon { background: var(--ink-600); }
 .tool-card[data-tool="Task"]         .head .icon { background: var(--ink-800); font-size: 11px; }
-.tool-card[data-tool="TodoWrite"]    .head .icon { background: oklch(0.52 0.14 145); }
+.tool-card[data-tool="TodoWrite"]    .head .icon { background: var(--success-solid); }
 .tool-card[data-tool="exit_plan_mode"] .head .icon { font-size: 13px; background: var(--lapis-700); }
 .tool-card[data-tool^="mcp__"]       .head .icon { background: var(--lapis-700); font-size: 9px; font-weight: 700; }
 
-/* Terminal chrome ---------------------------------------------------------- */
-.term {
-  background: var(--bg-terminal);
-  color: var(--fg-on-dark);
-  border-radius: var(--radius-md);
-  overflow: hidden;
-  font-family: var(--font-mono);
-  font-size: 13px;
-  line-height: 1.65;
-}
-.term .chrome {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 8px 14px;
-  border-bottom: 1px solid #1F2740;
-  background: #050717;
-  font-size: 11.5px;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  color: #6E7891;
-}
-.term .chrome .dots { display: flex; gap: 5px; }
-.term .chrome .dots span {
-  width: 9px; height: 9px;
-  border-radius: 50%;
-  background: #2C3656;
-}
-.term .chrome .label { font-family: var(--font-mono); }
-.term pre {
-  margin: 0;
-  padding: 16px 18px;
-  white-space: pre;
-  overflow: auto;
-}
 
 /* Pair-id badge ------------------------------------------------------------ */
 .pair-id {
@@ -642,8 +624,8 @@ details.thinking .clamp.is-open .clamp-body { max-height: none; }
 }
 
 /* Redacted thinking -------------------------------------------------------- */
-.block.redacted-thinking { --rule-color: var(--ink-300); }
-.block.redacted-thinking .role .tag { background: var(--ink-400); color: white; }
+.block.redacted-thinking { --rule-color: var(--border-strong); }
+.block.redacted-thinking .role .tag { background: var(--ink-400); color: var(--fg-on-dark); }
 .redacted-note {
   display: flex; align-items: center; gap: 10px;
   padding: 10px 16px;
@@ -656,8 +638,8 @@ details.thinking .clamp.is-open .clamp-body { max-height: none; }
 }
 
 /* Slash command ------------------------------------------------------------- */
-.block.slash-cmd { --rule-color: var(--ink-400); }
-.block.slash-cmd .role .tag { background: var(--ink-500); color: white; }
+.block.slash-cmd { --rule-color: var(--border-strong); }
+.block.slash-cmd .role .tag { background: var(--ink-500); color: var(--fg-on-dark); }
 .slash-card {
   display: flex; align-items: center; gap: 10px;
   padding: 10px 16px;
@@ -672,7 +654,7 @@ details.thinking .clamp.is-open .clamp-body { max-height: none; }
 .slash-card .args { color: var(--fg-muted); }
 
 /* Command output ----------------------------------------------------------- */
-.block.cmd-output { --rule-color: var(--ink-300); }
+.block.cmd-output { --rule-color: var(--border-strong); }
 .cmd-output-body {
   padding: 12px 16px;
   background: var(--bg-sunk);
@@ -684,7 +666,7 @@ details.thinking .clamp.is-open .clamp-body { max-height: none; }
 }
 
 /* Meta blocks (hook_injection, system, unknown) ----------------------------- */
-.block.meta { --rule-color: var(--ink-300); }
+.block.meta { --rule-color: var(--border-strong); }
 .meta-bar {
   display: flex; align-items: center; gap: 8px;
   font-family: var(--font-mono); font-size: 11px; font-weight: 600;
@@ -779,16 +761,16 @@ details.thinking .clamp.is-open .clamp-body { max-height: none; }
   display: grid; place-items: center;
 }
 .todo-item.completed .todo-check {
-  background: oklch(0.52 0.14 145); border-color: oklch(0.52 0.14 145);
+  background: var(--success-solid); border-color: var(--success-solid);
 }
 .todo-item.completed .todo-check::after {
-  content: "✓"; color: white; font-size: 10px; font-weight: 700;
+  content: "✓"; color: var(--fg-on-dark); font-size: 10px; font-weight: 700;
 }
 .todo-item.in-progress .todo-check {
   background: var(--cobalt-500); border-color: var(--cobalt-500);
 }
 .todo-item.in-progress .todo-check::after {
-  content: "·"; color: white; font-size: 18px; line-height: 0; margin-top: 2px;
+  content: "·"; color: var(--fg-on-dark); font-size: 18px; line-height: 0; margin-top: 2px;
 }
 .todo-item .todo-text { flex: 1; line-height: 1.4; }
 .todo-item.completed .todo-text { text-decoration: line-through; color: var(--fg-muted); }
@@ -797,8 +779,8 @@ details.thinking .clamp.is-open .clamp-body { max-height: none; }
   padding: 1px 6px; border-radius: 99px;
   font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase;
 }
-.todo-item .todo-priority.high   { background: oklch(0.94 0.06 25);  color: oklch(0.42 0.18 25); }
-.todo-item .todo-priority.medium { background: oklch(0.94 0.05 75);  color: oklch(0.42 0.14 75); }
+.todo-item .todo-priority.high   { background: var(--danger-bg);  color: var(--danger-fg); }
+.todo-item .todo-priority.medium { background: var(--warning-bg);  color: var(--warning-fg); }
 .todo-item .todo-priority.low    { background: var(--bg-sunk); color: var(--fg-muted); border: 1px solid var(--border); }
 
 /* Plan body ---------------------------------------------------------------- */
@@ -861,14 +843,14 @@ details.thinking .clamp.is-open .clamp-body { max-height: none; }
   border-right: 1px solid var(--border);
   margin-right: 12px;
 }
-.diff-line.add { background: oklch(0.96 0.04 145); }
-.diff-line.add::before { content: "+"; background: oklch(0.90 0.07 145); color: oklch(0.38 0.14 145); border-right-color: oklch(0.82 0.08 145); }
-.diff-line.del { background: oklch(0.96 0.04 25); }
-.diff-line.del::before { content: "−"; background: oklch(0.92 0.06 25); color: oklch(0.44 0.18 25); border-right-color: oklch(0.85 0.07 25); }
+.diff-line.add { background: var(--success-bg); }
+.diff-line.add::before { content: "+"; background: var(--success-border); color: var(--success-fg); border-right-color: var(--success-border); }
+.diff-line.del { background: var(--danger-bg); }
+.diff-line.del::before { content: "−"; background: var(--danger-border); color: var(--danger-fg); border-right-color: var(--danger-border); }
 .diff-line.ctx::before { content: " "; }
 
 /* Image block -------------------------------------------------------------- */
-.block.image-block { --rule-color: var(--ink-400); }
+.block.image-block { --rule-color: var(--border-strong); }
 .image-card {
   background: var(--bg-paper); border: 1px solid var(--border);
   border-radius: var(--radius-md); overflow: hidden;
@@ -932,44 +914,10 @@ details.unknown-block summary::-webkit-details-marker { display: none; }
 
 /* Accessibility: prefers-contrast: more ----------------------------------- */
 @media (prefers-contrast: more) {
-  details.thinking .preview { color: var(--ink-900); font-style: normal; }
-  details.thinking { background: var(--ink-100); }
-  .turn-meta, .session-head .catalog, .block .role { color: var(--ink-700); }
+  details.thinking .preview { color: var(--fg); font-style: normal; }
+  details.thinking { background: var(--bg-paper); }
+  .turn-meta, .session-head .catalog, .block .role { color: var(--fg); }
 }
-
-/* Dark-mode block/body/code/err overrides — disabled; see
-   docs/session-fidelity.prd.md §Dark mode removal. Retained (commented)
-   so re-enabling is a one-block uncomment. */
-/*
-@media (prefers-color-scheme: dark) {
-  :root {
-    --role-thinking-text: #F0EBFF;
-  }
-  .block.user .body,
-  .block.assistant .body,
-  .block.error .body { color: var(--fg); }
-  .block .body code,
-  details.thinking .preview code {
-    background: rgba(255, 255, 255, 0.08);
-    color: #E8ECF6;
-  }
-  .block.user .body code {
-    background: rgba(46, 91, 255, 0.22);
-    color: #B7CBFF;
-  }
-  .tool-card .head .name { color: var(--fg); }
-  .tool-card pre.code {
-    background: #0F1428;
-    color: #E8ECF6;
-    border-color: #1F2740;
-  }
-  .err-callout { color: #ff8d8d; }
-  .err-callout .raw {
-    background: rgba(0, 0, 0, 0.3);
-    color: var(--fg-on-dark);
-  }
-}
-*/
 
 /* Narrow viewport: rail collapses into a <details> above the main column. */
 @media (max-width: 700px) {
@@ -1033,7 +981,7 @@ details.unknown-block summary::-webkit-details-marker { display: none; }
 .api-error-card .icon {
   flex-shrink: 0;
   width: 28px; height: 28px; border-radius: 6px;
-  background: var(--error-500); color: white;
+  background: var(--error-500); color: var(--fg-on-dark);
   display: grid; place-items: center;
   font-size: 14px; font-weight: 700;
 }
@@ -1065,14 +1013,14 @@ details.unknown-block summary::-webkit-details-marker { display: none; }
   display: grid; place-items: center;
   font-size: 18px; flex-shrink: 0;
 }
-.session-result.success .sr-icon { background: oklch(0.92 0.06 145); }
+.session-result.success .sr-icon { background: var(--success-bg); }
 .session-result.error   .sr-icon { background: var(--error-bg); }
 .session-result .sr-body { flex: 1; min-width: 0; }
 .session-result .sr-label {
   font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase;
   font-size: 11px; color: var(--fg-muted); margin-bottom: 6px;
 }
-.session-result.success .sr-label { color: oklch(0.42 0.12 145); }
+.session-result.success .sr-label { color: var(--success-fg); }
 .session-result.error   .sr-label { color: var(--error-600); }
 .session-result .sr-stats {
   display: flex; gap: 24px; flex-wrap: wrap;

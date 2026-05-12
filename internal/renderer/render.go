@@ -34,6 +34,12 @@ var componentCSS string
 //go:embed assets/terminal.css
 var terminalCSS string
 
+//go:embed assets/terminal_chrome.css
+var terminalChromeCSS string
+
+//go:embed assets/highlight.css
+var highlightCSS string
+
 //go:embed assets/favicon.svg
 var faviconSVG string
 
@@ -107,11 +113,12 @@ func stripCSSComments(s string) string {
 
 func styleComponent() templ.Component {
 	return templ.ComponentFunc(func(_ context.Context, w io.Writer) error {
-		_, err := fmt.Fprintf(w, "<style>%s\n%s\n%s\n%s</style>",
+		_, err := fmt.Fprintf(w, "<style>%s\n%s\n%s\n%s\n%s</style>",
 			stripCSSComments(designCSS),
-			highlight.CSS(),
+			stripCSSComments(highlightCSS),
 			stripCSSComments(componentCSS),
-			stripCSSComments(terminalCSS))
+			stripCSSComments(terminalCSS),
+			stripCSSComments(terminalChromeCSS))
 		return err
 	})
 }
