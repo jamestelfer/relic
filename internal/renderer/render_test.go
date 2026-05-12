@@ -601,7 +601,7 @@ func TestRender_ReadEnrichment_WithLineRange(t *testing.T) {
 				Enrichment: &session.ReadEnrichment{
 					FilePath:  "/src/internal/parser/parser.go",
 					LineStart: 10,
-					LineCount: 50,
+					LineEnd:   59,
 				},
 			},
 		}}},
@@ -628,6 +628,48 @@ func TestRender_ReadEnrichment_NoLineRange(t *testing.T) {
 	out := render(t, s, renderer.Options{Name: "test"})
 	assert.Contains(t, out, "parser.go", "chrome label should show basename")
 	assert.NotContains(t, out, "parser.go:", "no line range when absent")
+}
+
+func TestRender_WriteEnrichment_Created(t *testing.T) {
+	linkedID := "toolu_write_c"
+	s := session.Session{
+		Turns: []session.Turn{{Index: 1, Blocks: []session.Block{
+			&session.ToolResult{
+				ToolUseID: linkedID, Content: "ok", LinkedCallID: &linkedID, LinkedCallName: "Write",
+				Enrichment: &session.WriteEnrichment{FilePath: "/src/new_file.go", Action: "created"},
+			},
+		}}},
+	}
+	out := render(t, s, renderer.Options{Name: "test"})
+	assert.Contains(t, out, "new_file.go · created", "chrome label: basename · created")
+}
+
+func TestRender_WriteEnrichment_Updated(t *testing.T) {
+	linkedID := "toolu_write_u"
+	s := session.Session{
+		Turns: []session.Turn{{Index: 1, Blocks: []session.Block{
+			&session.ToolResult{
+				ToolUseID: linkedID, Content: "ok", LinkedCallID: &linkedID, LinkedCallName: "Write",
+				Enrichment: &session.WriteEnrichment{FilePath: "/src/existing.go", Action: "updated"},
+			},
+		}}},
+	}
+	out := render(t, s, renderer.Options{Name: "test"})
+	assert.Contains(t, out, "existing.go · updated", "chrome label: basename · updated")
+}
+
+func TestRender_EditEnrichment(t *testing.T) {
+	linkedID := "toolu_edit_enr"
+	s := session.Session{
+		Turns: []session.Turn{{Index: 1, Blocks: []session.Block{
+			&session.ToolResult{
+				ToolUseID: linkedID, Content: "ok", LinkedCallID: &linkedID, LinkedCallName: "Edit",
+				Enrichment: &session.EditEnrichment{FilePath: "/src/session.go", Action: "updated"},
+			},
+		}}},
+	}
+	out := render(t, s, renderer.Options{Name: "test"})
+	assert.Contains(t, out, "session.go · updated", "chrome label: basename · updated")
 }
 
 func TestRender_ToolResult_NoEnrichment_Unchanged(t *testing.T) {

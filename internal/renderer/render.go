@@ -306,6 +306,10 @@ func termLabel(r *session.ToolResult) string {
 		}
 	case *session.ReadEnrichment:
 		return readLabel(e)
+	case *session.WriteEnrichment:
+		return writeEditLabel(basename(e.FilePath), e.Action)
+	case *session.EditEnrichment:
+		return writeEditLabel(basename(e.FilePath), e.Action)
 	}
 
 	return name
@@ -313,9 +317,15 @@ func termLabel(r *session.ToolResult) string {
 
 func readLabel(e *session.ReadEnrichment) string {
 	base := basename(e.FilePath)
-	if e.LineStart > 0 && e.LineCount > 0 {
-		end := e.LineStart + e.LineCount - 1
-		return fmt.Sprintf("%s:%d-%d", base, e.LineStart, end)
+	if e.LineStart > 0 && e.LineEnd > 0 {
+		return fmt.Sprintf("%s:%d-%d", base, e.LineStart, e.LineEnd)
+	}
+	return base
+}
+
+func writeEditLabel(base, action string) string {
+	if action != "" {
+		return base + " · " + action
 	}
 	return base
 }

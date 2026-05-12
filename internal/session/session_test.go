@@ -866,7 +866,8 @@ func TestTransformEnrichment_NilCases(t *testing.T) {
 }
 
 // TestTransformReadEnrichment: a Read ToolResult with dict toolUseResult
-// produces ReadEnrichment with file path and line range.
+// produces ReadEnrichment with file path from result and line range from
+// ToolCall input (offset/limit).
 func TestTransformReadEnrichment(t *testing.T) {
 	ts := time.Date(2025, 1, 15, 10, 0, 0, 0, time.UTC)
 	res := parser.Result{
@@ -874,16 +875,13 @@ func TestTransformReadEnrichment(t *testing.T) {
 			{Role: "user", Timestamp: &ts, LineNum: 1,
 				Content: []parser.ContentBlock{&parser.TextBlock{Text: "show me"}}},
 			{Role: "assistant", Timestamp: &ts, LineNum: 2,
-				Content: []parser.ContentBlock{&parser.ToolUseBlock{ID: "toolu_01", Name: "Read", Input: map[string]any{"file_path": "/src/foo.go", "offset": 10, "limit": 50}}}},
+				Content: []parser.ContentBlock{&parser.ToolUseBlock{ID: "toolu_01", Name: "Read", Input: map[string]any{"file_path": "/src/foo.go", "offset": float64(10), "limit": float64(50)}}}},
 			{Role: "user", Timestamp: &ts, LineNum: 3,
 				Envelope: parser.Envelope{ToolUseResult: map[string]any{
 					"type": "text",
 					"file": map[string]any{
-						"filePath":   "/src/foo.go",
-						"content":    "package main\n",
-						"startLine":  float64(10),
-						"numLines":   float64(50),
-						"totalLines": float64(200),
+						"filePath": "/src/foo.go",
+						"content":  "package main\n",
 					},
 				}},
 				Content: []parser.ContentBlock{&parser.ToolResultBlock{ToolUseID: "toolu_01", Content: "package main\n"}}},
@@ -904,13 +902,12 @@ func TestTransformReadEnrichment(t *testing.T) {
 	read, ok := result.Enrichment.(*session.ReadEnrichment)
 	require.True(t, ok, "enrichment should be *ReadEnrichment, got %T", result.Enrichment)
 	assert.Equal(t, "/src/foo.go", read.FilePath)
-	assert.Equal(t, 10, read.LineStart)
-	assert.Equal(t, 50, read.LineCount)
-	assert.Equal(t, 200, read.TotalLines)
+	assert.Equal(t, 10, read.LineStart, "LineStart from ToolCall input offset")
+	assert.Equal(t, 59, read.LineEnd, "LineEnd from ToolCall input offset+limit-1")
 }
 
-// TestTransformReadEnrichment_NoLineRange: Read result without line range fields
-// still produces enrichment with file path.
+// TestTransformReadEnrichment_NoLineRange: Read without offset/limit in ToolCall
+// input produces enrichment with file path but no line range.
 func TestTransformReadEnrichment_NoLineRange(t *testing.T) {
 	ts := time.Date(2025, 1, 15, 10, 0, 0, 0, time.UTC)
 	res := parser.Result{
@@ -944,7 +941,88 @@ func TestTransformReadEnrichment_NoLineRange(t *testing.T) {
 	require.True(t, ok)
 	assert.Equal(t, "/src/foo.go", read.FilePath)
 	assert.Equal(t, 0, read.LineStart)
-	assert.Equal(t, 0, read.LineCount)
+	assert.Equal(t, 0, read.LineEnd)
+}
+
+// TestTransformWriteEnrichment: Write tool result produces WriteEnrichment
+// with file path and action (created/updated).
+func TestTransformWriteEnrichment(t *testing.T) {
+	ts := time.Date(2025, 1, 15, 10, 0, 0, 0, time.UTC)
+	cases := []struct {
+		name       string
+		writeType  string
+		wantAction string
+	}{
+		{"create", "create", "created"},
+		{"update", "update", "updated"},
+		{"unknown type", "overwrite", ""},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			res := parser.Result{
+				Messages: []parser.Message{
+					{Role: "user", Timestamp: &ts, LineNum: 1,
+						Content: []parser.ContentBlock{&parser.TextBlock{Text: "go"}}},
+					{Role: "assistant", Timestamp: &ts, LineNum: 2,
+						Content: []parser.ContentBlock{&parser.ToolUseBlock{ID: "toolu_01", Name: "Write", Input: map[string]any{"file_path": "/src/foo.go"}}}},
+					{Role: "user", Timestamp: &ts, LineNum: 3,
+						Envelope: parser.Envelope{ToolUseResult: map[string]any{
+							"type":     tc.writeType,
+							"filePath": "/src/foo.go",
+							"content":  "package main",
+						}},
+						Content: []parser.ContentBlock{&parser.ToolResultBlock{ToolUseID: "toolu_01", Content: "ok"}}},
+				},
+			}
+			s := session.Transform(res)
+			var result *session.ToolResult
+			for _, b := range s.Turns[0].Blocks {
+				if tr, ok := b.(*session.ToolResult); ok {
+					result = tr
+				}
+			}
+			require.NotNil(t, result)
+			require.NotNil(t, result.Enrichment)
+			w, ok := result.Enrichment.(*session.WriteEnrichment)
+			require.True(t, ok, "expected *WriteEnrichment, got %T", result.Enrichment)
+			assert.Equal(t, "/src/foo.go", w.FilePath)
+			assert.Equal(t, tc.wantAction, w.Action)
+		})
+	}
+}
+
+// TestTransformEditEnrichment: Edit tool result produces EditEnrichment
+// with file path (action is always "updated").
+func TestTransformEditEnrichment(t *testing.T) {
+	ts := time.Date(2025, 1, 15, 10, 0, 0, 0, time.UTC)
+	res := parser.Result{
+		Messages: []parser.Message{
+			{Role: "user", Timestamp: &ts, LineNum: 1,
+				Content: []parser.ContentBlock{&parser.TextBlock{Text: "go"}}},
+			{Role: "assistant", Timestamp: &ts, LineNum: 2,
+				Content: []parser.ContentBlock{&parser.ToolUseBlock{ID: "toolu_01", Name: "Edit", Input: map[string]any{"file_path": "/src/bar.go"}}}},
+			{Role: "user", Timestamp: &ts, LineNum: 3,
+				Envelope: parser.Envelope{ToolUseResult: map[string]any{
+					"filePath":  "/src/bar.go",
+					"oldString": "old",
+					"newString": "new",
+				}},
+				Content: []parser.ContentBlock{&parser.ToolResultBlock{ToolUseID: "toolu_01", Content: "ok"}}},
+		},
+	}
+	s := session.Transform(res)
+	var result *session.ToolResult
+	for _, b := range s.Turns[0].Blocks {
+		if tr, ok := b.(*session.ToolResult); ok {
+			result = tr
+		}
+	}
+	require.NotNil(t, result)
+	require.NotNil(t, result.Enrichment)
+	e, ok := result.Enrichment.(*session.EditEnrichment)
+	require.True(t, ok, "expected *EditEnrichment, got %T", result.Enrichment)
+	assert.Equal(t, "/src/bar.go", e.FilePath)
+	assert.Equal(t, "updated", e.Action)
 }
 
 // TestTransformRedactedThinking: RedactedThinkingBlock maps to *session.RedactedThinking.

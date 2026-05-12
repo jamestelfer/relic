@@ -18,19 +18,34 @@ func (e *BashEnrichment) enrichmentType() string { return "bash" }
 
 // ReadEnrichment holds structured data from a Read tool result.
 type ReadEnrichment struct {
-	FilePath   string
-	LineStart  int
-	LineCount  int
-	TotalLines int
+	FilePath  string
+	LineStart int
+	LineEnd   int
 }
 
 func (e *ReadEnrichment) enrichmentType() string { return "read" }
+
+// WriteEnrichment holds structured data from a Write tool result.
+type WriteEnrichment struct {
+	FilePath string
+	Action   string // "created" or "updated"
+}
+
+func (e *WriteEnrichment) enrichmentType() string { return "write" }
+
+// EditEnrichment holds structured data from an Edit tool result.
+type EditEnrichment struct {
+	FilePath string
+	Action   string // always "updated"
+}
+
+func (e *EditEnrichment) enrichmentType() string { return "edit" }
 
 // interpretEnrichment interprets a raw toolUseResult value based on the tool
 // name and produces a typed ToolEnrichment value. Returns nil when the raw value
 // is not a map (string/array/nil produce no enrichment) or the tool name is
 // unrecognised.
-func interpretEnrichment(toolName string, raw any) ToolEnrichment {
+func interpretEnrichment(toolName string, raw any, callInput map[string]any) ToolEnrichment {
 	m, ok := raw.(map[string]any)
 	if !ok {
 		return nil
@@ -40,13 +55,17 @@ func interpretEnrichment(toolName string, raw any) ToolEnrichment {
 	case "Bash":
 		return interpretBash(m)
 	case "Read":
-		return interpretRead(m)
+		return interpretRead(m, callInput)
+	case "Write":
+		return interpretWrite(m)
+	case "Edit":
+		return interpretEdit(m)
 	default:
 		return nil
 	}
 }
 
-func interpretRead(m map[string]any) *ReadEnrichment {
+func interpretRead(m map[string]any, callInput map[string]any) *ReadEnrichment {
 	file, ok := m["file"].(map[string]any)
 	if !ok {
 		return nil
@@ -55,12 +74,14 @@ func interpretRead(m map[string]any) *ReadEnrichment {
 	if filePath == "" {
 		return nil
 	}
-	return &ReadEnrichment{
-		FilePath:   filePath,
-		LineStart:  intFromAny(file["startLine"]),
-		LineCount:  intFromAny(file["numLines"]),
-		TotalLines: intFromAny(file["totalLines"]),
+	e := &ReadEnrichment{FilePath: filePath}
+	offset := intFromAny(callInput["offset"])
+	limit := intFromAny(callInput["limit"])
+	if offset > 0 && limit > 0 {
+		e.LineStart = offset
+		e.LineEnd = offset + limit - 1
 	}
+	return e
 }
 
 func intFromAny(v any) int {
@@ -71,6 +92,29 @@ func intFromAny(v any) int {
 		return n
 	}
 	return 0
+}
+
+func interpretWrite(m map[string]any) *WriteEnrichment {
+	filePath, _ := m["filePath"].(string)
+	if filePath == "" {
+		return nil
+	}
+	var action string
+	switch m["type"] {
+	case "create":
+		action = "created"
+	case "update":
+		action = "updated"
+	}
+	return &WriteEnrichment{FilePath: filePath, Action: action}
+}
+
+func interpretEdit(m map[string]any) *EditEnrichment {
+	filePath, _ := m["filePath"].(string)
+	if filePath == "" {
+		return nil
+	}
+	return &EditEnrichment{FilePath: filePath, Action: "updated"}
 }
 
 func interpretBash(m map[string]any) *BashEnrichment {

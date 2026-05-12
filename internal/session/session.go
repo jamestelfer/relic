@@ -768,7 +768,7 @@ func crossReferenceTools(turn *Turn) {
 				id := b.ToolUseID
 				b.LinkedCallID = &id
 				b.LinkedCallName = call.Name
-				b.Enrichment = interpretEnrichment(call.Name, b.rawToolUseResult)
+				b.Enrichment = interpretEnrichment(call.Name, b.rawToolUseResult, call.Input)
 			}
 		}
 	}
