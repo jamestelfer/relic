@@ -310,6 +310,10 @@ func termLabel(r *session.ToolResult) string {
 		return writeEditLabel(basename(e.FilePath), e.Action)
 	case *session.EditEnrichment:
 		return writeEditLabel(basename(e.FilePath), e.Action)
+	case *session.GrepEnrichment:
+		return grepLabel(name, e)
+	case *session.GlobEnrichment:
+		return globLabel(e)
 	}
 
 	return name
@@ -335,6 +339,31 @@ func basename(path string) string {
 		return path[i+1:]
 	}
 	return path
+}
+
+func grepLabel(fallback string, e *session.GrepEnrichment) string {
+	switch e.Mode {
+	case "content":
+		if e.NumLines > 0 && e.NumFiles > 0 {
+			return fmt.Sprintf("%d lines in %d files", e.NumLines, e.NumFiles)
+		}
+	case "files_with_matches":
+		if e.NumFiles > 0 {
+			return fmt.Sprintf("%d files", e.NumFiles)
+		}
+	case "count":
+		if e.NumMatches > 0 {
+			return fmt.Sprintf("%d matches", e.NumMatches)
+		}
+	}
+	return fallback
+}
+
+func globLabel(e *session.GlobEnrichment) string {
+	if e.Truncated {
+		return fmt.Sprintf("%d files (truncated)", e.NumFiles)
+	}
+	return fmt.Sprintf("%d files", e.NumFiles)
 }
 
 func formatOffset(d time.Duration) string {

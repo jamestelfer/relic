@@ -672,6 +672,91 @@ func TestRender_EditEnrichment(t *testing.T) {
 	assert.Contains(t, out, "session.go · updated", "chrome label: basename · updated")
 }
 
+func TestRender_GrepEnrichment_ContentMode(t *testing.T) {
+	linkedID := "toolu_grep_c"
+	s := session.Session{
+		Turns: []session.Turn{{Index: 1, Blocks: []session.Block{
+			&session.ToolResult{
+				ToolUseID: linkedID, Content: "file.go:42:match", LinkedCallID: &linkedID, LinkedCallName: "Grep",
+				Enrichment: &session.GrepEnrichment{Mode: "content", NumFiles: 3, NumLines: 25},
+			},
+		}}},
+	}
+	out := render(t, s, renderer.Options{Name: "test"})
+	assert.Contains(t, out, "25 lines in 3 files", "chrome label: content mode summary")
+}
+
+func TestRender_GrepEnrichment_FilesMode(t *testing.T) {
+	linkedID := "toolu_grep_f"
+	s := session.Session{
+		Turns: []session.Turn{{Index: 1, Blocks: []session.Block{
+			&session.ToolResult{
+				ToolUseID: linkedID, Content: "a.go\nb.go", LinkedCallID: &linkedID, LinkedCallName: "Grep",
+				Enrichment: &session.GrepEnrichment{Mode: "files_with_matches", NumFiles: 7},
+			},
+		}}},
+	}
+	out := render(t, s, renderer.Options{Name: "test"})
+	assert.Contains(t, out, "7 files", "chrome label: files_with_matches mode")
+}
+
+func TestRender_GrepEnrichment_CountMode(t *testing.T) {
+	linkedID := "toolu_grep_n"
+	s := session.Session{
+		Turns: []session.Turn{{Index: 1, Blocks: []session.Block{
+			&session.ToolResult{
+				ToolUseID: linkedID, Content: "25", LinkedCallID: &linkedID, LinkedCallName: "Grep",
+				Enrichment: &session.GrepEnrichment{Mode: "count", NumMatches: 25},
+			},
+		}}},
+	}
+	out := render(t, s, renderer.Options{Name: "test"})
+	assert.Contains(t, out, "25 matches", "chrome label: count mode shows match count")
+}
+
+func TestRender_GrepEnrichment_CountMode_NoData(t *testing.T) {
+	linkedID := "toolu_grep_n0"
+	s := session.Session{
+		Turns: []session.Turn{{Index: 1, Blocks: []session.Block{
+			&session.ToolResult{
+				ToolUseID: linkedID, Content: "0", LinkedCallID: &linkedID, LinkedCallName: "Grep",
+				Enrichment: &session.GrepEnrichment{Mode: "count"},
+			},
+		}}},
+	}
+	out := render(t, s, renderer.Options{Name: "test"})
+	assert.Contains(t, out, `<span class="label">Grep</span>`, "chrome label: falls back to tool name when no match count")
+}
+
+func TestRender_GlobEnrichment(t *testing.T) {
+	linkedID := "toolu_glob"
+	s := session.Session{
+		Turns: []session.Turn{{Index: 1, Blocks: []session.Block{
+			&session.ToolResult{
+				ToolUseID: linkedID, Content: "a.go\nb.go", LinkedCallID: &linkedID, LinkedCallName: "Glob",
+				Enrichment: &session.GlobEnrichment{NumFiles: 8, Truncated: false},
+			},
+		}}},
+	}
+	out := render(t, s, renderer.Options{Name: "test"})
+	assert.Contains(t, out, "8 files", "chrome label: file count")
+	assert.NotContains(t, out, "truncated", "no truncated marker when not truncated")
+}
+
+func TestRender_GlobEnrichment_Truncated(t *testing.T) {
+	linkedID := "toolu_glob_t"
+	s := session.Session{
+		Turns: []session.Turn{{Index: 1, Blocks: []session.Block{
+			&session.ToolResult{
+				ToolUseID: linkedID, Content: "a.go", LinkedCallID: &linkedID, LinkedCallName: "Glob",
+				Enrichment: &session.GlobEnrichment{NumFiles: 100, Truncated: true},
+			},
+		}}},
+	}
+	out := render(t, s, renderer.Options{Name: "test"})
+	assert.Contains(t, out, "100 files (truncated)", "chrome label: truncated glob")
+}
+
 func TestRender_ToolResult_NoEnrichment_Unchanged(t *testing.T) {
 	linkedID := "toolu_no_enr"
 	s := session.Session{

@@ -1025,6 +1025,193 @@ func TestTransformEditEnrichment(t *testing.T) {
 	assert.Equal(t, "updated", e.Action)
 }
 
+// TestTransformGrepEnrichment: Grep tool result produces GrepEnrichment with
+// mode, file count, and line count, varying by grep mode.
+func TestTransformGrepEnrichment(t *testing.T) {
+	ts := time.Date(2025, 1, 15, 10, 0, 0, 0, time.UTC)
+	cases := []struct {
+		name           string
+		toolResult     map[string]any
+		wantMode       string
+		wantNumFiles   int
+		wantNumLines   int
+		wantNumMatches int
+	}{
+		{
+			name: "content mode",
+			toolResult: map[string]any{
+				"mode":      "content",
+				"numFiles":  float64(3),
+				"filenames": []any{},
+				"content":   "file.go:42:matching line",
+				"numLines":  float64(25),
+			},
+			wantMode: "content", wantNumFiles: 3, wantNumLines: 25,
+		},
+		{
+			name: "files_with_matches mode",
+			toolResult: map[string]any{
+				"mode":      "files_with_matches",
+				"numFiles":  float64(7),
+				"filenames": []any{"a.go", "b.go"},
+			},
+			wantMode: "files_with_matches", wantNumFiles: 7,
+		},
+		{
+			name: "count mode",
+			toolResult: map[string]any{
+				"mode":       "count",
+				"numFiles":   float64(0),
+				"filenames":  []any{},
+				"content":    "25",
+				"numMatches": float64(25),
+			},
+			wantMode: "count", wantNumMatches: 25,
+		},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			res := parser.Result{
+				Messages: []parser.Message{
+					{Role: "user", Timestamp: &ts, LineNum: 1,
+						Content: []parser.ContentBlock{&parser.TextBlock{Text: "find it"}}},
+					{Role: "assistant", Timestamp: &ts, LineNum: 2,
+						Content: []parser.ContentBlock{&parser.ToolUseBlock{ID: "toolu_01", Name: "Grep", Input: map[string]any{"pattern": "foo"}}}},
+					{Role: "user", Timestamp: &ts, LineNum: 3,
+						Envelope: parser.Envelope{ToolUseResult: tc.toolResult},
+						Content:  []parser.ContentBlock{&parser.ToolResultBlock{ToolUseID: "toolu_01", Content: "results"}}},
+				},
+			}
+			s := session.Transform(res)
+			var result *session.ToolResult
+			for _, b := range s.Turns[0].Blocks {
+				if tr, ok := b.(*session.ToolResult); ok {
+					result = tr
+				}
+			}
+			require.NotNil(t, result)
+			require.NotNil(t, result.Enrichment)
+			g, ok := result.Enrichment.(*session.GrepEnrichment)
+			require.True(t, ok, "expected *GrepEnrichment, got %T", result.Enrichment)
+			assert.Equal(t, tc.wantMode, g.Mode)
+			assert.Equal(t, tc.wantNumFiles, g.NumFiles)
+			assert.Equal(t, tc.wantNumLines, g.NumLines)
+			assert.Equal(t, tc.wantNumMatches, g.NumMatches)
+		})
+	}
+}
+
+// TestTransformGlobEnrichment: Glob tool result produces GlobEnrichment with
+// file count and truncated flag.
+func TestTransformGlobEnrichment(t *testing.T) {
+	ts := time.Date(2025, 1, 15, 10, 0, 0, 0, time.UTC)
+	cases := []struct {
+		name          string
+		toolResult    map[string]any
+		wantNumFiles  int
+		wantTruncated bool
+	}{
+		{
+			name: "normal",
+			toolResult: map[string]any{
+				"filenames":  []any{"a.go", "b.go"},
+				"durationMs": float64(23),
+				"numFiles":   float64(8),
+				"truncated":  false,
+			},
+			wantNumFiles: 8, wantTruncated: false,
+		},
+		{
+			name: "truncated",
+			toolResult: map[string]any{
+				"filenames":  []any{"a.go"},
+				"durationMs": float64(50),
+				"numFiles":   float64(100),
+				"truncated":  true,
+			},
+			wantNumFiles: 100, wantTruncated: true,
+		},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			res := parser.Result{
+				Messages: []parser.Message{
+					{Role: "user", Timestamp: &ts, LineNum: 1,
+						Content: []parser.ContentBlock{&parser.TextBlock{Text: "list"}}},
+					{Role: "assistant", Timestamp: &ts, LineNum: 2,
+						Content: []parser.ContentBlock{&parser.ToolUseBlock{ID: "toolu_01", Name: "Glob", Input: map[string]any{"pattern": "*.go"}}}},
+					{Role: "user", Timestamp: &ts, LineNum: 3,
+						Envelope: parser.Envelope{ToolUseResult: tc.toolResult},
+						Content:  []parser.ContentBlock{&parser.ToolResultBlock{ToolUseID: "toolu_01", Content: "files"}}},
+				},
+			}
+			s := session.Transform(res)
+			var result *session.ToolResult
+			for _, b := range s.Turns[0].Blocks {
+				if tr, ok := b.(*session.ToolResult); ok {
+					result = tr
+				}
+			}
+			require.NotNil(t, result)
+			require.NotNil(t, result.Enrichment)
+			g, ok := result.Enrichment.(*session.GlobEnrichment)
+			require.True(t, ok, "expected *GlobEnrichment, got %T", result.Enrichment)
+			assert.Equal(t, tc.wantNumFiles, g.NumFiles)
+			assert.Equal(t, tc.wantTruncated, g.Truncated)
+		})
+	}
+}
+
+// TestTransformGlobEnrichment_Malformed: Glob result missing numFiles produces nil enrichment.
+func TestTransformGlobEnrichment_Malformed(t *testing.T) {
+	ts := time.Date(2025, 1, 15, 10, 0, 0, 0, time.UTC)
+	res := parser.Result{
+		Messages: []parser.Message{
+			{Role: "user", Timestamp: &ts, LineNum: 1,
+				Content: []parser.ContentBlock{&parser.TextBlock{Text: "list"}}},
+			{Role: "assistant", Timestamp: &ts, LineNum: 2,
+				Content: []parser.ContentBlock{&parser.ToolUseBlock{ID: "toolu_01", Name: "Glob", Input: map[string]any{}}}},
+			{Role: "user", Timestamp: &ts, LineNum: 3,
+				Envelope: parser.Envelope{ToolUseResult: map[string]any{"truncated": false}},
+				Content:  []parser.ContentBlock{&parser.ToolResultBlock{ToolUseID: "toolu_01", Content: "err"}}},
+		},
+	}
+	s := session.Transform(res)
+	var result *session.ToolResult
+	for _, b := range s.Turns[0].Blocks {
+		if tr, ok := b.(*session.ToolResult); ok {
+			result = tr
+		}
+	}
+	require.NotNil(t, result)
+	assert.Nil(t, result.Enrichment, "glob without numFiles should produce nil enrichment")
+}
+
+// TestTransformGrepEnrichment_NoMode: Grep result without mode field produces nil enrichment.
+func TestTransformGrepEnrichment_NoMode(t *testing.T) {
+	ts := time.Date(2025, 1, 15, 10, 0, 0, 0, time.UTC)
+	res := parser.Result{
+		Messages: []parser.Message{
+			{Role: "user", Timestamp: &ts, LineNum: 1,
+				Content: []parser.ContentBlock{&parser.TextBlock{Text: "find"}}},
+			{Role: "assistant", Timestamp: &ts, LineNum: 2,
+				Content: []parser.ContentBlock{&parser.ToolUseBlock{ID: "toolu_01", Name: "Grep", Input: map[string]any{}}}},
+			{Role: "user", Timestamp: &ts, LineNum: 3,
+				Envelope: parser.Envelope{ToolUseResult: map[string]any{"numFiles": float64(0)}},
+				Content:  []parser.ContentBlock{&parser.ToolResultBlock{ToolUseID: "toolu_01", Content: "no match"}}},
+		},
+	}
+	s := session.Transform(res)
+	var result *session.ToolResult
+	for _, b := range s.Turns[0].Blocks {
+		if tr, ok := b.(*session.ToolResult); ok {
+			result = tr
+		}
+	}
+	require.NotNil(t, result)
+	assert.Nil(t, result.Enrichment, "malformed grep result should produce nil enrichment")
+}
+
 // TestTransformRedactedThinking: RedactedThinkingBlock maps to *session.RedactedThinking.
 func TestTransformRedactedThinking(t *testing.T) {
 	res := parseFixture(t, "redacted_thinking.jsonl")

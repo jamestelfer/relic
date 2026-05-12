@@ -41,6 +41,24 @@ type EditEnrichment struct {
 
 func (e *EditEnrichment) enrichmentType() string { return "edit" }
 
+// GrepEnrichment holds structured data from a Grep tool result.
+type GrepEnrichment struct {
+	Mode       string // "content", "files_with_matches", or "count"
+	NumFiles   int
+	NumLines   int
+	NumMatches int
+}
+
+func (e *GrepEnrichment) enrichmentType() string { return "grep" }
+
+// GlobEnrichment holds structured data from a Glob tool result.
+type GlobEnrichment struct {
+	NumFiles  int
+	Truncated bool
+}
+
+func (e *GlobEnrichment) enrichmentType() string { return "glob" }
+
 // interpretEnrichment interprets a raw toolUseResult value based on the tool
 // name and produces a typed ToolEnrichment value. Returns nil when the raw value
 // is not a map (string/array/nil produce no enrichment) or the tool name is
@@ -60,6 +78,10 @@ func interpretEnrichment(toolName string, raw any, callInput map[string]any) Too
 		return interpretWrite(m)
 	case "Edit":
 		return interpretEdit(m)
+	case "Grep":
+		return interpretGrep(m)
+	case "Glob":
+		return interpretGlob(m)
 	default:
 		return nil
 	}
@@ -115,6 +137,28 @@ func interpretEdit(m map[string]any) *EditEnrichment {
 		return nil
 	}
 	return &EditEnrichment{FilePath: filePath, Action: "updated"}
+}
+
+func interpretGlob(m map[string]any) *GlobEnrichment {
+	numFiles := intFromAny(m["numFiles"])
+	if numFiles == 0 {
+		return nil
+	}
+	truncated, _ := m["truncated"].(bool)
+	return &GlobEnrichment{NumFiles: numFiles, Truncated: truncated}
+}
+
+func interpretGrep(m map[string]any) *GrepEnrichment {
+	mode, _ := m["mode"].(string)
+	if mode == "" {
+		return nil
+	}
+	return &GrepEnrichment{
+		Mode:       mode,
+		NumFiles:   intFromAny(m["numFiles"]),
+		NumLines:   intFromAny(m["numLines"]),
+		NumMatches: intFromAny(m["numMatches"]),
+	}
 }
 
 func interpretBash(m map[string]any) *BashEnrichment {
