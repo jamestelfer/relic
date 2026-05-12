@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/charmbracelet/huh"
+	"github.com/charmbracelet/lipgloss"
 )
 
 // ProjectEntry represents a discovered project directory containing sessions.
@@ -203,9 +204,12 @@ func Pick(homeDir string) (string, error) {
 		return "", err
 	}
 
+	muted := lipgloss.NewStyle().Foreground(lipgloss.Color("240"))
 	sessionOptions := make([]huh.Option[string], len(sessions))
 	for i, s := range sessions {
-		label := filepath.Base(s.Path)
+		name := filepath.Base(s.Path)
+		date := muted.Render(RelativeTime(now, s.ModTime))
+		label := name + "  " + date
 		sessionOptions[i] = huh.NewOption(label, s.Path)
 	}
 
