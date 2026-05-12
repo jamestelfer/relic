@@ -301,21 +301,33 @@ func termLabel(r *session.ToolResult) string {
 
 	switch e := r.Enrichment.(type) {
 	case *session.BashEnrichment:
-		if e.Interrupted {
+		if e != nil && e.Interrupted {
 			return name + " · interrupted"
 		}
 	case *session.ReadEnrichment:
-		return readLabel(e)
+		if e != nil {
+			return readLabel(e)
+		}
 	case *session.WriteEnrichment:
-		return writeEditLabel(basename(e.FilePath), e.Action)
+		if e != nil {
+			return writeEditLabel(basename(e.FilePath), e.Action)
+		}
 	case *session.EditEnrichment:
-		return writeEditLabel(basename(e.FilePath), e.Action)
+		if e != nil {
+			return writeEditLabel(basename(e.FilePath), e.Action)
+		}
 	case *session.GrepEnrichment:
-		return grepLabel(name, e)
+		if e != nil {
+			return grepLabel(name, e)
+		}
 	case *session.GlobEnrichment:
-		return globLabel(e)
+		if e != nil {
+			return globLabel(e)
+		}
 	case *session.AgentEnrichment:
-		return agentLabel(e)
+		if e != nil {
+			return agentLabel(e)
+		}
 	}
 
 	return name

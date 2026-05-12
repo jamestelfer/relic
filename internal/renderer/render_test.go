@@ -819,3 +819,20 @@ func TestRender_ToolResult_NoEnrichment_Unchanged(t *testing.T) {
 	assert.Contains(t, out, "normal output")
 	assert.Contains(t, out, `<span class="label">Read</span>`)
 }
+
+func TestRender_ToolResult_NilTypedEnrichment_NoPanic(t *testing.T) {
+	linkedID := "toolu_nil_enr"
+	s := session.Session{
+		Turns: []session.Turn{{Index: 1, Blocks: []session.Block{
+			&session.ToolResult{
+				ToolUseID:      linkedID,
+				Content:        "file content",
+				LinkedCallID:   &linkedID,
+				LinkedCallName: "Read",
+				Enrichment:     (*session.ReadEnrichment)(nil),
+			},
+		}}},
+	}
+	out := render(t, s, renderer.Options{Name: "test"})
+	assert.Contains(t, out, `<span class="label">Read</span>`, "should fall back to tool name when enrichment is typed nil")
+}

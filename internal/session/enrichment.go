@@ -82,22 +82,35 @@ func interpretEnrichment(toolName string, raw any, callInput map[string]any) Too
 
 	switch toolName {
 	case "Bash":
-		return interpretBash(m)
+		if e := interpretBash(m); e != nil {
+			return e
+		}
 	case "Read":
-		return interpretRead(m, callInput)
+		if e := interpretRead(m, callInput); e != nil {
+			return e
+		}
 	case "Write":
-		return interpretWrite(m)
+		if e := interpretWrite(m); e != nil {
+			return e
+		}
 	case "Edit":
-		return interpretEdit(m)
+		if e := interpretEdit(m); e != nil {
+			return e
+		}
 	case "Grep":
-		return interpretGrep(m)
+		if e := interpretGrep(m); e != nil {
+			return e
+		}
 	case "Glob":
-		return interpretGlob(m)
+		if e := interpretGlob(m); e != nil {
+			return e
+		}
 	case "Agent":
-		return interpretAgent(m)
-	default:
-		return nil
+		if e := interpretAgent(m); e != nil {
+			return e
+		}
 	}
+	return nil
 }
 
 func interpretRead(m map[string]any, callInput map[string]any) *ReadEnrichment {

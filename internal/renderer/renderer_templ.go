@@ -1590,7 +1590,7 @@ func toolResultBlock(b *session.ToolResult) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		if bash, ok := b.Enrichment.(*session.BashEnrichment); ok {
+		if bash, ok := b.Enrichment.(*session.BashEnrichment); ok && bash != nil {
 			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 101, "<pre>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
