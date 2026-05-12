@@ -294,10 +294,14 @@ func mcpResultHTML(content string) template.HTML {
 }
 
 func termLabel(r *session.ToolResult) string {
+	name := "tool_result"
 	if r.LinkedCallName != "" {
-		return r.LinkedCallName
+		name = r.LinkedCallName
 	}
-	return "tool_result"
+	if bash, ok := r.Enrichment.(*session.BashEnrichment); ok && bash.Interrupted {
+		return name + " · interrupted"
+	}
+	return name
 }
 
 func formatOffset(d time.Duration) string {
@@ -391,6 +395,10 @@ func userBashOutputHTML(stdout, stderr string) template.HTML {
 		combined = stdout
 	}
 	return safeANSI(combined)
+}
+
+func bashEnrichmentHTML(e *session.BashEnrichment) template.HTML {
+	return userBashOutputHTML(e.Stdout, e.Stderr)
 }
 
 func safeANSI(s string) (result template.HTML) {

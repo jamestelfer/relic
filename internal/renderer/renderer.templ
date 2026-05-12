@@ -397,7 +397,9 @@ templ toolResultBlock(b *session.ToolResult) {
 						<span class="dots"><span></span><span></span><span></span></span>
 						<span class="label">{ termLabel(b) }</span>
 					</div>
-					if isMCPTool(b.LinkedCallName) {
+					if bash, ok := b.Enrichment.(*session.BashEnrichment); ok {
+						<pre>@templ.Raw(string(bashEnrichmentHTML(bash)))</pre>
+					} else if isMCPTool(b.LinkedCallName) {
 						@templ.Raw(string(mcpResultHTML(b.Content)))
 					} else {
 						<pre>@templ.Raw(string(safeANSI(b.Content)))</pre>

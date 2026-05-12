@@ -504,3 +504,104 @@ func TestRender_ThemeOverrideCSS(t *testing.T) {
 	assert.Contains(t, out, `[data-theme="dark"]`, "CSS must include dark override selector")
 	assert.Contains(t, out, `[data-theme="light"]`, "CSS must include light override selector")
 }
+
+func TestRender_BashEnrichment_StderrSeparator(t *testing.T) {
+	linkedID := "toolu_bash_enr"
+	s := session.Session{
+		Turns: []session.Turn{{Index: 1, Blocks: []session.Block{
+			&session.ToolResult{
+				ToolUseID:      linkedID,
+				Content:        "raw content ignored when enriched",
+				LinkedCallID:   &linkedID,
+				LinkedCallName: "Bash",
+				Enrichment: &session.BashEnrichment{
+					Stdout: "hello world",
+					Stderr: "warning: something",
+				},
+			},
+		}}},
+	}
+	out := render(t, s, renderer.Options{Name: "test"})
+	assert.Contains(t, out, "hello world")
+	assert.Contains(t, out, "warning: something")
+	assert.Contains(t, out, "stderr shown below", "stderr separator must be present")
+}
+
+func TestRender_BashEnrichment_NoStderr(t *testing.T) {
+	linkedID := "toolu_bash_enr2"
+	s := session.Session{
+		Turns: []session.Turn{{Index: 1, Blocks: []session.Block{
+			&session.ToolResult{
+				ToolUseID:      linkedID,
+				Content:        "raw content",
+				LinkedCallID:   &linkedID,
+				LinkedCallName: "Bash",
+				Enrichment: &session.BashEnrichment{
+					Stdout: "only stdout here",
+					Stderr: "",
+				},
+			},
+		}}},
+	}
+	out := render(t, s, renderer.Options{Name: "test"})
+	assert.Contains(t, out, "only stdout here")
+	assert.NotContains(t, out, "stderr shown below", "no stderr separator when stderr is empty")
+}
+
+func TestRender_BashEnrichment_InterruptedLabel(t *testing.T) {
+	linkedID := "toolu_bash_int"
+	s := session.Session{
+		Turns: []session.Turn{{Index: 1, Blocks: []session.Block{
+			&session.ToolResult{
+				ToolUseID:      linkedID,
+				Content:        "partial output",
+				LinkedCallID:   &linkedID,
+				LinkedCallName: "Bash",
+				Enrichment: &session.BashEnrichment{
+					Stdout:      "partial output",
+					Interrupted: true,
+				},
+			},
+		}}},
+	}
+	out := render(t, s, renderer.Options{Name: "test"})
+	assert.Contains(t, out, "interrupted", "chrome label should include 'interrupted' for interrupted Bash")
+}
+
+func TestRender_BashEnrichment_NormalLabel(t *testing.T) {
+	linkedID := "toolu_bash_norm"
+	s := session.Session{
+		Turns: []session.Turn{{Index: 1, Blocks: []session.Block{
+			&session.ToolResult{
+				ToolUseID:      linkedID,
+				Content:        "ok",
+				LinkedCallID:   &linkedID,
+				LinkedCallName: "Bash",
+				Enrichment: &session.BashEnrichment{
+					Stdout: "ok",
+				},
+			},
+		}}},
+	}
+	out := render(t, s, renderer.Options{Name: "test"})
+	assert.NotContains(t, out, "interrupted", "non-interrupted Bash should not show 'interrupted'")
+	// Chrome label should still show "Bash"
+	assert.Contains(t, out, `<span class="label">Bash</span>`)
+}
+
+func TestRender_ToolResult_NoEnrichment_Unchanged(t *testing.T) {
+	linkedID := "toolu_no_enr"
+	s := session.Session{
+		Turns: []session.Turn{{Index: 1, Blocks: []session.Block{
+			&session.ToolResult{
+				ToolUseID:      linkedID,
+				Content:        "normal output",
+				LinkedCallID:   &linkedID,
+				LinkedCallName: "Read",
+			},
+		}}},
+	}
+	out := render(t, s, renderer.Options{Name: "test"})
+	assert.Contains(t, out, "normal output")
+	assert.Contains(t, out, `<span class="label">Read</span>`)
+}

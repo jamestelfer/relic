@@ -1,0 +1,4 @@
+{"type":"user","timestamp":"2025-01-15T10:00:01.000Z","message":{"role":"user","content":"Run the tests"}}
+{"type":"assistant","timestamp":"2025-01-15T10:00:02.000Z","message":{"role":"assistant","model":"claude-opus-4-5","content":[{"type":"tool_use","id":"toolu_01","name":"Bash","input":{"command":"go test ./..."}}]}}
+{"type":"user","timestamp":"2025-01-15T10:00:05.000Z","toolUseResult":{"stdout":"ok  ./...\n","stderr":"","interrupted":false,"isImage":false,"noOutputExpected":false},"message":{"role":"user","content":[{"type":"tool_result","tool_use_id":"toolu_01","content":"ok  ./...\n"}]}}
+{"type":"assistant","timestamp":"2025-01-15T10:00:06.000Z","message":{"role":"assistant","content":[{"type":"text","text":"Tests passed!"}]}}

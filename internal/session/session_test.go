@@ -743,6 +743,128 @@ func TestTransformUserBash(t *testing.T) {
 	assert.Equal(t, inputs[1].ID, *results[1].LinkedCallID)
 }
 
+// TestTransformBashEnrichment: a Bash ToolResult with dict toolUseResult
+// produces BashEnrichment with stdout, stderr, and interrupted fields.
+func TestTransformBashEnrichment(t *testing.T) {
+	res := parseFixture(t, "bash_enrichment.jsonl")
+	s := session.Transform(res)
+
+	require.Len(t, s.Turns, 1)
+	turn := s.Turns[0]
+
+	var result *session.ToolResult
+	for _, b := range turn.Blocks {
+		if tr, ok := b.(*session.ToolResult); ok {
+			result = tr
+			break
+		}
+	}
+	require.NotNil(t, result)
+
+	require.NotNil(t, result.Enrichment, "ToolResult should have enrichment")
+	bash, ok := result.Enrichment.(*session.BashEnrichment)
+	require.True(t, ok, "enrichment should be *BashEnrichment, got %T", result.Enrichment)
+	assert.Equal(t, "ok  ./...\n", bash.Stdout)
+	assert.Equal(t, "warning: deprecated\n", bash.Stderr)
+	assert.False(t, bash.Interrupted)
+}
+
+// TestTransformBashEnrichment_Interrupted: interrupted Bash execution produces
+// enrichment with Interrupted=true.
+func TestTransformBashEnrichment_Interrupted(t *testing.T) {
+	ts := time.Date(2025, 1, 15, 10, 0, 0, 0, time.UTC)
+	res := parser.Result{
+		Messages: []parser.Message{
+			{Role: "user", Timestamp: &ts, LineNum: 1,
+				Content: []parser.ContentBlock{&parser.TextBlock{Text: "go"}}},
+			{Role: "assistant", Timestamp: &ts, LineNum: 2,
+				Content: []parser.ContentBlock{&parser.ToolUseBlock{ID: "toolu_01", Name: "Bash", Input: map[string]any{"command": "sleep 999"}}}},
+			{Role: "user", Timestamp: &ts, LineNum: 3,
+				Envelope: parser.Envelope{ToolUseResult: map[string]any{"stdout": "partial", "stderr": "", "interrupted": true}},
+				Content:  []parser.ContentBlock{&parser.ToolResultBlock{ToolUseID: "toolu_01", Content: "partial"}}},
+		},
+	}
+	s := session.Transform(res)
+
+	require.Len(t, s.Turns, 1)
+	var result *session.ToolResult
+	for _, b := range s.Turns[0].Blocks {
+		if tr, ok := b.(*session.ToolResult); ok {
+			result = tr
+			break
+		}
+	}
+	require.NotNil(t, result)
+	require.NotNil(t, result.Enrichment)
+	bash, ok := result.Enrichment.(*session.BashEnrichment)
+	require.True(t, ok)
+	assert.True(t, bash.Interrupted)
+	assert.Equal(t, "partial", bash.Stdout)
+}
+
+// TestTransformEnrichment_NilCases: enrichment is nil for absent toolUseResult,
+// string toolUseResult, array toolUseResult, and unpaired ToolResult.
+func TestTransformEnrichment_NilCases(t *testing.T) {
+	ts := time.Date(2025, 1, 15, 10, 0, 0, 0, time.UTC)
+
+	t.Run("absent toolUseResult", func(t *testing.T) {
+		res := parser.Result{
+			Messages: []parser.Message{
+				{Role: "user", Timestamp: &ts, LineNum: 1,
+					Content: []parser.ContentBlock{&parser.TextBlock{Text: "go"}}},
+				{Role: "assistant", Timestamp: &ts, LineNum: 2,
+					Content: []parser.ContentBlock{&parser.ToolUseBlock{ID: "toolu_01", Name: "Bash", Input: map[string]any{}}}},
+				{Role: "user", Timestamp: &ts, LineNum: 3,
+					Content: []parser.ContentBlock{&parser.ToolResultBlock{ToolUseID: "toolu_01", Content: "ok"}}},
+			},
+		}
+		s := session.Transform(res)
+		for _, b := range s.Turns[0].Blocks {
+			if tr, ok := b.(*session.ToolResult); ok {
+				assert.Nil(t, tr.Enrichment, "absent toolUseResult → nil enrichment")
+			}
+		}
+	})
+
+	t.Run("string toolUseResult", func(t *testing.T) {
+		res := parser.Result{
+			Messages: []parser.Message{
+				{Role: "user", Timestamp: &ts, LineNum: 1,
+					Content: []parser.ContentBlock{&parser.TextBlock{Text: "go"}}},
+				{Role: "assistant", Timestamp: &ts, LineNum: 2,
+					Content: []parser.ContentBlock{&parser.ToolUseBlock{ID: "toolu_01", Name: "Bash", Input: map[string]any{}}}},
+				{Role: "user", Timestamp: &ts, LineNum: 3,
+					Envelope: parser.Envelope{ToolUseResult: "Error: Exit code 1"},
+					Content:  []parser.ContentBlock{&parser.ToolResultBlock{ToolUseID: "toolu_01", Content: "Error"}}},
+			},
+		}
+		s := session.Transform(res)
+		for _, b := range s.Turns[0].Blocks {
+			if tr, ok := b.(*session.ToolResult); ok {
+				assert.Nil(t, tr.Enrichment, "string toolUseResult → nil enrichment")
+			}
+		}
+	})
+
+	t.Run("unpaired ToolResult", func(t *testing.T) {
+		res := parser.Result{
+			Messages: []parser.Message{
+				{Role: "user", Timestamp: &ts, LineNum: 1,
+					Content: []parser.ContentBlock{&parser.TextBlock{Text: "go"}}},
+				{Role: "user", Timestamp: &ts, LineNum: 2,
+					Envelope: parser.Envelope{ToolUseResult: map[string]any{"stdout": "x", "stderr": "", "interrupted": false}},
+					Content:  []parser.ContentBlock{&parser.ToolResultBlock{ToolUseID: "toolu_orphan", Content: "x"}}},
+			},
+		}
+		s := session.Transform(res)
+		for _, b := range s.Turns[0].Blocks {
+			if tr, ok := b.(*session.ToolResult); ok {
+				assert.Nil(t, tr.Enrichment, "unpaired ToolResult → nil enrichment")
+			}
+		}
+	})
+}
+
 // TestTransformRedactedThinking: RedactedThinkingBlock maps to *session.RedactedThinking.
 func TestTransformRedactedThinking(t *testing.T) {
 	res := parseFixture(t, "redacted_thinking.jsonl")

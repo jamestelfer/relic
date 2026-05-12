@@ -1,0 +1,2 @@
+{"type":"user","timestamp":"2025-01-15T10:00:01.000Z","toolUseResult":"Error: Exit code 2\ncommand not found","message":{"role":"user","content":[{"type":"tool_result","tool_use_id":"toolu_01","content":"Error: Exit code 2\ncommand not found"}]}}
+{"type":"user","timestamp":"2025-01-15T10:00:02.000Z","toolUseResult":[{"type":"text","text":"MCP result"}],"message":{"role":"user","content":[{"type":"tool_result","tool_use_id":"toolu_02","content":[{"type":"text","text":"MCP result"}]}]}}

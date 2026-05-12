@@ -380,3 +380,54 @@ func TestParseImageBlock(t *testing.T) {
 	assert.Equal(t, "image/png", img.MediaType)
 	assert.Equal(t, "iVBORw0KGgo=", img.Base64)
 }
+
+// TestParseToolUseResult_Dict: a JSONL record with a dict-type toolUseResult
+// exposes the raw data on the Envelope.
+func TestParseToolUseResult_Dict(t *testing.T) {
+	res, _, err := parser.Parse(openFixture(t, "tool_use_result.jsonl"))
+	require.NoError(t, err)
+
+	// Line 3 is the user message with toolUseResult.
+	require.Len(t, res.Messages, 4)
+	env := res.Messages[2].Envelope
+
+	require.NotNil(t, env.ToolUseResult, "dict toolUseResult must be extracted")
+	m, ok := env.ToolUseResult.(map[string]any)
+	require.True(t, ok, "dict toolUseResult should be map[string]any, got %T", env.ToolUseResult)
+	assert.Equal(t, "ok  ./...\n", m["stdout"])
+	assert.Equal(t, "", m["stderr"])
+	assert.Equal(t, false, m["interrupted"])
+}
+
+// TestParseToolUseResult_Absent: records without toolUseResult leave Envelope.ToolUseResult nil.
+func TestParseToolUseResult_Absent(t *testing.T) {
+	res, _, err := parser.Parse(openFixture(t, "tool_use_result.jsonl"))
+	require.NoError(t, err)
+
+	// Lines 1, 2, 4 have no toolUseResult.
+	assert.Nil(t, res.Messages[0].Envelope.ToolUseResult)
+	assert.Nil(t, res.Messages[1].Envelope.ToolUseResult)
+	assert.Nil(t, res.Messages[3].Envelope.ToolUseResult)
+}
+
+// TestParseToolUseResult_StringAndArray: string and array toolUseResult variants
+// are extracted as-is (string stays string, array stays []any).
+func TestParseToolUseResult_StringAndArray(t *testing.T) {
+	res, _, err := parser.Parse(openFixture(t, "tool_use_result_variants.jsonl"))
+	require.NoError(t, err)
+
+	require.Len(t, res.Messages, 2)
+
+	// Line 1: string toolUseResult.
+	strResult := res.Messages[0].Envelope.ToolUseResult
+	require.NotNil(t, strResult)
+	s, ok := strResult.(string)
+	require.True(t, ok, "string toolUseResult should be string, got %T", strResult)
+	assert.Contains(t, s, "Error: Exit code 2")
+
+	// Line 2: array toolUseResult.
+	arrResult := res.Messages[1].Envelope.ToolUseResult
+	require.NotNil(t, arrResult)
+	_, ok = arrResult.([]any)
+	require.True(t, ok, "array toolUseResult should be []any, got %T", arrResult)
+}
