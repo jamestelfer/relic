@@ -142,6 +142,17 @@
 
   --error-bg: light-dark(#FBE9E9, rgba(217, 56, 56, 0.12));
 
+  /* Status — success (green), danger (red), warning (amber) */
+  --success-bg:     light-dark(oklch(0.94 0.04 145), oklch(0.20 0.04 145));
+  --success-fg:     light-dark(oklch(0.42 0.12 145), oklch(0.75 0.12 145));
+  --success-solid:  oklch(0.52 0.14 145);
+  --success-border: light-dark(oklch(0.82 0.08 145), oklch(0.30 0.06 145));
+  --danger-bg:      light-dark(oklch(0.94 0.06 25), oklch(0.20 0.04 25));
+  --danger-fg:      light-dark(oklch(0.42 0.18 25), oklch(0.72 0.14 25));
+  --danger-border:  light-dark(oklch(0.85 0.07 25), oklch(0.30 0.05 25));
+  --warning-bg:     light-dark(oklch(0.94 0.05 75), oklch(0.22 0.04 75));
+  --warning-fg:     light-dark(oklch(0.42 0.14 75), oklch(0.72 0.10 75));
+
   /* Scale: radii, shadow, spacing */
   --radius-xs:  3px;
   --radius-sm:  5px;
