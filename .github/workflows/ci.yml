@@ -1,0 +1,62 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+env:
+  GOEXPERIMENT: jsonv2
+
+jobs:
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-go@v6
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: Read just version
+        id: tool-versions
+        run: |
+          version=$(grep '^just ' .mise.toml | sed 's/.*"\([0-9][^"]*\)".*/\1/')
+          echo "just=${version}" >> "$GITHUB_OUTPUT"
+
+      - uses: extractions/setup-just@v4
+        with:
+          just-version: ${{ steps.tool-versions.outputs.just }}
+
+      - name: Run tests
+        run: just test
+
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-go@v6
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: Read tool versions
+        id: tool-versions
+        run: |
+          echo "just=$(grep '^just ' .mise.toml | sed 's/.*"\([0-9][^"]*\)".*/\1/')" >> "$GITHUB_OUTPUT"
+          echo "golangci-lint=$(grep '^"golangci-lint"' .mise.toml | sed 's/.*"\([0-9][^"]*\)".*/\1/')" >> "$GITHUB_OUTPUT"
+
+      - uses: extractions/setup-just@v4
+        with:
+          just-version: ${{ steps.tool-versions.outputs.just }}
+
+      - name: Generate templ files
+        run: just generate
+
+      - uses: golangci/golangci-lint-action@v9
+        with:
+          version: v${{ steps.tool-versions.outputs.golangci-lint }}
