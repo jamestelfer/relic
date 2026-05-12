@@ -26,6 +26,7 @@ type ProjectEntry struct {
 type SessionEntry struct {
 	Path    string
 	ModTime time.Time
+	Size    int64
 }
 
 // ErrAborted is returned by Pick when the user cancels the selection (Ctrl-C / Esc).
@@ -54,6 +55,19 @@ func RelativeTime(now, t time.Time) string {
 	return t.Format("Jan 2")
 }
 
+// FormatSize formats a byte count as a human-readable string using binary
+// units (B, KiB, MiB).
+func FormatSize(bytes int64) string {
+	switch {
+	case bytes >= 1<<20:
+		return fmt.Sprintf("%.1f MiB", float64(bytes)/float64(1<<20))
+	case bytes >= 1<<10:
+		return fmt.Sprintf("%.1f KiB", float64(bytes)/float64(1<<10))
+	default:
+		return fmt.Sprintf("%d B", bytes)
+	}
+}
+
 // DecodePath strips the encoded home directory prefix from an encoded project
 // directory name and replaces it with "~/". The remainder of the path is left
 // encoded. If the encoded name does not start with the home prefix, it is
@@ -62,12 +76,18 @@ func DecodePath(homeDir, encoded string) string {
 	if encoded == "" {
 		return ""
 	}
-	encodedHome := strings.ReplaceAll(homeDir, string(filepath.Separator), "-")
+	// Claude Code encodes paths by replacing both "/" and "." with "-".
+	encodedHome := strings.NewReplacer(
+		string(filepath.Separator), "-",
+		".", "-",
+	).Replace(homeDir)
 	prefix := encodedHome + "-"
 	if !strings.HasPrefix(encoded, prefix) {
 		return encoded
 	}
-	return "~/" + encoded[len(prefix):]
+	remainder := encoded[len(prefix):]
+	remainder = strings.ReplaceAll(remainder, "--", " · ")
+	return "~/" + remainder
 }
 
 // DiscoverProjects scans homeDir/.claude/projects for project directories
@@ -146,6 +166,7 @@ func DiscoverSessions(projectDir string) ([]SessionEntry, error) {
 		sessions = append(sessions, SessionEntry{
 			Path:    filepath.Join(projectDir, d.Name()),
 			ModTime: info.ModTime(),
+			Size:    info.Size(),
 		})
 	}
 
@@ -209,7 +230,8 @@ func Pick(homeDir string) (string, error) {
 	for i, s := range sessions {
 		name := filepath.Base(s.Path)
 		date := muted.Render(RelativeTime(now, s.ModTime))
-		label := name + "  " + date
+		size := muted.Render(FormatSize(s.Size))
+		label := name + "  " + size + "  " + date
 		sessionOptions[i] = huh.NewOption(label, s.Path)
 	}
 

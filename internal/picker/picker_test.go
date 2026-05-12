@@ -170,16 +170,28 @@ func TestDecodePath(t *testing.T) {
 			want:    "~/src-oss-relic",
 		},
 		{
+			name:    "dot in username encoded as dash",
+			homeDir: "/Users/james.telfer",
+			encoded: "-Users-james-telfer-src-oss-relic",
+			want:    "~/src-oss-relic",
+		},
+		{
+			name:    "double dash becomes separator",
+			homeDir: "/Users/james.telfer",
+			encoded: "-Users-james-telfer-src--fiddle-agent-teams",
+			want:    "~/src · fiddle-agent-teams",
+		},
+		{
 			name:    "path not under home returned as-is",
 			homeDir: "/Users/dev",
 			encoded: "-var-data-project",
 			want:    "-var-data-project",
 		},
 		{
-			name:    "worktree-style path",
+			name:    "worktree-style path with double dash",
 			homeDir: "/Users/dev",
-			encoded: "-Users-dev-src-oss-relic-.claude-worktrees-abc",
-			want:    "~/src-oss-relic-.claude-worktrees-abc",
+			encoded: "-Users-dev-src-oss-relic--claude-worktrees-abc",
+			want:    "~/src-oss-relic · claude-worktrees-abc",
 		},
 		{
 			name:    "empty string",
@@ -272,6 +284,43 @@ func TestDiscoverProjectsSortedByMostRecent(t *testing.T) {
 	assert.Contains(t, projects[0].Dir, "gamma")
 	assert.Contains(t, projects[1].Dir, "beta")
 	assert.Contains(t, projects[2].Dir, "alpha")
+}
+
+func TestFormatSize(t *testing.T) {
+	cases := []struct {
+		name  string
+		bytes int64
+		want  string
+	}{
+		{"zero", 0, "0 B"},
+		{"bytes", 512, "512 B"},
+		{"one KiB", 1024, "1.0 KiB"},
+		{"fractional KiB", 1536, "1.5 KiB"},
+		{"large KiB", 102400, "100.0 KiB"},
+		{"one MiB", 1048576, "1.0 MiB"},
+		{"fractional MiB", 2097152, "2.0 MiB"},
+	}
+
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			got := picker.FormatSize(c.bytes)
+			assert.Equal(t, c.want, got)
+		})
+	}
+}
+
+func TestDiscoverSessionsIncludesSize(t *testing.T) {
+	root := buildProjectTree(t)
+	betaDir := filepath.Join(root, ".claude", "projects", "-Users-dev-src-beta")
+
+	sessions, err := picker.DiscoverSessions(betaDir)
+	require.NoError(t, err)
+	require.Len(t, sessions, 2)
+
+	// Fixture files contain "{}" (2 bytes).
+	for _, s := range sessions {
+		assert.Equal(t, int64(2), s.Size, "session %s should have size 2", s.Path)
+	}
 }
 
 func TestDiscoverSessionsExcludesNonJsonl(t *testing.T) {
