@@ -865,6 +865,88 @@ func TestTransformEnrichment_NilCases(t *testing.T) {
 	})
 }
 
+// TestTransformReadEnrichment: a Read ToolResult with dict toolUseResult
+// produces ReadEnrichment with file path and line range.
+func TestTransformReadEnrichment(t *testing.T) {
+	ts := time.Date(2025, 1, 15, 10, 0, 0, 0, time.UTC)
+	res := parser.Result{
+		Messages: []parser.Message{
+			{Role: "user", Timestamp: &ts, LineNum: 1,
+				Content: []parser.ContentBlock{&parser.TextBlock{Text: "show me"}}},
+			{Role: "assistant", Timestamp: &ts, LineNum: 2,
+				Content: []parser.ContentBlock{&parser.ToolUseBlock{ID: "toolu_01", Name: "Read", Input: map[string]any{"file_path": "/src/foo.go", "offset": 10, "limit": 50}}}},
+			{Role: "user", Timestamp: &ts, LineNum: 3,
+				Envelope: parser.Envelope{ToolUseResult: map[string]any{
+					"type": "text",
+					"file": map[string]any{
+						"filePath":   "/src/foo.go",
+						"content":    "package main\n",
+						"startLine":  float64(10),
+						"numLines":   float64(50),
+						"totalLines": float64(200),
+					},
+				}},
+				Content: []parser.ContentBlock{&parser.ToolResultBlock{ToolUseID: "toolu_01", Content: "package main\n"}}},
+		},
+	}
+	s := session.Transform(res)
+
+	require.Len(t, s.Turns, 1)
+	var result *session.ToolResult
+	for _, b := range s.Turns[0].Blocks {
+		if tr, ok := b.(*session.ToolResult); ok {
+			result = tr
+			break
+		}
+	}
+	require.NotNil(t, result)
+	require.NotNil(t, result.Enrichment)
+	read, ok := result.Enrichment.(*session.ReadEnrichment)
+	require.True(t, ok, "enrichment should be *ReadEnrichment, got %T", result.Enrichment)
+	assert.Equal(t, "/src/foo.go", read.FilePath)
+	assert.Equal(t, 10, read.LineStart)
+	assert.Equal(t, 50, read.LineCount)
+	assert.Equal(t, 200, read.TotalLines)
+}
+
+// TestTransformReadEnrichment_NoLineRange: Read result without line range fields
+// still produces enrichment with file path.
+func TestTransformReadEnrichment_NoLineRange(t *testing.T) {
+	ts := time.Date(2025, 1, 15, 10, 0, 0, 0, time.UTC)
+	res := parser.Result{
+		Messages: []parser.Message{
+			{Role: "user", Timestamp: &ts, LineNum: 1,
+				Content: []parser.ContentBlock{&parser.TextBlock{Text: "show me"}}},
+			{Role: "assistant", Timestamp: &ts, LineNum: 2,
+				Content: []parser.ContentBlock{&parser.ToolUseBlock{ID: "toolu_01", Name: "Read", Input: map[string]any{"file_path": "/src/foo.go"}}}},
+			{Role: "user", Timestamp: &ts, LineNum: 3,
+				Envelope: parser.Envelope{ToolUseResult: map[string]any{
+					"type": "text",
+					"file": map[string]any{
+						"filePath": "/src/foo.go",
+						"content":  "full file",
+					},
+				}},
+				Content: []parser.ContentBlock{&parser.ToolResultBlock{ToolUseID: "toolu_01", Content: "full file"}}},
+		},
+	}
+	s := session.Transform(res)
+
+	var result *session.ToolResult
+	for _, b := range s.Turns[0].Blocks {
+		if tr, ok := b.(*session.ToolResult); ok {
+			result = tr
+		}
+	}
+	require.NotNil(t, result)
+	require.NotNil(t, result.Enrichment)
+	read, ok := result.Enrichment.(*session.ReadEnrichment)
+	require.True(t, ok)
+	assert.Equal(t, "/src/foo.go", read.FilePath)
+	assert.Equal(t, 0, read.LineStart)
+	assert.Equal(t, 0, read.LineCount)
+}
+
 // TestTransformRedactedThinking: RedactedThinkingBlock maps to *session.RedactedThinking.
 func TestTransformRedactedThinking(t *testing.T) {
 	res := parseFixture(t, "redacted_thinking.jsonl")

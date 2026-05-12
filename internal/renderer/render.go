@@ -298,10 +298,33 @@ func termLabel(r *session.ToolResult) string {
 	if r.LinkedCallName != "" {
 		name = r.LinkedCallName
 	}
-	if bash, ok := r.Enrichment.(*session.BashEnrichment); ok && bash.Interrupted {
-		return name + " · interrupted"
+
+	switch e := r.Enrichment.(type) {
+	case *session.BashEnrichment:
+		if e.Interrupted {
+			return name + " · interrupted"
+		}
+	case *session.ReadEnrichment:
+		return readLabel(e)
 	}
+
 	return name
+}
+
+func readLabel(e *session.ReadEnrichment) string {
+	base := basename(e.FilePath)
+	if e.LineStart > 0 && e.LineCount > 0 {
+		end := e.LineStart + e.LineCount - 1
+		return fmt.Sprintf("%s:%d-%d", base, e.LineStart, end)
+	}
+	return base
+}
+
+func basename(path string) string {
+	if i := strings.LastIndexAny(path, "/\\"); i >= 0 {
+		return path[i+1:]
+	}
+	return path
 }
 
 func formatOffset(d time.Duration) string {

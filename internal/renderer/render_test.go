@@ -589,6 +589,47 @@ func TestRender_BashEnrichment_NormalLabel(t *testing.T) {
 	assert.Contains(t, out, `<span class="label">Bash</span>`)
 }
 
+func TestRender_ReadEnrichment_WithLineRange(t *testing.T) {
+	linkedID := "toolu_read_enr"
+	s := session.Session{
+		Turns: []session.Turn{{Index: 1, Blocks: []session.Block{
+			&session.ToolResult{
+				ToolUseID:      linkedID,
+				Content:        "file content",
+				LinkedCallID:   &linkedID,
+				LinkedCallName: "Read",
+				Enrichment: &session.ReadEnrichment{
+					FilePath:  "/src/internal/parser/parser.go",
+					LineStart: 10,
+					LineCount: 50,
+				},
+			},
+		}}},
+	}
+	out := render(t, s, renderer.Options{Name: "test"})
+	assert.Contains(t, out, "parser.go:10-59", "chrome label should show basename:start-end")
+}
+
+func TestRender_ReadEnrichment_NoLineRange(t *testing.T) {
+	linkedID := "toolu_read_enr2"
+	s := session.Session{
+		Turns: []session.Turn{{Index: 1, Blocks: []session.Block{
+			&session.ToolResult{
+				ToolUseID:      linkedID,
+				Content:        "file content",
+				LinkedCallID:   &linkedID,
+				LinkedCallName: "Read",
+				Enrichment: &session.ReadEnrichment{
+					FilePath: "/src/internal/parser/parser.go",
+				},
+			},
+		}}},
+	}
+	out := render(t, s, renderer.Options{Name: "test"})
+	assert.Contains(t, out, "parser.go", "chrome label should show basename")
+	assert.NotContains(t, out, "parser.go:", "no line range when absent")
+}
+
 func TestRender_ToolResult_NoEnrichment_Unchanged(t *testing.T) {
 	linkedID := "toolu_no_enr"
 	s := session.Session{
