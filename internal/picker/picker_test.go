@@ -11,16 +11,21 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// buildFixtureTree creates a temporary directory tree of .jsonl files with
-// controlled modification times and returns the root directory.
+// buildProjectTree creates a temporary directory tree with multiple project
+// directories containing .jsonl files at controlled modification times.
 //
 //	root/
 //	  .claude/projects/
-//	    alpha/session.jsonl     (mtime: oldest)
-//	    beta/session.jsonl      (mtime: middle)
-//	    gamma/recent.jsonl      (mtime: newest)
-//	    gamma/ignored.txt       (not .jsonl, must be excluded)
-func buildFixtureTree(t *testing.T) string {
+//	    -Users-dev-src-alpha/
+//	      aaa.jsonl  (mtime: 2025-01-01)
+//	    -Users-dev-src-beta/
+//	      bbb.jsonl  (mtime: 2025-06-01)
+//	      ccc.jsonl  (mtime: 2025-03-01)
+//	    -Users-dev-src-gamma/
+//	      ddd.jsonl  (mtime: 2025-12-01)
+//	    -Users-dev-src-empty/
+//	      notes.txt  (not .jsonl — this dir should be excluded)
+func buildProjectTree(t *testing.T) string {
 	t.Helper()
 	root := t.TempDir()
 	base := filepath.Join(root, ".claude", "projects")
@@ -29,10 +34,11 @@ func buildFixtureTree(t *testing.T) string {
 		rel   string
 		mtime time.Time
 	}{
-		{"alpha/session.jsonl", time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)},
-		{"beta/session.jsonl", time.Date(2025, 6, 1, 0, 0, 0, 0, time.UTC)},
-		{"gamma/recent.jsonl", time.Date(2025, 12, 1, 0, 0, 0, 0, time.UTC)},
-		{"gamma/ignored.txt", time.Date(2025, 12, 2, 0, 0, 0, 0, time.UTC)},
+		{"-Users-dev-src-alpha/aaa.jsonl", time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)},
+		{"-Users-dev-src-beta/bbb.jsonl", time.Date(2025, 6, 1, 0, 0, 0, 0, time.UTC)},
+		{"-Users-dev-src-beta/ccc.jsonl", time.Date(2025, 3, 1, 0, 0, 0, 0, time.UTC)},
+		{"-Users-dev-src-gamma/ddd.jsonl", time.Date(2025, 12, 1, 0, 0, 0, 0, time.UTC)},
+		{"-Users-dev-src-empty/notes.txt", time.Date(2025, 12, 2, 0, 0, 0, 0, time.UTC)},
 	}
 
 	for _, f := range files {
@@ -44,54 +50,304 @@ func buildFixtureTree(t *testing.T) string {
 	return root
 }
 
-// TestDiscover verifies that Discover finds .jsonl files sorted most-recent-first
-// and excludes non-.jsonl files.
-func TestDiscover(t *testing.T) {
-	root := buildFixtureTree(t)
+func TestDiscoverSessions(t *testing.T) {
+	root := buildProjectTree(t)
+	betaDir := filepath.Join(root, ".claude", "projects", "-Users-dev-src-beta")
 
-	entries, err := picker.Discover(root)
+	sessions, err := picker.DiscoverSessions(betaDir)
 	require.NoError(t, err)
+	require.Len(t, sessions, 2)
 
-	// 3 .jsonl files, no .txt
-	require.Len(t, entries, 3)
-
-	// Most recent first.
-	assert.True(t, entries[0].ModTime.After(entries[1].ModTime), "entries must be sorted newest first")
-	assert.True(t, entries[1].ModTime.After(entries[2].ModTime), "entries must be sorted newest first")
+	// Sorted most-recent first: bbb (June) before ccc (March).
+	assert.Contains(t, sessions[0].Path, "bbb.jsonl")
+	assert.Contains(t, sessions[1].Path, "ccc.jsonl")
+	assert.True(t, sessions[0].ModTime.After(sessions[1].ModTime),
+		"sessions must be sorted newest first")
 
 	// Paths should be absolute.
-	for _, e := range entries {
-		assert.True(t, filepath.IsAbs(e.Path), "path should be absolute: %s", e.Path)
-	}
-
-	// Non-.jsonl file must be excluded.
-	for _, e := range entries {
-		assert.Equal(t, ".jsonl", filepath.Ext(e.Path), "only .jsonl files expected")
+	for _, s := range sessions {
+		assert.True(t, filepath.IsAbs(s.Path), "Path should be absolute: %s", s.Path)
 	}
 }
 
-// TestDiscoverEmpty verifies that Discover returns an error when no .jsonl files exist.
-func TestDiscoverEmpty(t *testing.T) {
+func TestDiscoverProjects(t *testing.T) {
+	root := buildProjectTree(t)
+
+	projects, err := picker.DiscoverProjects(root)
+	require.NoError(t, err)
+
+	// 3 project dirs have .jsonl files; the "empty" dir only has .txt
+	require.Len(t, projects, 3)
+
+	// All Dirs should be absolute paths.
+	for _, p := range projects {
+		assert.True(t, filepath.IsAbs(p.Dir), "Dir should be absolute: %s", p.Dir)
+	}
+
+	// The "empty" dir with only .txt should be excluded.
+	for _, p := range projects {
+		assert.NotContains(t, p.Dir, "empty", "dir with no .jsonl should be excluded")
+	}
+}
+
+func TestDiscoverProjectsSessionCount(t *testing.T) {
+	root := buildProjectTree(t)
+
+	projects, err := picker.DiscoverProjects(root)
+	require.NoError(t, err)
+
+	counts := make(map[string]int)
+	for _, p := range projects {
+		counts[filepath.Base(p.Dir)] = p.SessionCount
+	}
+
+	assert.Equal(t, 1, counts["-Users-dev-src-alpha"])
+	assert.Equal(t, 2, counts["-Users-dev-src-beta"])
+	assert.Equal(t, 1, counts["-Users-dev-src-gamma"])
+}
+
+func TestDiscoverProjectsMostRecentModTime(t *testing.T) {
+	root := buildProjectTree(t)
+
+	projects, err := picker.DiscoverProjects(root)
+	require.NoError(t, err)
+
+	times := make(map[string]time.Time)
+	for _, p := range projects {
+		times[filepath.Base(p.Dir)] = p.MostRecentModTime
+	}
+
+	// Beta has two files: bbb (June) and ccc (March). Most recent should be June.
+	assert.True(t, time.Date(2025, 6, 1, 0, 0, 0, 0, time.UTC).Equal(times["-Users-dev-src-beta"]),
+		"beta most recent should be June, got %v", times["-Users-dev-src-beta"])
+	assert.True(t, time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC).Equal(times["-Users-dev-src-alpha"]),
+		"alpha most recent should be January, got %v", times["-Users-dev-src-alpha"])
+	assert.True(t, time.Date(2025, 12, 1, 0, 0, 0, 0, time.UTC).Equal(times["-Users-dev-src-gamma"]),
+		"gamma most recent should be December, got %v", times["-Users-dev-src-gamma"])
+}
+
+func TestDiscoverProjectsNoProjects(t *testing.T) {
 	root := t.TempDir()
-	// Create the directory but no files.
 	require.NoError(t, os.MkdirAll(filepath.Join(root, ".claude", "projects"), 0o755))
 
-	_, err := picker.Discover(root)
+	_, err := picker.DiscoverProjects(root)
 	require.Error(t, err)
-	assert.Contains(t, err.Error(), "no session files found")
+	assert.ErrorIs(t, err, picker.ErrNoProjects)
+	assert.Contains(t, err.Error(), ".claude/projects")
 }
 
-// TestRelativePath verifies that RelativePath trims the home-dir prefix correctly.
-func TestRelativePath(t *testing.T) {
-	home := "/home/user"
+func TestDiscoverProjectsMissingDir(t *testing.T) {
+	root := t.TempDir()
+
+	_, err := picker.DiscoverProjects(root)
+	require.Error(t, err)
+	assert.ErrorIs(t, err, picker.ErrNoProjects)
+}
+
+func TestDiscoverProjectsSingleSession(t *testing.T) {
+	root := t.TempDir()
+	base := filepath.Join(root, ".claude", "projects", "-Users-dev-src-solo")
+	require.NoError(t, os.MkdirAll(base, 0o755))
+	require.NoError(t, os.WriteFile(filepath.Join(base, "only.jsonl"), []byte("{}"), 0o644))
+
+	projects, err := picker.DiscoverProjects(root)
+	require.NoError(t, err)
+	require.Len(t, projects, 1)
+	assert.Equal(t, 1, projects[0].SessionCount)
+}
+
+func TestDecodePath(t *testing.T) {
 	cases := []struct {
-		path string
+		name    string
+		homeDir string
+		encoded string
+		want    string
+	}{
+		{
+			name:    "home prefix replaced with ~/",
+			homeDir: "/Users/dev",
+			encoded: "-Users-dev-src-oss-relic",
+			want:    "~/src-oss-relic",
+		},
+		{
+			name:    "dot in username encoded as dash",
+			homeDir: "/Users/james.telfer",
+			encoded: "-Users-james-telfer-src-oss-relic",
+			want:    "~/src-oss-relic",
+		},
+		{
+			name:    "double dash becomes separator",
+			homeDir: "/Users/james.telfer",
+			encoded: "-Users-james-telfer-src--fiddle-agent-teams",
+			want:    "~/src · fiddle-agent-teams",
+		},
+		{
+			name:    "path not under home returned as-is",
+			homeDir: "/Users/dev",
+			encoded: "-var-data-project",
+			want:    "-var-data-project",
+		},
+		{
+			name:    "worktree-style path with double dash",
+			homeDir: "/Users/dev",
+			encoded: "-Users-dev-src-oss-relic--claude-worktrees-abc",
+			want:    "~/src-oss-relic · claude-worktrees-abc",
+		},
+		{
+			name:    "empty string",
+			homeDir: "/Users/dev",
+			encoded: "",
+			want:    "",
+		},
+		{
+			name:    "root home dir",
+			homeDir: "/",
+			encoded: "-src-project",
+			want:    "-src-project",
+		},
+	}
+
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			got := picker.DecodePath(c.homeDir, c.encoded)
+			assert.Equal(t, c.want, got)
+		})
+	}
+}
+
+func TestRelativeTime(t *testing.T) {
+	now := time.Date(2025, 6, 15, 12, 0, 0, 0, time.UTC)
+
+	cases := []struct {
+		name string
+		t    time.Time
 		want string
 	}{
-		{"/home/user/.claude/projects/foo/bar.jsonl", "~/.claude/projects/foo/bar.jsonl"},
-		{"/other/path/file.jsonl", "/other/path/file.jsonl"},
+		{
+			name: "seconds ago",
+			t:    now.Add(-30 * time.Second),
+			want: "30s ago",
+		},
+		{
+			name: "minutes ago",
+			t:    now.Add(-45 * time.Minute),
+			want: "45m ago",
+		},
+		{
+			name: "hours ago",
+			t:    now.Add(-3 * time.Hour),
+			want: "3h ago",
+		},
+		{
+			name: "days ago",
+			t:    now.Add(-5 * 24 * time.Hour),
+			want: "5d ago",
+		},
+		{
+			name: "29 days ago (still relative)",
+			t:    now.Add(-29 * 24 * time.Hour),
+			want: "29d ago",
+		},
+		{
+			name: "30 days ago (absolute)",
+			t:    now.Add(-30 * 24 * time.Hour),
+			want: "May 16",
+		},
+		{
+			name: "months ago (absolute)",
+			t:    time.Date(2025, 1, 15, 0, 0, 0, 0, time.UTC),
+			want: "Jan 15",
+		},
+		{
+			name: "different year",
+			t:    time.Date(2024, 3, 5, 0, 0, 0, 0, time.UTC),
+			want: "Mar 5",
+		},
+		{
+			name: "future seconds",
+			t:    now.Add(30 * time.Second),
+			want: "in 30s",
+		},
+		{
+			name: "future hours",
+			t:    now.Add(3 * time.Hour),
+			want: "in 3h",
+		},
+		{
+			name: "future days",
+			t:    now.Add(5 * 24 * time.Hour),
+			want: "in 5d",
+		},
+		{
+			name: "future beyond 30 days",
+			t:    now.Add(45 * 24 * time.Hour),
+			want: "Jul 30",
+		},
 	}
+
 	for _, c := range cases {
-		assert.Equal(t, c.want, picker.RelativePath(home, c.path))
+		t.Run(c.name, func(t *testing.T) {
+			got := picker.RelativeTime(now, c.t)
+			assert.Equal(t, c.want, got)
+		})
 	}
+}
+
+func TestDiscoverProjectsSortedByMostRecent(t *testing.T) {
+	root := buildProjectTree(t)
+
+	projects, err := picker.DiscoverProjects(root)
+	require.NoError(t, err)
+	require.Len(t, projects, 3)
+
+	// gamma (Dec) > beta (Jun) > alpha (Jan)
+	assert.Contains(t, projects[0].Dir, "gamma")
+	assert.Contains(t, projects[1].Dir, "beta")
+	assert.Contains(t, projects[2].Dir, "alpha")
+}
+
+func TestFormatSize(t *testing.T) {
+	cases := []struct {
+		name  string
+		bytes int64
+		want  string
+	}{
+		{"zero", 0, "0 B"},
+		{"bytes", 512, "512 B"},
+		{"one KiB", 1024, "1.0 KiB"},
+		{"fractional KiB", 1536, "1.5 KiB"},
+		{"large KiB", 102400, "100.0 KiB"},
+		{"one MiB", 1048576, "1.0 MiB"},
+		{"fractional MiB", 2097152, "2.0 MiB"},
+	}
+
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			got := picker.FormatSize(c.bytes)
+			assert.Equal(t, c.want, got)
+		})
+	}
+}
+
+func TestDiscoverSessionsIncludesSize(t *testing.T) {
+	root := buildProjectTree(t)
+	betaDir := filepath.Join(root, ".claude", "projects", "-Users-dev-src-beta")
+
+	sessions, err := picker.DiscoverSessions(betaDir)
+	require.NoError(t, err)
+	require.Len(t, sessions, 2)
+
+	// Fixture files contain "{}" (2 bytes).
+	for _, s := range sessions {
+		assert.Equal(t, int64(2), s.Size, "session %s should have size 2", s.Path)
+	}
+}
+
+func TestDiscoverSessionsExcludesNonJsonl(t *testing.T) {
+	root := buildProjectTree(t)
+	emptyDir := filepath.Join(root, ".claude", "projects", "-Users-dev-src-empty")
+
+	sessions, err := picker.DiscoverSessions(emptyDir)
+	require.NoError(t, err)
+	assert.Empty(t, sessions)
 }

@@ -1,11 +1,10 @@
 // Package picker discovers Claude Code session JSONL files and presents an
-// interactive selection menu to the user.
+// interactive two-step selection menu (project then session) to the user.
 package picker
 
 import (
 	"errors"
 	"fmt"
-	"io/fs"
 	"os"
 	"path/filepath"
 	"slices"
@@ -13,58 +12,174 @@ import (
 	"time"
 
 	"github.com/charmbracelet/huh"
+	"github.com/charmbracelet/lipgloss"
 )
 
-// Entry represents a discovered session file.
-type Entry struct {
-	Path    string    // absolute path
-	ModTime time.Time // file modification time
+// ProjectEntry represents a discovered project directory containing sessions.
+type ProjectEntry struct {
+	Dir               string
+	MostRecentModTime time.Time
+	SessionCount      int
+}
+
+// SessionEntry represents a discovered session file.
+type SessionEntry struct {
+	Path    string
+	ModTime time.Time
+	Size    int64
 }
 
 // ErrAborted is returned by Pick when the user cancels the selection (Ctrl-C / Esc).
 var ErrAborted = errors.New("picker aborted")
 
-// ErrNoSessions is returned by Discover when no .jsonl files are found.
-var ErrNoSessions = errors.New("no session files found")
+// ErrNoProjects is returned when no project directories with .jsonl files are found.
+var ErrNoProjects = errors.New("no Claude Code projects found")
 
-// Discover scans homeDir/.claude/projects recursively for .jsonl files,
-// returning them sorted by modification time, most recent first.
-// Returns ErrNoSessions (wrapped) when the directory exists but is empty.
-func Discover(homeDir string) ([]Entry, error) {
+// RelativeTime formats the duration between now and t as a human-readable
+// relative string for times less than 30 days old, or as an absolute date
+// otherwise.
+func RelativeTime(now, t time.Time) string {
+	d := now.Sub(t)
+	future := d < 0
+	if future {
+		d = -d
+	}
+	if d < 30*24*time.Hour {
+		var value string
+		switch {
+		case d < time.Minute:
+			value = fmt.Sprintf("%ds", int(d.Seconds()))
+		case d < time.Hour:
+			value = fmt.Sprintf("%dm", int(d.Minutes()))
+		case d < 24*time.Hour:
+			value = fmt.Sprintf("%dh", int(d.Hours()))
+		default:
+			value = fmt.Sprintf("%dd", int(d.Hours()/24))
+		}
+		if future {
+			return "in " + value
+		}
+		return value + " ago"
+	}
+	return t.Format("Jan 2")
+}
+
+// FormatSize formats a byte count as a human-readable string using binary
+// units (B, KiB, MiB).
+func FormatSize(bytes int64) string {
+	switch {
+	case bytes >= 1<<20:
+		return fmt.Sprintf("%.1f MiB", float64(bytes)/float64(1<<20))
+	case bytes >= 1<<10:
+		return fmt.Sprintf("%.1f KiB", float64(bytes)/float64(1<<10))
+	default:
+		return fmt.Sprintf("%d B", bytes)
+	}
+}
+
+// DecodePath strips the encoded home directory prefix from an encoded project
+// directory name and replaces it with "~/". The remainder of the path is left
+// encoded. If the encoded name does not start with the home prefix, it is
+// returned unchanged.
+func DecodePath(homeDir, encoded string) string {
+	if encoded == "" {
+		return ""
+	}
+	// Claude Code encodes paths by replacing both "/" and "." with "-".
+	encodedHome := strings.NewReplacer(
+		string(filepath.Separator), "-",
+		".", "-",
+	).Replace(homeDir)
+	prefix := encodedHome + "-"
+	if !strings.HasPrefix(encoded, prefix) {
+		return encoded
+	}
+	remainder := encoded[len(prefix):]
+	remainder = strings.ReplaceAll(remainder, "--", " · ")
+	return "~/" + remainder
+}
+
+// DiscoverProjects scans homeDir/.claude/projects for project directories
+// that contain at least one .jsonl file.
+func DiscoverProjects(homeDir string) ([]ProjectEntry, error) {
 	projectsDir := filepath.Join(homeDir, ".claude", "projects")
 
-	var entries []Entry
-	err := fs.WalkDir(os.DirFS(projectsDir), ".", func(path string, d fs.DirEntry, err error) error {
-		if err != nil {
-			// Skip unreadable subtrees.
-			return nil
+	dirEntries, err := os.ReadDir(projectsDir)
+	if err != nil {
+		if errors.Is(err, os.ErrNotExist) {
+			return nil, fmt.Errorf("%w in %s", ErrNoProjects, projectsDir)
 		}
+		return nil, fmt.Errorf("read %s: %w", projectsDir, err)
+	}
+
+	var projects []ProjectEntry
+	for _, d := range dirEntries {
+		if !d.IsDir() {
+			continue
+		}
+
+		projDir := filepath.Join(projectsDir, d.Name())
+		sessions, err := DiscoverSessions(projDir)
+		if err != nil {
+			return nil, err
+		}
+		if len(sessions) == 0 {
+			continue
+		}
+
+		projects = append(projects, ProjectEntry{
+			Dir:               projDir,
+			MostRecentModTime: sessions[0].ModTime,
+			SessionCount:      len(sessions),
+		})
+	}
+
+	if len(projects) == 0 {
+		return nil, fmt.Errorf("%w in %s", ErrNoProjects, projectsDir)
+	}
+
+	slices.SortFunc(projects, func(a, b ProjectEntry) int {
+		if a.MostRecentModTime.After(b.MostRecentModTime) {
+			return -1
+		}
+		if a.MostRecentModTime.Before(b.MostRecentModTime) {
+			return 1
+		}
+		return 0
+	})
+
+	return projects, nil
+}
+
+// DiscoverSessions scans projectDir for .jsonl files, returning them sorted
+// by modification time (most recent first). Returns an empty slice if no
+// .jsonl files are found.
+func DiscoverSessions(projectDir string) ([]SessionEntry, error) {
+	dirEntries, err := os.ReadDir(projectDir)
+	if err != nil {
+		return nil, fmt.Errorf("read %s: %w", projectDir, err)
+	}
+
+	var sessions []SessionEntry
+	for _, d := range dirEntries {
 		if d.IsDir() {
-			return nil
+			continue
 		}
 		if !strings.EqualFold(filepath.Ext(d.Name()), ".jsonl") {
-			return nil
+			continue
 		}
 		info, err := d.Info()
 		if err != nil {
-			return nil
+			continue
 		}
-		entries = append(entries, Entry{
-			Path:    filepath.Join(projectsDir, path),
+		sessions = append(sessions, SessionEntry{
+			Path:    filepath.Join(projectDir, d.Name()),
 			ModTime: info.ModTime(),
+			Size:    info.Size(),
 		})
-		return nil
-	})
-	if err != nil && !errors.Is(err, fs.ErrNotExist) {
-		return nil, fmt.Errorf("walk %s: %w", projectsDir, err)
 	}
 
-	if len(entries) == 0 {
-		return nil, fmt.Errorf("%w in %s", ErrNoSessions, projectsDir)
-	}
-
-	// Sort most recent first.
-	slices.SortFunc(entries, func(a, b Entry) int {
+	slices.SortFunc(sessions, func(a, b SessionEntry) int {
 		if a.ModTime.After(b.ModTime) {
 			return -1
 		}
@@ -74,48 +189,80 @@ func Discover(homeDir string) ([]Entry, error) {
 		return 0
 	})
 
-	return entries, nil
+	return sessions, nil
 }
 
-// RelativePath returns path with homeDir replaced by "~". If path does not
-// start with homeDir, it is returned unchanged.
-func RelativePath(homeDir, path string) string {
-	if strings.HasPrefix(path, homeDir+string(filepath.Separator)) {
-		return "~" + path[len(homeDir):]
-	}
-	return path
-}
-
-// Pick presents an interactive huh select menu of discovered session files and
-// returns the chosen absolute path. If the user aborts (Ctrl-C / Esc),
-// huh.ErrUserAborted is returned.
+// Pick presents a two-step interactive selection: first choose a project
+// directory, then choose a session file within it. Returns the absolute path
+// of the chosen .jsonl file. If the user aborts (Ctrl-C / Esc) at either step,
+// ErrAborted is returned.
 func Pick(homeDir string) (string, error) {
-	entries, err := Discover(homeDir)
+	projects, err := DiscoverProjects(homeDir)
 	if err != nil {
 		return "", err
 	}
 
-	options := make([]huh.Option[string], len(entries))
-	for i, e := range entries {
-		label := RelativePath(homeDir, e.Path)
-		options[i] = huh.NewOption(label, e.Path)
+	// Step 1: project selection
+	now := time.Now()
+	projectOptions := make([]huh.Option[string], len(projects))
+	for i, p := range projects {
+		name := DecodePath(homeDir, filepath.Base(p.Dir))
+		label := fmt.Sprintf("%s  %d sessions  %s", name, p.SessionCount, RelativeTime(now, p.MostRecentModTime))
+		projectOptions[i] = huh.NewOption(label, p.Dir)
 	}
 
-	var chosen string
-	form := huh.NewForm(
+	var chosenProject string
+	projectForm := huh.NewForm(
 		huh.NewGroup(
 			huh.NewSelect[string]().
-				Title("Select a Claude Code session").
-				Options(options...).
-				Value(&chosen),
+				Title("Select a project").
+				Options(projectOptions...).
+				Value(&chosenProject),
 		),
 	)
 
-	if err := form.Run(); err != nil {
+	if err := projectForm.Run(); err != nil {
 		if errors.Is(err, huh.ErrUserAborted) {
 			return "", ErrAborted
 		}
 		return "", err
 	}
-	return chosen, nil
+
+	// Step 2: session selection
+	sessions, err := DiscoverSessions(chosenProject)
+	if err != nil {
+		return "", err
+	}
+	if len(sessions) == 0 {
+		return "", fmt.Errorf("no sessions found in %s", chosenProject)
+	}
+
+	muted := lipgloss.NewStyle().Foreground(lipgloss.Color("240"))
+	sessionOptions := make([]huh.Option[string], len(sessions))
+	for i, s := range sessions {
+		name := filepath.Base(s.Path)
+		date := muted.Render(RelativeTime(now, s.ModTime))
+		size := muted.Render(FormatSize(s.Size))
+		label := name + "  " + size + "  " + date
+		sessionOptions[i] = huh.NewOption(label, s.Path)
+	}
+
+	var chosenSession string
+	sessionForm := huh.NewForm(
+		huh.NewGroup(
+			huh.NewSelect[string]().
+				Title("Select a session").
+				Options(sessionOptions...).
+				Value(&chosenSession),
+		),
+	)
+
+	if err := sessionForm.Run(); err != nil {
+		if errors.Is(err, huh.ErrUserAborted) {
+			return "", ErrAborted
+		}
+		return "", err
+	}
+
+	return chosenSession, nil
 }
