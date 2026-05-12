@@ -40,17 +40,26 @@ var ErrNoProjects = errors.New("no Claude Code projects found")
 // otherwise.
 func RelativeTime(now, t time.Time) string {
 	d := now.Sub(t)
+	future := d < 0
+	if future {
+		d = -d
+	}
 	if d < 30*24*time.Hour {
+		var value string
 		switch {
 		case d < time.Minute:
-			return fmt.Sprintf("%ds ago", int(d.Seconds()))
+			value = fmt.Sprintf("%ds", int(d.Seconds()))
 		case d < time.Hour:
-			return fmt.Sprintf("%dm ago", int(d.Minutes()))
+			value = fmt.Sprintf("%dm", int(d.Minutes()))
 		case d < 24*time.Hour:
-			return fmt.Sprintf("%dh ago", int(d.Hours()))
+			value = fmt.Sprintf("%dh", int(d.Hours()))
 		default:
-			return fmt.Sprintf("%dd ago", int(d.Hours()/24))
+			value = fmt.Sprintf("%dd", int(d.Hours()/24))
 		}
+		if future {
+			return "in " + value
+		}
+		return value + " ago"
 	}
 	return t.Format("Jan 2")
 }
@@ -223,6 +232,9 @@ func Pick(homeDir string) (string, error) {
 	sessions, err := DiscoverSessions(chosenProject)
 	if err != nil {
 		return "", err
+	}
+	if len(sessions) == 0 {
+		return "", fmt.Errorf("no sessions found in %s", chosenProject)
 	}
 
 	muted := lipgloss.NewStyle().Foreground(lipgloss.Color("240"))

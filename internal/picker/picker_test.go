@@ -263,6 +263,26 @@ func TestRelativeTime(t *testing.T) {
 			t:    time.Date(2024, 3, 5, 0, 0, 0, 0, time.UTC),
 			want: "Mar 5",
 		},
+		{
+			name: "future seconds",
+			t:    now.Add(30 * time.Second),
+			want: "in 30s",
+		},
+		{
+			name: "future hours",
+			t:    now.Add(3 * time.Hour),
+			want: "in 3h",
+		},
+		{
+			name: "future days",
+			t:    now.Add(5 * 24 * time.Hour),
+			want: "in 5d",
+		},
+		{
+			name: "future beyond 30 days",
+			t:    now.Add(45 * 24 * time.Hour),
+			want: "Jul 30",
+		},
 	}
 
 	for _, c := range cases {
