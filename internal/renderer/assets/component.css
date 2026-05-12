@@ -375,9 +375,9 @@ section.turn .turn-marker {
   font-family: var(--font-mono);
   font-size: 0.88em;
   padding: 1.5px 6px;
-  background: var(--bg-sunk);
+  background: light-dark(var(--bg-sunk), rgba(46, 91, 255, 0.22));
   border-radius: 4px;
-  color: var(--teal-600);
+  color: light-dark(var(--teal-600), #B7CBFF);
 }
 
 /* Assistant ----------------------------------------------------- */
@@ -387,12 +387,15 @@ section.turn .turn-marker {
 .block.assistant .body p { margin: 0 0 0.85em; }
 .block.assistant .body p:first-child { margin-top: 0; }
 .block.assistant .body p:last-child { margin-bottom: 0; }
-.block.assistant .body code {
+.block.assistant .body code,
+.block.error .body code,
+details.thinking .preview code {
   font-family: var(--font-mono);
   font-size: 0.9em;
   padding: 1.5px 6px;
-  background: var(--bg-sunk);
+  background: light-dark(var(--bg-sunk), rgba(255, 255, 255, 0.08));
   border-radius: 4px;
+  color: light-dark(currentColor, #E8ECF6);
 }
 .block.assistant .body strong { font-weight: 600; }
 .block.assistant .body h1,
@@ -478,7 +481,7 @@ details.thinking .preview {
    here so the expanded body beats the 3.3em cap set for thinking. */
 details.thinking .clamp .clamp-body { max-height: 3.3em; }
 details.thinking .clamp.is-open .clamp-body { max-height: none; }
-:root { --role-thinking-text: #2E1F5F; }
+:root { --role-thinking-text: light-dark(#2E1F5F, #F0EBFF); }
 
 /* Error -------------------------------------------------------- */
 .block.error { --rule-color: var(--error-500); }
@@ -488,16 +491,16 @@ details.thinking .clamp.is-open .clamp-body { max-height: none; }
   padding: 14px 18px;
   font-family: var(--font-mono);
   font-size: 13px;
-  color: var(--error-600);
+  color: light-dark(var(--error-600), #ff8d8d);
 }
 .err-callout strong { font-weight: 600; }
 .err-callout .raw {
   display: block;
   margin-top: 8px;
   padding: 10px 12px;
-  background: rgba(255, 255, 255, 0.5);
+  background: light-dark(rgba(255, 255, 255, 0.5), rgba(0, 0, 0, 0.3));
   border-radius: 4px;
-  color: var(--ink-700);
+  color: light-dark(var(--ink-700), var(--fg-on-dark));
   font-size: 12px;
   white-space: pre-wrap;
   word-break: break-all;
@@ -950,64 +953,6 @@ details.unknown-block summary::-webkit-details-marker { display: none; }
   details.thinking .preview { color: var(--ink-900); font-style: normal; }
   details.thinking { background: var(--ink-100); }
   .turn-meta, .session-head .catalog, .block .role { color: var(--ink-700); }
-}
-
-/* Dark-mode block/body/code/err overrides */
-@media (prefers-color-scheme: dark) {
-  :root {
-    --role-thinking-text: #F0EBFF;
-  }
-  .block.user .body,
-  .block.assistant .body,
-  .block.error .body { color: var(--fg); }
-  .block .body code,
-  details.thinking .preview code {
-    background: rgba(255, 255, 255, 0.08);
-    color: #E8ECF6;
-  }
-  .block.user .body code {
-    background: rgba(46, 91, 255, 0.22);
-    color: #B7CBFF;
-  }
-  .tool-card .head .name { color: var(--fg); }
-  .tool-card pre.code {
-    background: #0F1428;
-    color: #E8ECF6;
-    border-color: #1F2740;
-  }
-  .err-callout { color: #ff8d8d; }
-  .err-callout .raw {
-    background: rgba(0, 0, 0, 0.3);
-    color: var(--fg-on-dark);
-  }
-}
-
-/* Theme toggle: data-theme overrides for component dark mode */
-html[data-theme="dark"] {
-  --role-thinking-text: #F0EBFF;
-}
-html[data-theme="dark"] .block.user .body,
-html[data-theme="dark"] .block.assistant .body,
-html[data-theme="dark"] .block.error .body { color: var(--fg); }
-html[data-theme="dark"] .block .body code,
-html[data-theme="dark"] details.thinking .preview code {
-  background: rgba(255, 255, 255, 0.08);
-  color: #E8ECF6;
-}
-html[data-theme="dark"] .block.user .body code {
-  background: rgba(46, 91, 255, 0.22);
-  color: #B7CBFF;
-}
-html[data-theme="dark"] .tool-card .head .name { color: var(--fg); }
-html[data-theme="dark"] .tool-card pre.code {
-  background: #0F1428;
-  color: #E8ECF6;
-  border-color: #1F2740;
-}
-html[data-theme="dark"] .err-callout { color: #ff8d8d; }
-html[data-theme="dark"] .err-callout .raw {
-  background: rgba(0, 0, 0, 0.3);
-  color: var(--fg-on-dark);
 }
 
 /* Narrow viewport: rail collapses into a <details> above the main column. */
