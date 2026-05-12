@@ -20,11 +20,13 @@ jobs:
           go-version-file: go.mod
           cache: true
 
+      - uses: jdx/mise-action@v4
+        with:
+          install: false
+
       - name: Read just version
         id: tool-versions
-        run: |
-          version=$(grep '^just ' .mise.toml | sed 's/.*"\([0-9][^"]*\)".*/\1/')
-          echo "just=${version}" >> "$GITHUB_OUTPUT"
+        run: echo "just=$(mise current just)" >> "$GITHUB_OUTPUT"
 
       - uses: extractions/setup-just@v4
         with:
@@ -44,11 +46,15 @@ jobs:
           go-version-file: go.mod
           cache: true
 
+      - uses: jdx/mise-action@v4
+        with:
+          install: false
+
       - name: Read tool versions
         id: tool-versions
         run: |
-          echo "just=$(grep '^just ' .mise.toml | sed 's/.*"\([0-9][^"]*\)".*/\1/')" >> "$GITHUB_OUTPUT"
-          echo "golangci-lint=$(grep '^"golangci-lint"' .mise.toml | sed 's/.*"\([0-9][^"]*\)".*/\1/')" >> "$GITHUB_OUTPUT"
+          echo "just=$(mise current just)" >> "$GITHUB_OUTPUT"
+          echo "golangci-lint=$(mise current golangci-lint)" >> "$GITHUB_OUTPUT"
 
       - uses: extractions/setup-just@v4
         with:
