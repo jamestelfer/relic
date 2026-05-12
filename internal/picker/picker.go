@@ -33,6 +33,42 @@ var ErrAborted = errors.New("picker aborted")
 // ErrNoProjects is returned when no project directories with .jsonl files are found.
 var ErrNoProjects = errors.New("no Claude Code projects found")
 
+// RelativeTime formats the duration between now and t as a human-readable
+// relative string for times less than 30 days old, or as an absolute date
+// otherwise.
+func RelativeTime(now, t time.Time) string {
+	d := now.Sub(t)
+	if d < 30*24*time.Hour {
+		switch {
+		case d < time.Minute:
+			return fmt.Sprintf("%ds ago", int(d.Seconds()))
+		case d < time.Hour:
+			return fmt.Sprintf("%dm ago", int(d.Minutes()))
+		case d < 24*time.Hour:
+			return fmt.Sprintf("%dh ago", int(d.Hours()))
+		default:
+			return fmt.Sprintf("%dd ago", int(d.Hours()/24))
+		}
+	}
+	return t.Format("Jan 2")
+}
+
+// DecodePath strips the encoded home directory prefix from an encoded project
+// directory name and replaces it with "~/". The remainder of the path is left
+// encoded. If the encoded name does not start with the home prefix, it is
+// returned unchanged.
+func DecodePath(homeDir, encoded string) string {
+	if encoded == "" {
+		return ""
+	}
+	encodedHome := strings.ReplaceAll(homeDir, string(filepath.Separator), "-")
+	prefix := encodedHome + "-"
+	if !strings.HasPrefix(encoded, prefix) {
+		return encoded
+	}
+	return "~/" + encoded[len(prefix):]
+}
+
 // DiscoverProjects scans homeDir/.claude/projects for project directories
 // that contain at least one .jsonl file.
 func DiscoverProjects(homeDir string) ([]ProjectEntry, error) {
@@ -71,6 +107,16 @@ func DiscoverProjects(homeDir string) ([]ProjectEntry, error) {
 	if len(projects) == 0 {
 		return nil, fmt.Errorf("%w in %s", ErrNoProjects, projectsDir)
 	}
+
+	slices.SortFunc(projects, func(a, b ProjectEntry) int {
+		if a.MostRecentModTime.After(b.MostRecentModTime) {
+			return -1
+		}
+		if a.MostRecentModTime.Before(b.MostRecentModTime) {
+			return 1
+		}
+		return 0
+	})
 
 	return projects, nil
 }
@@ -126,9 +172,11 @@ func Pick(homeDir string) (string, error) {
 	}
 
 	// Step 1: project selection
+	now := time.Now()
 	projectOptions := make([]huh.Option[string], len(projects))
 	for i, p := range projects {
-		label := filepath.Base(p.Dir)
+		name := DecodePath(homeDir, filepath.Base(p.Dir))
+		label := fmt.Sprintf("%s  %d sessions  %s", name, p.SessionCount, RelativeTime(now, p.MostRecentModTime))
 		projectOptions[i] = huh.NewOption(label, p.Dir)
 	}
 

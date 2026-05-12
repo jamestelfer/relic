@@ -156,6 +156,124 @@ func TestDiscoverProjectsSingleSession(t *testing.T) {
 	assert.Equal(t, 1, projects[0].SessionCount)
 }
 
+func TestDecodePath(t *testing.T) {
+	cases := []struct {
+		name    string
+		homeDir string
+		encoded string
+		want    string
+	}{
+		{
+			name:    "home prefix replaced with ~/",
+			homeDir: "/Users/dev",
+			encoded: "-Users-dev-src-oss-relic",
+			want:    "~/src-oss-relic",
+		},
+		{
+			name:    "path not under home returned as-is",
+			homeDir: "/Users/dev",
+			encoded: "-var-data-project",
+			want:    "-var-data-project",
+		},
+		{
+			name:    "worktree-style path",
+			homeDir: "/Users/dev",
+			encoded: "-Users-dev-src-oss-relic-.claude-worktrees-abc",
+			want:    "~/src-oss-relic-.claude-worktrees-abc",
+		},
+		{
+			name:    "empty string",
+			homeDir: "/Users/dev",
+			encoded: "",
+			want:    "",
+		},
+		{
+			name:    "root home dir",
+			homeDir: "/",
+			encoded: "-src-project",
+			want:    "-src-project",
+		},
+	}
+
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			got := picker.DecodePath(c.homeDir, c.encoded)
+			assert.Equal(t, c.want, got)
+		})
+	}
+}
+
+func TestRelativeTime(t *testing.T) {
+	now := time.Date(2025, 6, 15, 12, 0, 0, 0, time.UTC)
+
+	cases := []struct {
+		name string
+		t    time.Time
+		want string
+	}{
+		{
+			name: "seconds ago",
+			t:    now.Add(-30 * time.Second),
+			want: "30s ago",
+		},
+		{
+			name: "minutes ago",
+			t:    now.Add(-45 * time.Minute),
+			want: "45m ago",
+		},
+		{
+			name: "hours ago",
+			t:    now.Add(-3 * time.Hour),
+			want: "3h ago",
+		},
+		{
+			name: "days ago",
+			t:    now.Add(-5 * 24 * time.Hour),
+			want: "5d ago",
+		},
+		{
+			name: "29 days ago (still relative)",
+			t:    now.Add(-29 * 24 * time.Hour),
+			want: "29d ago",
+		},
+		{
+			name: "30 days ago (absolute)",
+			t:    now.Add(-30 * 24 * time.Hour),
+			want: "May 16",
+		},
+		{
+			name: "months ago (absolute)",
+			t:    time.Date(2025, 1, 15, 0, 0, 0, 0, time.UTC),
+			want: "Jan 15",
+		},
+		{
+			name: "different year",
+			t:    time.Date(2024, 3, 5, 0, 0, 0, 0, time.UTC),
+			want: "Mar 5",
+		},
+	}
+
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			got := picker.RelativeTime(now, c.t)
+			assert.Equal(t, c.want, got)
+		})
+	}
+}
+
+func TestDiscoverProjectsSortedByMostRecent(t *testing.T) {
+	root := buildProjectTree(t)
+
+	projects, err := picker.DiscoverProjects(root)
+	require.NoError(t, err)
+	require.Len(t, projects, 3)
+
+	// gamma (Dec) > beta (Jun) > alpha (Jan)
+	assert.Contains(t, projects[0].Dir, "gamma")
+	assert.Contains(t, projects[1].Dir, "beta")
+	assert.Contains(t, projects[2].Dir, "alpha")
+}
+
 func TestDiscoverSessionsExcludesNonJsonl(t *testing.T) {
 	root := buildProjectTree(t)
 	emptyDir := filepath.Join(root, ".claude", "projects", "-Users-dev-src-empty")
