@@ -2,12 +2,15 @@ package renderer
 
 import (
 	"html/template"
+	"strings"
 
-	_ "github.com/microcosm-cc/bluemonday"
+	"github.com/microcosm-cc/bluemonday"
 	"github.com/yuin/goldmark/ast"
 	goldmarkRenderer "github.com/yuin/goldmark/renderer"
 	"github.com/yuin/goldmark/util"
 )
+
+var sanitizePolicy = bluemonday.UGCPolicy()
 
 type htmlSanitizer struct{}
 
@@ -21,14 +24,18 @@ func (s *htmlSanitizer) renderHTMLBlock(w util.BufWriter, source []byte, node as
 		return ast.WalkContinue, nil
 	}
 	n := node.(*ast.HTMLBlock)
+
+	var raw strings.Builder
 	lines := n.Lines()
 	for i := 0; i < lines.Len(); i++ {
 		line := lines.At(i)
-		_, _ = w.WriteString(template.HTMLEscapeString(string(line.Value(source))))
+		raw.Write(line.Value(source))
 	}
 	if n.HasClosure() {
-		_, _ = w.WriteString(template.HTMLEscapeString(string(n.ClosureLine.Value(source))))
+		raw.Write(n.ClosureLine.Value(source))
 	}
+
+	_, _ = w.WriteString(sanitize(raw.String()))
 	return ast.WalkContinue, nil
 }
 
@@ -37,9 +44,21 @@ func (s *htmlSanitizer) renderRawHTML(w util.BufWriter, source []byte, node ast.
 		return ast.WalkSkipChildren, nil
 	}
 	n := node.(*ast.RawHTML)
+
+	var raw strings.Builder
 	for i := 0; i < n.Segments.Len(); i++ {
 		seg := n.Segments.At(i)
-		_, _ = w.WriteString(template.HTMLEscapeString(string(seg.Value(source))))
+		raw.Write(seg.Value(source))
 	}
+
+	_, _ = w.WriteString(sanitize(raw.String()))
 	return ast.WalkSkipChildren, nil
+}
+
+func sanitize(raw string) string {
+	out := sanitizePolicy.Sanitize(raw)
+	if strings.TrimSpace(out) == "" {
+		return template.HTMLEscapeString(raw)
+	}
+	return out
 }

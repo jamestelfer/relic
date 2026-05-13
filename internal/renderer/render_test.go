@@ -904,14 +904,15 @@ func TestRender_BlockHTML_ScriptEscaped(t *testing.T) {
 	assert.NotContains(t, out, "<!-- raw HTML omitted -->", "no omit comment")
 }
 
-func TestRender_BlockHTML_DivEscaped(t *testing.T) {
+func TestRender_BlockHTML_SafeDivRendered(t *testing.T) {
 	s := session.Session{
 		Turns: []session.Turn{{Index: 1, Blocks: []session.Block{
 			&session.AssistantText{Text: "Example:\n\n<div>content</div>\n\nEnd."},
 		}}},
 	}
 	out := render(t, s, renderer.Options{Name: "test"})
-	assert.Contains(t, out, "&lt;div&gt;content&lt;/div&gt;", "block div should be escaped")
+	assert.Contains(t, out, "<div>content</div>", "safe div renders as HTML")
+	assert.NotContains(t, out, "&lt;div&gt;", "safe div should not be escaped")
 	assert.NotContains(t, out, "<!-- raw HTML omitted -->", "no omit comment")
 }
 
@@ -939,6 +940,61 @@ func TestRender_NormalMarkdown_Unaffected(t *testing.T) {
 	assert.Contains(t, out, "chroma", "code block gets syntax highlighting")
 }
 
+func TestRender_SafeAnchor_RenderedAsHTML(t *testing.T) {
+	s := session.Session{
+		Turns: []session.Turn{{Index: 1, Blocks: []session.Block{
+			&session.AssistantText{Text: `Visit <a href="http://example.com">link</a> now.`},
+		}}},
+	}
+	out := render(t, s, renderer.Options{Name: "test"})
+	assert.Contains(t, out, `<a href="http://example.com"`, "safe anchor rendered as HTML")
+	assert.Contains(t, out, `>link</a>`, "link text and closing tag present")
+	assert.NotContains(t, out, "&lt;a href", "safe anchor should not be escaped")
+}
+
+func TestRender_JavascriptHref_Stripped(t *testing.T) {
+	s := session.Session{
+		Turns: []session.Turn{{Index: 1, Blocks: []session.Block{
+			&session.AssistantText{Text: "Try this:\n\n<a href=\"javascript:alert(1)\">click</a>\n\nDone."},
+		}}},
+	}
+	out := render(t, s, renderer.Options{Name: "test"})
+	assert.NotContains(t, out, `href="javascript:`, "no functional javascript: href in output")
+}
+
+func TestRender_OnclickAttr_Stripped(t *testing.T) {
+	s := session.Session{
+		Turns: []session.Turn{{Index: 1, Blocks: []session.Block{
+			&session.AssistantText{Text: "Try this:\n\n<button onclick=\"alert(1)\">click</button>\n\nDone."},
+		}}},
+	}
+	out := render(t, s, renderer.Options{Name: "test"})
+	assert.NotContains(t, out, `onclick="`, "no functional onclick attribute in output")
+}
+
+func TestRender_GitHubElements_DetailsRendered(t *testing.T) {
+	s := session.Session{
+		Turns: []session.Turn{{Index: 1, Blocks: []session.Block{
+			&session.AssistantText{Text: "Info:\n\n<details><summary>Click</summary>Content</details>\n\nEnd."},
+		}}},
+	}
+	out := render(t, s, renderer.Options{Name: "test"})
+	assert.Contains(t, out, "<details>", "details element rendered as HTML")
+	assert.Contains(t, out, "<summary>Click</summary>", "summary element rendered as HTML")
+}
+
+func TestRender_GitHubElements_MarkSupSub(t *testing.T) {
+	s := session.Session{
+		Turns: []session.Turn{{Index: 1, Blocks: []session.Block{
+			&session.AssistantText{Text: "Text with <mark>highlight</mark> and x<sup>2</sup> and H<sub>2</sub>O."},
+		}}},
+	}
+	out := render(t, s, renderer.Options{Name: "test"})
+	assert.Contains(t, out, "<mark>highlight</mark>", "mark element rendered")
+	assert.Contains(t, out, "<sup>2</sup>", "sup element rendered")
+	assert.Contains(t, out, "<sub>2</sub>", "sub element rendered")
+}
+
 func TestRender_HTMLSanitization_Snapshot(t *testing.T) {
 	s := session.Session{
 		Turns: []session.Turn{{Index: 1, Blocks: []session.Block{
@@ -947,9 +1003,13 @@ func TestRender_HTMLSanitization_Snapshot(t *testing.T) {
 				"",
 				"<script>alert('xss')</script>",
 				"",
-				"<div class=\"evil\">block div</div>",
+				"<div>safe block div</div>",
 				"",
 				"<iframe src=\"http://evil.com\"></iframe>",
+				"",
+				"Link: <a href=\"http://example.com\">safe link</a> here.",
+				"",
+				"<details><summary>Expand</summary>Detail content</details>",
 				"",
 				"Safe markdown: **bold** and `code`.",
 			}, "\n")},
