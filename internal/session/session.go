@@ -68,6 +68,13 @@ func (b *ToolCall) Arg() string {
 			return fmt.Sprintf("%d todos", len(todos))
 		}
 		return ""
+	case "AskUserQuestion":
+		if qs, ok := b.Input["questions"].([]any); ok && len(qs) > 0 {
+			if q, ok := qs[0].(map[string]any); ok {
+				return inputString(q, "question")
+			}
+		}
+		return ""
 	}
 	return defaultArgFromInput(b.Input)
 }

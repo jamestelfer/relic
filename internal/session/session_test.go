@@ -182,6 +182,7 @@ func TestToolCallArg_KnownTools(t *testing.T) {
 		{"Grep", map[string]any{"pattern": "TODO"}, "TODO"},
 		{"WebSearch", map[string]any{"query": "golang jsonv2"}, "golang jsonv2"},
 		{"TodoWrite", map[string]any{"todos": []any{1, 2, 3}}, "3 todos"},
+		{"AskUserQuestion", map[string]any{"questions": []any{map[string]any{"question": "Should I continue?", "header": "Confirm"}}}, "Should I continue?"},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
