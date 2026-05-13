@@ -20,7 +20,7 @@
   font-size: 11.5px;
   letter-spacing: 0.04em;
   text-transform: uppercase;
-  color: #6E7891;
+  color: var(--ink-400);
 }
 .term .chrome .dots { display: flex; gap: 5px; }
 .term .chrome .dots span {

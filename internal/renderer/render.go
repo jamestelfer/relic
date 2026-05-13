@@ -306,15 +306,15 @@ func termLabel(r *session.ToolResult) string {
 		}
 	case *session.ReadEnrichment:
 		if e != nil {
-			return readLabel(e)
+			return name + " · " + readLabel(e)
 		}
 	case *session.WriteEnrichment:
 		if e != nil {
-			return writeEditLabel(basename(e.FilePath), e.Action)
+			return name + " · " + writeEditLabel(basename(e.FilePath), e.Action)
 		}
 	case *session.EditEnrichment:
 		if e != nil {
-			return writeEditLabel(basename(e.FilePath), e.Action)
+			return name + " · " + writeEditLabel(basename(e.FilePath), e.Action)
 		}
 	case *session.GrepEnrichment:
 		if e != nil {
@@ -322,11 +322,11 @@ func termLabel(r *session.ToolResult) string {
 		}
 	case *session.GlobEnrichment:
 		if e != nil {
-			return globLabel(e)
+			return name + " · " + globLabel(e)
 		}
 	case *session.AgentEnrichment:
 		if e != nil {
-			return agentLabel(e)
+			return name + " · " + agentLabel(e)
 		}
 	}
 
@@ -355,22 +355,22 @@ func basename(path string) string {
 	return path
 }
 
-func grepLabel(fallback string, e *session.GrepEnrichment) string {
+func grepLabel(name string, e *session.GrepEnrichment) string {
 	switch e.Mode {
 	case "content":
 		if e.NumLines > 0 && e.NumFiles > 0 {
-			return fmt.Sprintf("%d lines in %d files", e.NumLines, e.NumFiles)
+			return fmt.Sprintf("%s · %d lines in %d files", name, e.NumLines, e.NumFiles)
 		}
 	case "files_with_matches":
 		if e.NumFiles > 0 {
-			return fmt.Sprintf("%d files", e.NumFiles)
+			return fmt.Sprintf("%s · %d files", name, e.NumFiles)
 		}
 	case "count":
 		if e.NumMatches > 0 {
-			return fmt.Sprintf("%d matches", e.NumMatches)
+			return fmt.Sprintf("%s · %d matches", name, e.NumMatches)
 		}
 	}
-	return fallback
+	return name
 }
 
 func globLabel(e *session.GlobEnrichment) string {

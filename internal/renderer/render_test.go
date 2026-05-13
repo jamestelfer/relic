@@ -607,7 +607,7 @@ func TestRender_ReadEnrichment_WithLineRange(t *testing.T) {
 		}}},
 	}
 	out := render(t, s, renderer.Options{Name: "test"})
-	assert.Contains(t, out, "parser.go:10-59", "chrome label should show basename:start-end")
+	assert.Contains(t, out, "Read · parser.go:10-59", "chrome label should show tool · basename:start-end")
 }
 
 func TestRender_ReadEnrichment_NoLineRange(t *testing.T) {
@@ -626,7 +626,7 @@ func TestRender_ReadEnrichment_NoLineRange(t *testing.T) {
 		}}},
 	}
 	out := render(t, s, renderer.Options{Name: "test"})
-	assert.Contains(t, out, "parser.go", "chrome label should show basename")
+	assert.Contains(t, out, "Read · parser.go", "chrome label should show tool · basename")
 	assert.NotContains(t, out, "parser.go:", "no line range when absent")
 }
 
@@ -641,7 +641,7 @@ func TestRender_WriteEnrichment_Created(t *testing.T) {
 		}}},
 	}
 	out := render(t, s, renderer.Options{Name: "test"})
-	assert.Contains(t, out, "new_file.go · created", "chrome label: basename · created")
+	assert.Contains(t, out, "Write · new_file.go · created", "chrome label: tool · basename · created")
 }
 
 func TestRender_WriteEnrichment_Updated(t *testing.T) {
@@ -655,7 +655,7 @@ func TestRender_WriteEnrichment_Updated(t *testing.T) {
 		}}},
 	}
 	out := render(t, s, renderer.Options{Name: "test"})
-	assert.Contains(t, out, "existing.go · updated", "chrome label: basename · updated")
+	assert.Contains(t, out, "Write · existing.go · updated", "chrome label: tool · basename · updated")
 }
 
 func TestRender_EditEnrichment(t *testing.T) {
@@ -669,7 +669,7 @@ func TestRender_EditEnrichment(t *testing.T) {
 		}}},
 	}
 	out := render(t, s, renderer.Options{Name: "test"})
-	assert.Contains(t, out, "session.go · updated", "chrome label: basename · updated")
+	assert.Contains(t, out, "Edit · session.go · updated", "chrome label: tool · basename · updated")
 }
 
 func TestRender_GrepEnrichment_ContentMode(t *testing.T) {
@@ -683,7 +683,7 @@ func TestRender_GrepEnrichment_ContentMode(t *testing.T) {
 		}}},
 	}
 	out := render(t, s, renderer.Options{Name: "test"})
-	assert.Contains(t, out, "25 lines in 3 files", "chrome label: content mode summary")
+	assert.Contains(t, out, "Grep · 25 lines in 3 files", "chrome label: tool · content mode summary")
 }
 
 func TestRender_GrepEnrichment_FilesMode(t *testing.T) {
@@ -697,7 +697,7 @@ func TestRender_GrepEnrichment_FilesMode(t *testing.T) {
 		}}},
 	}
 	out := render(t, s, renderer.Options{Name: "test"})
-	assert.Contains(t, out, "7 files", "chrome label: files_with_matches mode")
+	assert.Contains(t, out, "Grep · 7 files", "chrome label: tool · files_with_matches mode")
 }
 
 func TestRender_GrepEnrichment_CountMode(t *testing.T) {
@@ -711,7 +711,7 @@ func TestRender_GrepEnrichment_CountMode(t *testing.T) {
 		}}},
 	}
 	out := render(t, s, renderer.Options{Name: "test"})
-	assert.Contains(t, out, "25 matches", "chrome label: count mode shows match count")
+	assert.Contains(t, out, "Grep · 25 matches", "chrome label: tool · count mode shows match count")
 }
 
 func TestRender_GrepEnrichment_CountMode_NoData(t *testing.T) {
@@ -739,7 +739,7 @@ func TestRender_GlobEnrichment(t *testing.T) {
 		}}},
 	}
 	out := render(t, s, renderer.Options{Name: "test"})
-	assert.Contains(t, out, "8 files", "chrome label: file count")
+	assert.Contains(t, out, "Glob · 8 files", "chrome label: tool · file count")
 	assert.NotContains(t, out, "truncated", "no truncated marker when not truncated")
 }
 
@@ -754,7 +754,7 @@ func TestRender_GlobEnrichment_Truncated(t *testing.T) {
 		}}},
 	}
 	out := render(t, s, renderer.Options{Name: "test"})
-	assert.Contains(t, out, "100 files (truncated)", "chrome label: truncated glob")
+	assert.Contains(t, out, "Glob · 100 files (truncated)", "chrome label: tool · truncated glob")
 }
 
 func TestRender_AgentEnrichment(t *testing.T) {
@@ -768,9 +768,7 @@ func TestRender_AgentEnrichment(t *testing.T) {
 		}}},
 	}
 	out := render(t, s, renderer.Options{Name: "test"})
-	assert.Contains(t, out, "general-purpose", "chrome label: agent type")
-	assert.Contains(t, out, "45s", "chrome label: duration")
-	assert.Contains(t, out, "12.5k tokens", "chrome label: token count")
+	assert.Contains(t, out, "Agent · general-purpose · 45s · 12.5k tokens", "chrome label: tool · agent type · duration · tokens")
 }
 
 func TestRender_AgentEnrichment_SubSecond(t *testing.T) {
