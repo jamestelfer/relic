@@ -1410,6 +1410,65 @@ func TestTransformAskUserQuestionEnrichment(t *testing.T) {
 	assert.Equal(t, "Put it on ~/Desktop/out.html", q1.Freetext)
 }
 
+func TestTransformAskUserQuestionEnrichment_MultiSelect(t *testing.T) {
+	ts := time.Date(2025, 1, 15, 10, 0, 0, 0, time.UTC)
+	res := parser.Result{
+		Messages: []parser.Message{
+			{Role: "user", Timestamp: &ts, LineNum: 1,
+				Content: []parser.ContentBlock{&parser.TextBlock{Text: "go"}}},
+			{Role: "assistant", Timestamp: &ts, LineNum: 2,
+				Content: []parser.ContentBlock{&parser.ToolUseBlock{
+					ID: "toolu_01", Name: "AskUserQuestion",
+					Input: map[string]any{"questions": []any{
+						map[string]any{
+							"question":    "Which features?",
+							"header":      "Features",
+							"options":     []any{map[string]any{"label": "Search"}, map[string]any{"label": "Tasks"}, map[string]any{"label": "Web"}},
+							"multiSelect": true,
+						},
+					}},
+				}}},
+			{Role: "user", Timestamp: &ts, LineNum: 3,
+				Envelope: parser.Envelope{ToolUseResult: map[string]any{
+					"questions": []any{
+						map[string]any{
+							"question":    "Which features?",
+							"header":      "Features",
+							"options":     []any{map[string]any{"label": "Search"}, map[string]any{"label": "Tasks"}, map[string]any{"label": "Web"}},
+							"multiSelect": true,
+						},
+					},
+					"answers": map[string]any{
+						"Which features?": []any{"Search", "Web"},
+					},
+				}},
+				Content: []parser.ContentBlock{&parser.ToolResultBlock{
+					ToolUseID: "toolu_01",
+					Content:   "User has answered your questions.",
+				}}},
+		},
+	}
+	s := session.Transform(res)
+
+	var result *session.ToolResult
+	for _, b := range s.Turns[0].Blocks {
+		if tr, ok := b.(*session.ToolResult); ok {
+			result = tr
+			break
+		}
+	}
+	require.NotNil(t, result)
+	require.NotNil(t, result.Enrichment)
+
+	ask, ok := result.Enrichment.(*session.AskUserQuestionEnrichment)
+	require.True(t, ok)
+	require.Len(t, ask.Questions, 1)
+
+	q := ask.Questions[0]
+	assert.Equal(t, []string{"Search", "Tasks", "Web"}, q.Options)
+	assert.Equal(t, []string{"Search", "Web"}, q.Selected)
+}
+
 func TestTransformAskUserQuestionEnrichment_Malformed(t *testing.T) {
 	ts := time.Date(2025, 1, 15, 10, 0, 0, 0, time.UTC)
 

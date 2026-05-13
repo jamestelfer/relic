@@ -254,8 +254,17 @@ func interpretAskUserQuestion(m map[string]any) *AskUserQuestionEnrichment {
 		}
 
 		var selected []string
-		if answer, ok := answers[questionText].(string); ok && answer != "" {
-			selected = []string{answer}
+		switch v := answers[questionText].(type) {
+		case []any:
+			for _, item := range v {
+				if s, ok := item.(string); ok && s != "" {
+					selected = append(selected, s)
+				}
+			}
+		case string:
+			if v != "" {
+				selected = []string{v}
+			}
 		}
 
 		var freetext string
