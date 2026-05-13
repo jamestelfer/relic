@@ -3,6 +3,7 @@ package renderer
 import (
 	"html/template"
 
+	_ "github.com/microcosm-cc/bluemonday"
 	"github.com/yuin/goldmark/ast"
 	goldmarkRenderer "github.com/yuin/goldmark/renderer"
 	"github.com/yuin/goldmark/util"
