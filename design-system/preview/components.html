@@ -207,6 +207,21 @@
   .todo-item .todo-priority.medium { background: oklch(0.94 0.05 75); color: oklch(0.42 0.14 75); }
   .todo-item .todo-priority.low    { background: var(--bg-sunk); color: var(--fg-muted); border: 1px solid var(--border); }
 
+  .tool-card[data-tool="AskUserQuestion"] .head .icon { background: var(--teal-600); }
+  .ask-list { padding: 12px 16px; display: flex; flex-direction: column; gap: 12px; border-top: 1px solid var(--border); }
+  .ask-item { display: flex; flex-direction: column; gap: 6px; padding: 10px 12px; border-radius: var(--radius-sm); background: var(--bg-sunk); }
+  .ask-header { font-family: var(--font-mono); font-size: 10.5px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--fg-subtle); }
+  .ask-question { font-family: var(--font-ui); font-size: 13.5px; line-height: 1.5; color: var(--fg); }
+  .ask-options { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px; }
+  .ask-option { font-family: var(--font-mono); font-size: 11.5px; padding: 3px 10px; border-radius: 99px; background: var(--bg-paper); border: 1px solid var(--border); color: var(--fg-muted); }
+  .ask-option.selected { background: var(--teal-50); border-color: var(--teal-400); color: var(--teal-700); font-weight: 500; }
+
+  .ask-result { padding: 12px 16px; display: flex; flex-direction: column; gap: 12px; background: var(--bg-paper); border: 1px solid var(--border); border-radius: var(--radius-md); }
+  .ask-result-item { display: flex; flex-direction: column; gap: 6px; padding: 10px 12px; border-radius: var(--radius-sm); background: var(--bg-sunk); }
+  .ask-result .ask-option:not(.selected) { opacity: 0.4; }
+  .ask-freetext { margin-top: 4px; padding: 8px 12px; background: var(--bg-paper); border: 1px solid var(--teal-300); border-radius: var(--radius-sm); font-family: var(--font-ui); font-size: 13.5px; line-height: 1.5; color: var(--fg); }
+  .ask-freetext code { font-family: var(--font-mono); font-size: 0.88em; padding: 1px 5px; background: var(--bg-sunk); border-radius: 3px; }
+
   .plan-body { padding: 16px 20px; font-family: var(--font-ui); font-size: 14px; line-height: 1.7; color: var(--fg); border-top: 1px solid var(--border); }
   .plan-body h3 { font-family: var(--font-ui); font-size: 13px; font-weight: 700; letter-spacing: 0.03em; text-transform: uppercase; color: var(--fg-muted); margin: 16px 0 6px; }
   .plan-body h3:first-child { margin-top: 0; }
@@ -362,6 +377,7 @@
   <a class="toc-item" href="#c-webfetch">     <span class="toc-dot" style="background:var(--ink-600)"></span>   <span class="toc-label">WebFetch</span> </a>
   <a class="toc-item" href="#c-task">         <span class="toc-dot" style="background:var(--ink-800)"></span>   <span class="toc-label">Task</span> delegation </a>
   <a class="toc-item" href="#c-todo">         <span class="toc-dot" style="background:oklch(0.52 0.14 145)"></span> <span class="toc-label">TodoWrite</span> </a>
+  <a class="toc-item" href="#c-ask">          <span class="toc-dot" style="background:var(--teal-600)"></span>  <span class="toc-label">AskUserQuestion</span> </a>
   <a class="toc-item" href="#c-plan">         <span class="toc-dot" style="background:var(--lapis-700)"></span>  <span class="toc-label">exit_plan_mode</span> </a>
   <a class="toc-item" href="#c-mcp">          <span class="toc-dot" style="background:var(--lapis-700)"></span>  <span class="toc-label">MCP tool</span> </a>
   <a class="toc-item" href="#c-tool-result">  <span class="toc-dot" style="background:var(--ink-400)"></span>   <span class="toc-label">tool_result</span> terminal </a>
@@ -657,6 +673,49 @@
       </article>
     </div>
 
+    <div class="comp-item" id="c-ask">
+      <div class="comp-name">AskUserQuestion — prompt (tool_use) <span class="relevance">relevance 5</span></div>
+      <article class="block tool">
+        <div class="role"><span class="tag">tool_use</span><a class="pair-id" href="#c-ask-result">tu_ask ↓</a><time>15:12</time></div>
+        <div class="tool-card" data-tool="AskUserQuestion">
+          <div class="head">
+            <span class="icon">?</span>
+            <span class="name">AskUserQuestion</span>
+            <span class="arg">Should I also run a Playwright browser session?</span>
+          </div>
+          <div class="ask-list">
+            <div class="ask-item">
+              <div class="ask-header">Scope</div>
+              <div class="ask-question">Should I also run a Playwright browser session to exercise that tool, or keep this to CLI-only tools?</div>
+              <div class="ask-options">
+                <span class="ask-option">CLI tools only</span>
+                <span class="ask-option">Include browser</span>
+                <span class="ask-option">Headless only</span>
+              </div>
+            </div>
+            <div class="ask-item">
+              <div class="ask-header">Coverage</div>
+              <div class="ask-question">Which tool categories should the demo session exercise?</div>
+              <div class="ask-options">
+                <span class="ask-option">File I/O</span>
+                <span class="ask-option">Search</span>
+                <span class="ask-option">Tasks</span>
+                <span class="ask-option">Web</span>
+              </div>
+            </div>
+            <div class="ask-item">
+              <div class="ask-header">Output</div>
+              <div class="ask-question">Where should the rendered HTML be saved?</div>
+              <div class="ask-options">
+                <span class="ask-option">Current directory</span>
+                <span class="ask-option">Temp folder</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </article>
+    </div>
+
     <div class="comp-item" id="c-plan">
       <div class="comp-name">exit_plan_mode — plan body <span class="relevance">relevance 5</span></div>
       <article class="block tool">
@@ -724,6 +783,46 @@
   <span class="dim">--- PASS: TestRender_Fixture (0.04s)</span>
 <span class="ok">PASS</span>
 ok  <span class="path">github.com/jamestelfer/relic/internal/renderer</span>  <span class="dim">0.42s</span></pre>
+        </div>
+      </article>
+    </div>
+
+    <div class="comp-item" id="c-ask-result">
+      <div class="comp-name">AskUserQuestion — choices (tool_result) <span class="relevance">relevance 5</span></div>
+      <article class="block tool-result">
+        <div class="role">
+          <span class="tag">tool_result</span>
+          <a class="pair-id" href="#c-ask">↑ tu_ask</a>
+        </div>
+        <div class="ask-result">
+          <div class="ask-result-item">
+            <div class="ask-header">Scope</div>
+            <div class="ask-question">Should I also run a Playwright browser session to exercise that tool, or keep this to CLI-only tools?</div>
+            <div class="ask-options">
+              <span class="ask-option">CLI tools only</span>
+              <span class="ask-option selected">Include browser</span>
+              <span class="ask-option">Headless only</span>
+            </div>
+          </div>
+          <div class="ask-result-item">
+            <div class="ask-header">Coverage</div>
+            <div class="ask-question">Which tool categories should the demo session exercise?</div>
+            <div class="ask-options">
+              <span class="ask-option selected">File I/O</span>
+              <span class="ask-option selected">Search</span>
+              <span class="ask-option">Tasks</span>
+              <span class="ask-option selected">Web</span>
+            </div>
+          </div>
+          <div class="ask-result-item">
+            <div class="ask-header">Output</div>
+            <div class="ask-question">Where should the rendered HTML be saved?</div>
+            <div class="ask-options">
+              <span class="ask-option">Current directory</span>
+              <span class="ask-option">Temp folder</span>
+            </div>
+            <div class="ask-freetext">Write it to <code>~/Desktop/demo-output.html</code> so I can open it easily</div>
+          </div>
         </div>
       </article>
     </div>
