@@ -191,6 +191,8 @@ func toolIcon(name string) string {
 		return "✓" // ✓
 	case "Task":
 		return "▶▶" // ▶▶
+	case "AskUserQuestion":
+		return "?"
 	}
 	if name == "" {
 		return "?"
@@ -558,6 +560,36 @@ func todoPriority(item map[string]any) string {
 		return s
 	}
 	return ""
+}
+
+func askHeader(item map[string]any) string {
+	if s, ok := item["header"].(string); ok {
+		return s
+	}
+	return ""
+}
+
+func askQuestion(item map[string]any) string {
+	if s, ok := item["question"].(string); ok {
+		return s
+	}
+	return ""
+}
+
+func askOptionLabels(item map[string]any) []string {
+	opts, ok := item["options"].([]any)
+	if !ok {
+		return nil
+	}
+	labels := make([]string, 0, len(opts))
+	for _, o := range opts {
+		if m, ok := o.(map[string]any); ok {
+			if l, ok := m["label"].(string); ok {
+				labels = append(labels, l)
+			}
+		}
+	}
+	return labels
 }
 
 func formatJSON(m map[string]any) string {

@@ -81,7 +81,18 @@ func TestIntegration_AllBlockTypes(t *testing.T) {
 						Input: map[string]any{"plan": "## Plan\n1. Add types\n2. Add tests"},
 					},
 					&session.ToolCall{
-						ID: "toolu_09MCP", Name: "mcp__github__create_issue",
+						ID: "toolu_09ASK", Name: "AskUserQuestion",
+						Input: map[string]any{"questions": []any{
+							map[string]any{
+								"question":    "Which approach should we take?",
+								"header":      "Strategy",
+								"options":     []any{map[string]any{"label": "Option A", "description": "First"}, map[string]any{"label": "Option B", "description": "Second"}},
+								"multiSelect": false,
+							},
+						}},
+					},
+					&session.ToolCall{
+						ID: "toolu_10MCP", Name: "mcp__github__create_issue",
 						Input: map[string]any{"title": "test issue", "repo": "relic"},
 					},
 					&session.Image{MediaType: "image/png", Base64: "iVBORw0KGgo="},
@@ -154,6 +165,7 @@ func TestIntegration_AllBlockTypes(t *testing.T) {
 	assert.Contains(t, out, `data-tool="Task"`)
 	assert.Contains(t, out, `data-tool="TodoWrite"`)
 	assert.Contains(t, out, `data-tool="exit_plan_mode"`)
+	assert.Contains(t, out, `data-tool="AskUserQuestion"`)
 	assert.Contains(t, out, `data-tool="mcp__github__create_issue"`)
 
 	// WebSearch body structure
@@ -169,6 +181,12 @@ func TestIntegration_AllBlockTypes(t *testing.T) {
 	assert.Contains(t, out, `class="todo-list"`)
 	assert.Contains(t, out, `class="todo-check"`)
 	assert.Contains(t, out, `class="todo-text"`)
+
+	// AskUserQuestion body structure
+	assert.Contains(t, out, `class="ask-list"`)
+	assert.Contains(t, out, `class="ask-header"`)
+	assert.Contains(t, out, `class="ask-question"`)
+	assert.Contains(t, out, `class="ask-option"`)
 
 	// MCP body structure
 	assert.Contains(t, out, `class="mcp-server"`)
@@ -210,6 +228,7 @@ func TestIntegration_AllBlockTypes(t *testing.T) {
 	assert.Contains(t, css, ".task-delegation")
 	assert.Contains(t, css, ".todo-list")
 	assert.Contains(t, css, ".plan-body")
+	assert.Contains(t, css, ".ask-list")
 	assert.Contains(t, css, ".mcp-server")
 	assert.Contains(t, css, ".diff-body")
 	assert.Contains(t, css, ".image-card")

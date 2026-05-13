@@ -282,6 +282,8 @@ templ toolBody(b *session.ToolCall) {
 			@taskBody(b)
 		case b.Name == "TodoWrite":
 			@todoWriteBody(b)
+		case b.Name == "AskUserQuestion":
+			@askUserQuestionBody(b)
 		case b.Name == "exit_plan_mode":
 			@planBody(b)
 		case isMCPTool(b.Name):
@@ -347,6 +349,32 @@ templ todoWriteBody(b *session.ToolCall) {
 						<span class="todo-text">{ todoContent(item) }</span>
 						if p := todoPriority(item); p != "" {
 							<span class={ "todo-priority", p }>{ p }</span>
+						}
+					</div>
+				}
+			}
+		</div>
+	}
+}
+
+templ askUserQuestionBody(b *session.ToolCall) {
+	if questions, ok := b.Input["questions"].([]any); ok && len(questions) > 0 {
+		<div class="ask-list">
+			for _, q := range questions {
+				if item, ok := q.(map[string]any); ok {
+					<div class="ask-item">
+						if h := askHeader(item); h != "" {
+							<div class="ask-header">{ h }</div>
+						}
+						if qt := askQuestion(item); qt != "" {
+							<div class="ask-question">{ qt }</div>
+						}
+						if labels := askOptionLabels(item); len(labels) > 0 {
+							<div class="ask-options">
+								for _, label := range labels {
+									<span class="ask-option">{ label }</span>
+								}
+							</div>
 						}
 					</div>
 				}
