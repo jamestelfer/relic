@@ -23,7 +23,9 @@ import (
 	highlighting "github.com/yuin/goldmark-highlighting/v2"
 	"github.com/yuin/goldmark/extension"
 	"github.com/yuin/goldmark/parser"
+	goldmarkRenderer "github.com/yuin/goldmark/renderer"
 	"github.com/yuin/goldmark/renderer/html"
+	"github.com/yuin/goldmark/util"
 )
 
 //go:embed assets/colors_and_type.css
@@ -59,6 +61,9 @@ var md = goldmark.New(
 	),
 	goldmark.WithRendererOptions(
 		html.WithHardWraps(),
+		goldmarkRenderer.WithNodeRenderers(
+			util.Prioritized(&htmlSanitizer{}, 0),
+		),
 	),
 )
 

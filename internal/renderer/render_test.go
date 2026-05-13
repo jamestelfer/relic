@@ -5,6 +5,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/gkampitakis/go-snaps/snaps"
 	"github.com/jamestelfer/relic/internal/renderer"
 	"github.com/jamestelfer/relic/internal/session"
 	"github.com/stretchr/testify/assert"
@@ -878,6 +879,94 @@ func TestRender_AskUserQuestion_ResultWithFreetext(t *testing.T) {
 
 	assert.Contains(t, out, `class="ask-freetext"`, "should render freetext block")
 	assert.Contains(t, out, "Put it on ~/Desktop/out.html", "freetext content present")
+}
+
+func TestRender_InlineHTML_Escaped(t *testing.T) {
+	s := session.Session{
+		Turns: []session.Turn{{Index: 1, Blocks: []session.Block{
+			&session.AssistantText{Text: "Press <kbd>Ctrl+C</kbd> to cancel."},
+		}}},
+	}
+	out := render(t, s, renderer.Options{Name: "test"})
+	assert.Contains(t, out, "&lt;kbd&gt;Ctrl+C&lt;/kbd&gt;", "inline HTML should be escaped")
+	assert.NotContains(t, out, "<!-- raw HTML omitted -->", "no omit comment")
+}
+
+func TestRender_BlockHTML_ScriptEscaped(t *testing.T) {
+	s := session.Session{
+		Turns: []session.Turn{{Index: 1, Blocks: []session.Block{
+			&session.AssistantText{Text: "Check this:\n\n<script>alert(1)</script>\n\nDone."},
+		}}},
+	}
+	out := render(t, s, renderer.Options{Name: "test"})
+	assert.Contains(t, out, "&lt;script&gt;alert(1)&lt;/script&gt;", "block script should be escaped")
+	assert.NotContains(t, out, "<script>alert(1)</script>", "no raw script element in output")
+	assert.NotContains(t, out, "<!-- raw HTML omitted -->", "no omit comment")
+}
+
+func TestRender_BlockHTML_DivEscaped(t *testing.T) {
+	s := session.Session{
+		Turns: []session.Turn{{Index: 1, Blocks: []session.Block{
+			&session.AssistantText{Text: "Example:\n\n<div>content</div>\n\nEnd."},
+		}}},
+	}
+	out := render(t, s, renderer.Options{Name: "test"})
+	assert.Contains(t, out, "&lt;div&gt;content&lt;/div&gt;", "block div should be escaped")
+	assert.NotContains(t, out, "<!-- raw HTML omitted -->", "no omit comment")
+}
+
+func TestRender_MixedHTML_AllEscaped(t *testing.T) {
+	s := session.Session{
+		Turns: []session.Turn{{Index: 1, Blocks: []session.Block{
+			&session.AssistantText{Text: "Use <kbd>Enter</kbd> to continue.\n\n<iframe src=\"evil\"></iframe>\n\nDone."},
+		}}},
+	}
+	out := render(t, s, renderer.Options{Name: "test"})
+	assert.Contains(t, out, "&lt;kbd&gt;Enter&lt;/kbd&gt;", "inline kbd escaped")
+	assert.Contains(t, out, "&lt;iframe", "block iframe escaped")
+	assert.NotContains(t, out, "<!-- raw HTML omitted -->", "no omit comment")
+}
+
+func TestRender_NormalMarkdown_Unaffected(t *testing.T) {
+	s := session.Session{
+		Turns: []session.Turn{{Index: 1, Blocks: []session.Block{
+			&session.AssistantText{Text: "**bold** and [link](http://example.com)\n\n```go\nfmt.Println(\"hi\")\n```"},
+		}}},
+	}
+	out := render(t, s, renderer.Options{Name: "test"})
+	assert.Contains(t, out, "<strong>bold</strong>", "bold renders as HTML")
+	assert.Contains(t, out, `<a href="http://example.com">link</a>`, "link renders as HTML")
+	assert.Contains(t, out, "chroma", "code block gets syntax highlighting")
+}
+
+func TestRender_HTMLSanitization_Snapshot(t *testing.T) {
+	s := session.Session{
+		Turns: []session.Turn{{Index: 1, Blocks: []session.Block{
+			&session.AssistantText{Text: strings.Join([]string{
+				"Inline: press <kbd>Ctrl+C</kbd> to cancel.",
+				"",
+				"<script>alert('xss')</script>",
+				"",
+				"<div class=\"evil\">block div</div>",
+				"",
+				"<iframe src=\"http://evil.com\"></iframe>",
+				"",
+				"Safe markdown: **bold** and `code`.",
+			}, "\n")},
+		}}},
+	}
+	out := render(t, s, renderer.Options{Name: "snap"})
+
+	// Extract just the assistant body content for a focused snapshot.
+	bodyStart := strings.Index(out, `class="body"`)
+	bodyEnd := strings.Index(out[bodyStart:], `</div><!-- end body -->`)
+	if bodyEnd < 0 {
+		// Fallback: find the closing </main> and snapshot everything from body start.
+		bodyEnd = strings.Index(out[bodyStart:], `</main>`)
+	}
+	body := out[bodyStart : bodyStart+bodyEnd]
+
+	snaps.MatchSnapshot(t, body)
 }
 
 func TestRender_AskUserQuestion_NilEnrichment_FallsBack(t *testing.T) {
