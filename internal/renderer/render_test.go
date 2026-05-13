@@ -504,3 +504,394 @@ func TestRender_ThemeOverrideCSS(t *testing.T) {
 	assert.Contains(t, out, `[data-theme="dark"]`, "CSS must include dark override selector")
 	assert.Contains(t, out, `[data-theme="light"]`, "CSS must include light override selector")
 }
+
+func TestRender_BashEnrichment_StderrSeparator(t *testing.T) {
+	linkedID := "toolu_bash_enr"
+	s := session.Session{
+		Turns: []session.Turn{{Index: 1, Blocks: []session.Block{
+			&session.ToolResult{
+				ToolUseID:      linkedID,
+				Content:        "raw content ignored when enriched",
+				LinkedCallID:   &linkedID,
+				LinkedCallName: "Bash",
+				Enrichment: &session.BashEnrichment{
+					Stdout: "hello world",
+					Stderr: "warning: something",
+				},
+			},
+		}}},
+	}
+	out := render(t, s, renderer.Options{Name: "test"})
+	assert.Contains(t, out, "hello world")
+	assert.Contains(t, out, "warning: something")
+	assert.Contains(t, out, "stderr shown below", "stderr separator must be present")
+}
+
+func TestRender_BashEnrichment_NoStderr(t *testing.T) {
+	linkedID := "toolu_bash_enr2"
+	s := session.Session{
+		Turns: []session.Turn{{Index: 1, Blocks: []session.Block{
+			&session.ToolResult{
+				ToolUseID:      linkedID,
+				Content:        "raw content",
+				LinkedCallID:   &linkedID,
+				LinkedCallName: "Bash",
+				Enrichment: &session.BashEnrichment{
+					Stdout: "only stdout here",
+					Stderr: "",
+				},
+			},
+		}}},
+	}
+	out := render(t, s, renderer.Options{Name: "test"})
+	assert.Contains(t, out, "only stdout here")
+	assert.NotContains(t, out, "stderr shown below", "no stderr separator when stderr is empty")
+}
+
+func TestRender_BashEnrichment_InterruptedLabel(t *testing.T) {
+	linkedID := "toolu_bash_int"
+	s := session.Session{
+		Turns: []session.Turn{{Index: 1, Blocks: []session.Block{
+			&session.ToolResult{
+				ToolUseID:      linkedID,
+				Content:        "partial output",
+				LinkedCallID:   &linkedID,
+				LinkedCallName: "Bash",
+				Enrichment: &session.BashEnrichment{
+					Stdout:      "partial output",
+					Interrupted: true,
+				},
+			},
+		}}},
+	}
+	out := render(t, s, renderer.Options{Name: "test"})
+	assert.Contains(t, out, "interrupted", "chrome label should include 'interrupted' for interrupted Bash")
+}
+
+func TestRender_BashEnrichment_NormalLabel(t *testing.T) {
+	linkedID := "toolu_bash_norm"
+	s := session.Session{
+		Turns: []session.Turn{{Index: 1, Blocks: []session.Block{
+			&session.ToolResult{
+				ToolUseID:      linkedID,
+				Content:        "ok",
+				LinkedCallID:   &linkedID,
+				LinkedCallName: "Bash",
+				Enrichment: &session.BashEnrichment{
+					Stdout: "ok",
+				},
+			},
+		}}},
+	}
+	out := render(t, s, renderer.Options{Name: "test"})
+	assert.NotContains(t, out, "interrupted", "non-interrupted Bash should not show 'interrupted'")
+	// Chrome label should still show "Bash"
+	assert.Contains(t, out, `<span class="label">Bash</span>`)
+}
+
+func TestRender_ReadEnrichment_WithLineRange(t *testing.T) {
+	linkedID := "toolu_read_enr"
+	s := session.Session{
+		Turns: []session.Turn{{Index: 1, Blocks: []session.Block{
+			&session.ToolResult{
+				ToolUseID:      linkedID,
+				Content:        "file content",
+				LinkedCallID:   &linkedID,
+				LinkedCallName: "Read",
+				Enrichment: &session.ReadEnrichment{
+					FilePath:  "/src/internal/parser/parser.go",
+					LineStart: 10,
+					LineEnd:   59,
+				},
+			},
+		}}},
+	}
+	out := render(t, s, renderer.Options{Name: "test"})
+	assert.Contains(t, out, "Read · parser.go:10-59", "chrome label should show tool · basename:start-end")
+}
+
+func TestRender_ReadEnrichment_NoLineRange(t *testing.T) {
+	linkedID := "toolu_read_enr2"
+	s := session.Session{
+		Turns: []session.Turn{{Index: 1, Blocks: []session.Block{
+			&session.ToolResult{
+				ToolUseID:      linkedID,
+				Content:        "file content",
+				LinkedCallID:   &linkedID,
+				LinkedCallName: "Read",
+				Enrichment: &session.ReadEnrichment{
+					FilePath: "/src/internal/parser/parser.go",
+				},
+			},
+		}}},
+	}
+	out := render(t, s, renderer.Options{Name: "test"})
+	assert.Contains(t, out, "Read · parser.go", "chrome label should show tool · basename")
+	assert.NotContains(t, out, "parser.go:", "no line range when absent")
+}
+
+func TestRender_WriteEnrichment_Created(t *testing.T) {
+	linkedID := "toolu_write_c"
+	s := session.Session{
+		Turns: []session.Turn{{Index: 1, Blocks: []session.Block{
+			&session.ToolResult{
+				ToolUseID: linkedID, Content: "ok", LinkedCallID: &linkedID, LinkedCallName: "Write",
+				Enrichment: &session.WriteEnrichment{FilePath: "/src/new_file.go", Action: "created"},
+			},
+		}}},
+	}
+	out := render(t, s, renderer.Options{Name: "test"})
+	assert.Contains(t, out, "Write · new_file.go · created", "chrome label: tool · basename · created")
+}
+
+func TestRender_WriteEnrichment_Updated(t *testing.T) {
+	linkedID := "toolu_write_u"
+	s := session.Session{
+		Turns: []session.Turn{{Index: 1, Blocks: []session.Block{
+			&session.ToolResult{
+				ToolUseID: linkedID, Content: "ok", LinkedCallID: &linkedID, LinkedCallName: "Write",
+				Enrichment: &session.WriteEnrichment{FilePath: "/src/existing.go", Action: "updated"},
+			},
+		}}},
+	}
+	out := render(t, s, renderer.Options{Name: "test"})
+	assert.Contains(t, out, "Write · existing.go · updated", "chrome label: tool · basename · updated")
+}
+
+func TestRender_EditEnrichment(t *testing.T) {
+	linkedID := "toolu_edit_enr"
+	s := session.Session{
+		Turns: []session.Turn{{Index: 1, Blocks: []session.Block{
+			&session.ToolResult{
+				ToolUseID: linkedID, Content: "ok", LinkedCallID: &linkedID, LinkedCallName: "Edit",
+				Enrichment: &session.EditEnrichment{FilePath: "/src/session.go", Action: "updated"},
+			},
+		}}},
+	}
+	out := render(t, s, renderer.Options{Name: "test"})
+	assert.Contains(t, out, "Edit · session.go · updated", "chrome label: tool · basename · updated")
+}
+
+func TestRender_GrepEnrichment_ContentMode(t *testing.T) {
+	linkedID := "toolu_grep_c"
+	s := session.Session{
+		Turns: []session.Turn{{Index: 1, Blocks: []session.Block{
+			&session.ToolResult{
+				ToolUseID: linkedID, Content: "file.go:42:match", LinkedCallID: &linkedID, LinkedCallName: "Grep",
+				Enrichment: &session.GrepEnrichment{Mode: "content", NumFiles: 3, NumLines: 25},
+			},
+		}}},
+	}
+	out := render(t, s, renderer.Options{Name: "test"})
+	assert.Contains(t, out, "Grep · 25 lines in 3 files", "chrome label: tool · content mode summary")
+}
+
+func TestRender_GrepEnrichment_FilesMode(t *testing.T) {
+	linkedID := "toolu_grep_f"
+	s := session.Session{
+		Turns: []session.Turn{{Index: 1, Blocks: []session.Block{
+			&session.ToolResult{
+				ToolUseID: linkedID, Content: "a.go\nb.go", LinkedCallID: &linkedID, LinkedCallName: "Grep",
+				Enrichment: &session.GrepEnrichment{Mode: "files_with_matches", NumFiles: 7},
+			},
+		}}},
+	}
+	out := render(t, s, renderer.Options{Name: "test"})
+	assert.Contains(t, out, "Grep · 7 files", "chrome label: tool · files_with_matches mode")
+}
+
+func TestRender_GrepEnrichment_CountMode(t *testing.T) {
+	linkedID := "toolu_grep_n"
+	s := session.Session{
+		Turns: []session.Turn{{Index: 1, Blocks: []session.Block{
+			&session.ToolResult{
+				ToolUseID: linkedID, Content: "25", LinkedCallID: &linkedID, LinkedCallName: "Grep",
+				Enrichment: &session.GrepEnrichment{Mode: "count", NumMatches: 25},
+			},
+		}}},
+	}
+	out := render(t, s, renderer.Options{Name: "test"})
+	assert.Contains(t, out, "Grep · 25 matches", "chrome label: tool · count mode shows match count")
+}
+
+func TestRender_GrepEnrichment_CountMode_NoData(t *testing.T) {
+	linkedID := "toolu_grep_n0"
+	s := session.Session{
+		Turns: []session.Turn{{Index: 1, Blocks: []session.Block{
+			&session.ToolResult{
+				ToolUseID: linkedID, Content: "0", LinkedCallID: &linkedID, LinkedCallName: "Grep",
+				Enrichment: &session.GrepEnrichment{Mode: "count"},
+			},
+		}}},
+	}
+	out := render(t, s, renderer.Options{Name: "test"})
+	assert.Contains(t, out, `<span class="label">Grep</span>`, "chrome label: falls back to tool name when no match count")
+}
+
+func TestRender_GlobEnrichment(t *testing.T) {
+	linkedID := "toolu_glob"
+	s := session.Session{
+		Turns: []session.Turn{{Index: 1, Blocks: []session.Block{
+			&session.ToolResult{
+				ToolUseID: linkedID, Content: "a.go\nb.go", LinkedCallID: &linkedID, LinkedCallName: "Glob",
+				Enrichment: &session.GlobEnrichment{NumFiles: 8, Truncated: false},
+			},
+		}}},
+	}
+	out := render(t, s, renderer.Options{Name: "test"})
+	assert.Contains(t, out, "Glob · 8 files", "chrome label: tool · file count")
+	assert.NotContains(t, out, "truncated", "no truncated marker when not truncated")
+}
+
+func TestRender_GlobEnrichment_Truncated(t *testing.T) {
+	linkedID := "toolu_glob_t"
+	s := session.Session{
+		Turns: []session.Turn{{Index: 1, Blocks: []session.Block{
+			&session.ToolResult{
+				ToolUseID: linkedID, Content: "a.go", LinkedCallID: &linkedID, LinkedCallName: "Glob",
+				Enrichment: &session.GlobEnrichment{NumFiles: 100, Truncated: true},
+			},
+		}}},
+	}
+	out := render(t, s, renderer.Options{Name: "test"})
+	assert.Contains(t, out, "Glob · 100 files (truncated)", "chrome label: tool · truncated glob")
+}
+
+func TestRender_AgentEnrichment(t *testing.T) {
+	linkedID := "toolu_agent"
+	s := session.Session{
+		Turns: []session.Turn{{Index: 1, Blocks: []session.Block{
+			&session.ToolResult{
+				ToolUseID: linkedID, Content: "done", LinkedCallID: &linkedID, LinkedCallName: "Agent",
+				Enrichment: &session.AgentEnrichment{AgentType: "general-purpose", Status: "completed", DurationMs: 45000, TokenCount: 12500, ToolUseCount: 8},
+			},
+		}}},
+	}
+	out := render(t, s, renderer.Options{Name: "test"})
+	assert.Contains(t, out, "Agent · general-purpose · 45s · 12.5k tokens", "chrome label: tool · agent type · duration · tokens")
+}
+
+func TestRender_AgentEnrichment_SubSecond(t *testing.T) {
+	linkedID := "toolu_agent_s"
+	s := session.Session{
+		Turns: []session.Turn{{Index: 1, Blocks: []session.Block{
+			&session.ToolResult{
+				ToolUseID: linkedID, Content: "done", LinkedCallID: &linkedID, LinkedCallName: "Agent",
+				Enrichment: &session.AgentEnrichment{AgentType: "Explore", Status: "completed", DurationMs: 500, TokenCount: 800},
+			},
+		}}},
+	}
+	out := render(t, s, renderer.Options{Name: "test"})
+	assert.Contains(t, out, "&lt;1s", "chrome label: sub-second duration")
+	assert.Contains(t, out, "800 tokens", "chrome label: exact token count under 1000")
+}
+
+func TestRender_AgentEnrichment_Minutes(t *testing.T) {
+	linkedID := "toolu_agent_m"
+	s := session.Session{
+		Turns: []session.Turn{{Index: 1, Blocks: []session.Block{
+			&session.ToolResult{
+				ToolUseID: linkedID, Content: "done", LinkedCallID: &linkedID, LinkedCallName: "Agent",
+				Enrichment: &session.AgentEnrichment{AgentType: "code-reviewer", Status: "completed", DurationMs: 125000, TokenCount: 1000},
+			},
+		}}},
+	}
+	out := render(t, s, renderer.Options{Name: "test"})
+	assert.Contains(t, out, "2m 5s", "chrome label: minutes+seconds")
+	assert.Contains(t, out, "1.0k tokens", "chrome label: exactly 1000 tokens")
+}
+
+func TestRender_ToolResult_NoEnrichment_Unchanged(t *testing.T) {
+	linkedID := "toolu_no_enr"
+	s := session.Session{
+		Turns: []session.Turn{{Index: 1, Blocks: []session.Block{
+			&session.ToolResult{
+				ToolUseID:      linkedID,
+				Content:        "normal output",
+				LinkedCallID:   &linkedID,
+				LinkedCallName: "Read",
+			},
+		}}},
+	}
+	out := render(t, s, renderer.Options{Name: "test"})
+	assert.Contains(t, out, "normal output")
+	assert.Contains(t, out, `<span class="label">Read</span>`)
+}
+
+func TestRender_ToolResult_NilTypedEnrichment_NoPanic(t *testing.T) {
+	linkedID := "toolu_nil_enr"
+	s := session.Session{
+		Turns: []session.Turn{{Index: 1, Blocks: []session.Block{
+			&session.ToolResult{
+				ToolUseID:      linkedID,
+				Content:        "file content",
+				LinkedCallID:   &linkedID,
+				LinkedCallName: "Read",
+				Enrichment:     (*session.ReadEnrichment)(nil),
+			},
+		}}},
+	}
+	out := render(t, s, renderer.Options{Name: "test"})
+	assert.Contains(t, out, `<span class="label">Read</span>`, "should fall back to tool name when enrichment is typed nil")
+}
+
+func TestRender_AskUserQuestion_ResultWithEnrichment(t *testing.T) {
+	s := session.Session{
+		Turns: []session.Turn{{Index: 1, Blocks: []session.Block{
+			&session.ToolResult{
+				ToolUseID: "toolu_ask", Content: "User has answered your questions.",
+				LinkedCallID: new("toolu_ask"), LinkedCallName: "AskUserQuestion",
+				Enrichment: &session.AskUserQuestionEnrichment{
+					Questions: []session.AskQuestionResult{
+						{Header: "Scope", Question: "Which approach?", Options: []string{"Option A", "Option B"}, Selected: []string{"Option B"}},
+					},
+				},
+			},
+		}}},
+	}
+	out := render(t, s, renderer.Options{Name: "test"})
+
+	assert.Contains(t, out, `class="ask-result"`, "should render ask-result container")
+	assert.Contains(t, out, `class="ask-result-item"`, "should render ask-result-item")
+	assert.Contains(t, out, `class="ask-header"`, "should render header")
+	assert.Contains(t, out, `class="ask-question"`, "should render question")
+	assert.Contains(t, out, `class="ask-option selected"`, "selected option has selected class")
+	assert.Contains(t, out, `class="ask-option"`, "unselected option has no selected class")
+	assert.NotContains(t, out, `class="term"`, "ask-result should not use terminal chrome")
+}
+
+func TestRender_AskUserQuestion_ResultWithFreetext(t *testing.T) {
+	s := session.Session{
+		Turns: []session.Turn{{Index: 1, Blocks: []session.Block{
+			&session.ToolResult{
+				ToolUseID: "toolu_ask_ft", Content: "User has answered.",
+				LinkedCallID: new("toolu_ask_ft"), LinkedCallName: "AskUserQuestion",
+				Enrichment: &session.AskUserQuestionEnrichment{
+					Questions: []session.AskQuestionResult{
+						{Header: "Output", Question: "Where to save?", Options: []string{"Desktop", "Temp"}, Selected: []string{"Desktop"}, Freetext: "Put it on ~/Desktop/out.html"},
+					},
+				},
+			},
+		}}},
+	}
+	out := render(t, s, renderer.Options{Name: "test"})
+
+	assert.Contains(t, out, `class="ask-freetext"`, "should render freetext block")
+	assert.Contains(t, out, "Put it on ~/Desktop/out.html", "freetext content present")
+}
+
+func TestRender_AskUserQuestion_NilEnrichment_FallsBack(t *testing.T) {
+	s := session.Session{
+		Turns: []session.Turn{{Index: 1, Blocks: []session.Block{
+			&session.ToolResult{
+				ToolUseID: "toolu_ask_nil", Content: "User has answered your questions.",
+				LinkedCallID: new("toolu_ask_nil"), LinkedCallName: "AskUserQuestion",
+			},
+		}}},
+	}
+	out := render(t, s, renderer.Options{Name: "test"})
+
+	assert.NotContains(t, out, `class="ask-result"`, "no ask-result when enrichment is nil")
+	assert.Contains(t, out, `class="term"`, "falls back to terminal chrome")
+	assert.Contains(t, out, "User has answered your questions.", "raw content shown in fallback")
+}

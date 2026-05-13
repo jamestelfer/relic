@@ -68,6 +68,13 @@ func (b *ToolCall) Arg() string {
 			return fmt.Sprintf("%d todos", len(todos))
 		}
 		return ""
+	case "AskUserQuestion":
+		if qs, ok := b.Input["questions"].([]any); ok && len(qs) > 0 {
+			if q, ok := qs[0].(map[string]any); ok {
+				return inputString(q, "question")
+			}
+		}
+		return ""
 	}
 	return defaultArgFromInput(b.Input)
 }
@@ -99,11 +106,13 @@ func defaultArgFromInput(m map[string]any) string {
 
 // ToolResult is tool output from a user message.
 type ToolResult struct {
-	ToolUseID      string  `json:"tool_use_id"`
-	Content        string  `json:"content"`
-	LinkedCallID   *string `json:"linked_call_id,omitempty"`
-	LinkedCallName string  `json:"linked_call_name,omitempty"`
-	LineNum        int     `json:"line_num"`
+	ToolUseID        string         `json:"tool_use_id"`
+	Content          string         `json:"content"`
+	LinkedCallID     *string        `json:"linked_call_id,omitempty"`
+	LinkedCallName   string         `json:"linked_call_name,omitempty"`
+	LineNum          int            `json:"line_num"`
+	Enrichment       ToolEnrichment `json:"enrichment,omitempty"`
+	rawToolUseResult any
 }
 
 func (b *ToolResult) BlockType() string { return "tool_result" }
@@ -718,7 +727,7 @@ func messageToBlocks(msg parser.Message) []Block {
 		case *parser.ToolUseBlock:
 			block = &ToolCall{ID: c.ID, Name: c.Name, Input: c.Input, LineNum: ln}
 		case *parser.ToolResultBlock:
-			block = &ToolResult{ToolUseID: c.ToolUseID, Content: c.Content, LineNum: ln}
+			block = &ToolResult{ToolUseID: c.ToolUseID, Content: c.Content, LineNum: ln, rawToolUseResult: msg.Envelope.ToolUseResult}
 		case *parser.ThinkingBlock:
 			block = &Thinking{Text: c.Thinking, LineNum: ln}
 		case *parser.RedactedThinkingBlock:
@@ -766,6 +775,7 @@ func crossReferenceTools(turn *Turn) {
 				id := b.ToolUseID
 				b.LinkedCallID = &id
 				b.LinkedCallName = call.Name
+				b.Enrichment = interpretEnrichment(call.Name, b.rawToolUseResult, call.Input)
 			}
 		}
 	}

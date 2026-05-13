@@ -182,6 +182,7 @@ func TestToolCallArg_KnownTools(t *testing.T) {
 		{"Grep", map[string]any{"pattern": "TODO"}, "TODO"},
 		{"WebSearch", map[string]any{"query": "golang jsonv2"}, "golang jsonv2"},
 		{"TodoWrite", map[string]any{"todos": []any{1, 2, 3}}, "3 todos"},
+		{"AskUserQuestion", map[string]any{"questions": []any{map[string]any{"question": "Should I continue?", "header": "Confirm"}}}, "Should I continue?"},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -743,6 +744,571 @@ func TestTransformUserBash(t *testing.T) {
 	assert.Equal(t, inputs[1].ID, *results[1].LinkedCallID)
 }
 
+// TestTransformBashEnrichment: a Bash ToolResult with dict toolUseResult
+// produces BashEnrichment with stdout, stderr, and interrupted fields.
+func TestTransformBashEnrichment(t *testing.T) {
+	res := parseFixture(t, "bash_enrichment.jsonl")
+	s := session.Transform(res)
+
+	require.Len(t, s.Turns, 1)
+	turn := s.Turns[0]
+
+	var result *session.ToolResult
+	for _, b := range turn.Blocks {
+		if tr, ok := b.(*session.ToolResult); ok {
+			result = tr
+			break
+		}
+	}
+	require.NotNil(t, result)
+
+	require.NotNil(t, result.Enrichment, "ToolResult should have enrichment")
+	bash, ok := result.Enrichment.(*session.BashEnrichment)
+	require.True(t, ok, "enrichment should be *BashEnrichment, got %T", result.Enrichment)
+	assert.Equal(t, "ok  ./...\n", bash.Stdout)
+	assert.Equal(t, "warning: deprecated\n", bash.Stderr)
+	assert.False(t, bash.Interrupted)
+}
+
+// TestTransformBashEnrichment_Interrupted: interrupted Bash execution produces
+// enrichment with Interrupted=true.
+func TestTransformBashEnrichment_Interrupted(t *testing.T) {
+	ts := time.Date(2025, 1, 15, 10, 0, 0, 0, time.UTC)
+	res := parser.Result{
+		Messages: []parser.Message{
+			{Role: "user", Timestamp: &ts, LineNum: 1,
+				Content: []parser.ContentBlock{&parser.TextBlock{Text: "go"}}},
+			{Role: "assistant", Timestamp: &ts, LineNum: 2,
+				Content: []parser.ContentBlock{&parser.ToolUseBlock{ID: "toolu_01", Name: "Bash", Input: map[string]any{"command": "sleep 999"}}}},
+			{Role: "user", Timestamp: &ts, LineNum: 3,
+				Envelope: parser.Envelope{ToolUseResult: map[string]any{"stdout": "partial", "stderr": "", "interrupted": true}},
+				Content:  []parser.ContentBlock{&parser.ToolResultBlock{ToolUseID: "toolu_01", Content: "partial"}}},
+		},
+	}
+	s := session.Transform(res)
+
+	require.Len(t, s.Turns, 1)
+	var result *session.ToolResult
+	for _, b := range s.Turns[0].Blocks {
+		if tr, ok := b.(*session.ToolResult); ok {
+			result = tr
+			break
+		}
+	}
+	require.NotNil(t, result)
+	require.NotNil(t, result.Enrichment)
+	bash, ok := result.Enrichment.(*session.BashEnrichment)
+	require.True(t, ok)
+	assert.True(t, bash.Interrupted)
+	assert.Equal(t, "partial", bash.Stdout)
+}
+
+// TestTransformEnrichment_NilCases: enrichment is nil for absent toolUseResult,
+// string toolUseResult, array toolUseResult, and unpaired ToolResult.
+func TestTransformEnrichment_NilCases(t *testing.T) {
+	ts := time.Date(2025, 1, 15, 10, 0, 0, 0, time.UTC)
+
+	t.Run("absent toolUseResult", func(t *testing.T) {
+		res := parser.Result{
+			Messages: []parser.Message{
+				{Role: "user", Timestamp: &ts, LineNum: 1,
+					Content: []parser.ContentBlock{&parser.TextBlock{Text: "go"}}},
+				{Role: "assistant", Timestamp: &ts, LineNum: 2,
+					Content: []parser.ContentBlock{&parser.ToolUseBlock{ID: "toolu_01", Name: "Bash", Input: map[string]any{}}}},
+				{Role: "user", Timestamp: &ts, LineNum: 3,
+					Content: []parser.ContentBlock{&parser.ToolResultBlock{ToolUseID: "toolu_01", Content: "ok"}}},
+			},
+		}
+		s := session.Transform(res)
+		for _, b := range s.Turns[0].Blocks {
+			if tr, ok := b.(*session.ToolResult); ok {
+				assert.Nil(t, tr.Enrichment, "absent toolUseResult → nil enrichment")
+			}
+		}
+	})
+
+	t.Run("string toolUseResult", func(t *testing.T) {
+		res := parser.Result{
+			Messages: []parser.Message{
+				{Role: "user", Timestamp: &ts, LineNum: 1,
+					Content: []parser.ContentBlock{&parser.TextBlock{Text: "go"}}},
+				{Role: "assistant", Timestamp: &ts, LineNum: 2,
+					Content: []parser.ContentBlock{&parser.ToolUseBlock{ID: "toolu_01", Name: "Bash", Input: map[string]any{}}}},
+				{Role: "user", Timestamp: &ts, LineNum: 3,
+					Envelope: parser.Envelope{ToolUseResult: "Error: Exit code 1"},
+					Content:  []parser.ContentBlock{&parser.ToolResultBlock{ToolUseID: "toolu_01", Content: "Error"}}},
+			},
+		}
+		s := session.Transform(res)
+		for _, b := range s.Turns[0].Blocks {
+			if tr, ok := b.(*session.ToolResult); ok {
+				assert.Nil(t, tr.Enrichment, "string toolUseResult → nil enrichment")
+			}
+		}
+	})
+
+	t.Run("unpaired ToolResult", func(t *testing.T) {
+		res := parser.Result{
+			Messages: []parser.Message{
+				{Role: "user", Timestamp: &ts, LineNum: 1,
+					Content: []parser.ContentBlock{&parser.TextBlock{Text: "go"}}},
+				{Role: "user", Timestamp: &ts, LineNum: 2,
+					Envelope: parser.Envelope{ToolUseResult: map[string]any{"stdout": "x", "stderr": "", "interrupted": false}},
+					Content:  []parser.ContentBlock{&parser.ToolResultBlock{ToolUseID: "toolu_orphan", Content: "x"}}},
+			},
+		}
+		s := session.Transform(res)
+		for _, b := range s.Turns[0].Blocks {
+			if tr, ok := b.(*session.ToolResult); ok {
+				assert.Nil(t, tr.Enrichment, "unpaired ToolResult → nil enrichment")
+			}
+		}
+	})
+}
+
+// TestTransformReadEnrichment: a Read ToolResult with dict toolUseResult
+// produces ReadEnrichment with file path from result and line range from
+// ToolCall input (offset/limit).
+func TestTransformReadEnrichment(t *testing.T) {
+	ts := time.Date(2025, 1, 15, 10, 0, 0, 0, time.UTC)
+	res := parser.Result{
+		Messages: []parser.Message{
+			{Role: "user", Timestamp: &ts, LineNum: 1,
+				Content: []parser.ContentBlock{&parser.TextBlock{Text: "show me"}}},
+			{Role: "assistant", Timestamp: &ts, LineNum: 2,
+				Content: []parser.ContentBlock{&parser.ToolUseBlock{ID: "toolu_01", Name: "Read", Input: map[string]any{"file_path": "/src/foo.go", "offset": float64(10), "limit": float64(50)}}}},
+			{Role: "user", Timestamp: &ts, LineNum: 3,
+				Envelope: parser.Envelope{ToolUseResult: map[string]any{
+					"type": "text",
+					"file": map[string]any{
+						"filePath": "/src/foo.go",
+						"content":  "package main\n",
+					},
+				}},
+				Content: []parser.ContentBlock{&parser.ToolResultBlock{ToolUseID: "toolu_01", Content: "package main\n"}}},
+		},
+	}
+	s := session.Transform(res)
+
+	require.Len(t, s.Turns, 1)
+	var result *session.ToolResult
+	for _, b := range s.Turns[0].Blocks {
+		if tr, ok := b.(*session.ToolResult); ok {
+			result = tr
+			break
+		}
+	}
+	require.NotNil(t, result)
+	require.NotNil(t, result.Enrichment)
+	read, ok := result.Enrichment.(*session.ReadEnrichment)
+	require.True(t, ok, "enrichment should be *ReadEnrichment, got %T", result.Enrichment)
+	assert.Equal(t, "/src/foo.go", read.FilePath)
+	assert.Equal(t, 10, read.LineStart, "LineStart from ToolCall input offset")
+	assert.Equal(t, 59, read.LineEnd, "LineEnd from ToolCall input offset+limit-1")
+}
+
+// TestTransformReadEnrichment_NoLineRange: Read without offset/limit in ToolCall
+// input produces enrichment with file path but no line range.
+func TestTransformReadEnrichment_NoLineRange(t *testing.T) {
+	ts := time.Date(2025, 1, 15, 10, 0, 0, 0, time.UTC)
+	res := parser.Result{
+		Messages: []parser.Message{
+			{Role: "user", Timestamp: &ts, LineNum: 1,
+				Content: []parser.ContentBlock{&parser.TextBlock{Text: "show me"}}},
+			{Role: "assistant", Timestamp: &ts, LineNum: 2,
+				Content: []parser.ContentBlock{&parser.ToolUseBlock{ID: "toolu_01", Name: "Read", Input: map[string]any{"file_path": "/src/foo.go"}}}},
+			{Role: "user", Timestamp: &ts, LineNum: 3,
+				Envelope: parser.Envelope{ToolUseResult: map[string]any{
+					"type": "text",
+					"file": map[string]any{
+						"filePath": "/src/foo.go",
+						"content":  "full file",
+					},
+				}},
+				Content: []parser.ContentBlock{&parser.ToolResultBlock{ToolUseID: "toolu_01", Content: "full file"}}},
+		},
+	}
+	s := session.Transform(res)
+
+	var result *session.ToolResult
+	for _, b := range s.Turns[0].Blocks {
+		if tr, ok := b.(*session.ToolResult); ok {
+			result = tr
+		}
+	}
+	require.NotNil(t, result)
+	require.NotNil(t, result.Enrichment)
+	read, ok := result.Enrichment.(*session.ReadEnrichment)
+	require.True(t, ok)
+	assert.Equal(t, "/src/foo.go", read.FilePath)
+	assert.Equal(t, 0, read.LineStart)
+	assert.Equal(t, 0, read.LineEnd)
+}
+
+// TestTransformWriteEnrichment: Write tool result produces WriteEnrichment
+// with file path and action (created/updated).
+func TestTransformWriteEnrichment(t *testing.T) {
+	ts := time.Date(2025, 1, 15, 10, 0, 0, 0, time.UTC)
+	cases := []struct {
+		name       string
+		writeType  string
+		wantAction string
+	}{
+		{"create", "create", "created"},
+		{"update", "update", "updated"},
+		{"unknown type", "overwrite", ""},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			res := parser.Result{
+				Messages: []parser.Message{
+					{Role: "user", Timestamp: &ts, LineNum: 1,
+						Content: []parser.ContentBlock{&parser.TextBlock{Text: "go"}}},
+					{Role: "assistant", Timestamp: &ts, LineNum: 2,
+						Content: []parser.ContentBlock{&parser.ToolUseBlock{ID: "toolu_01", Name: "Write", Input: map[string]any{"file_path": "/src/foo.go"}}}},
+					{Role: "user", Timestamp: &ts, LineNum: 3,
+						Envelope: parser.Envelope{ToolUseResult: map[string]any{
+							"type":     tc.writeType,
+							"filePath": "/src/foo.go",
+							"content":  "package main",
+						}},
+						Content: []parser.ContentBlock{&parser.ToolResultBlock{ToolUseID: "toolu_01", Content: "ok"}}},
+				},
+			}
+			s := session.Transform(res)
+			var result *session.ToolResult
+			for _, b := range s.Turns[0].Blocks {
+				if tr, ok := b.(*session.ToolResult); ok {
+					result = tr
+				}
+			}
+			require.NotNil(t, result)
+			require.NotNil(t, result.Enrichment)
+			w, ok := result.Enrichment.(*session.WriteEnrichment)
+			require.True(t, ok, "expected *WriteEnrichment, got %T", result.Enrichment)
+			assert.Equal(t, "/src/foo.go", w.FilePath)
+			assert.Equal(t, tc.wantAction, w.Action)
+		})
+	}
+}
+
+// TestTransformEditEnrichment: Edit tool result produces EditEnrichment
+// with file path (action is always "updated").
+func TestTransformEditEnrichment(t *testing.T) {
+	ts := time.Date(2025, 1, 15, 10, 0, 0, 0, time.UTC)
+	res := parser.Result{
+		Messages: []parser.Message{
+			{Role: "user", Timestamp: &ts, LineNum: 1,
+				Content: []parser.ContentBlock{&parser.TextBlock{Text: "go"}}},
+			{Role: "assistant", Timestamp: &ts, LineNum: 2,
+				Content: []parser.ContentBlock{&parser.ToolUseBlock{ID: "toolu_01", Name: "Edit", Input: map[string]any{"file_path": "/src/bar.go"}}}},
+			{Role: "user", Timestamp: &ts, LineNum: 3,
+				Envelope: parser.Envelope{ToolUseResult: map[string]any{
+					"filePath":  "/src/bar.go",
+					"oldString": "old",
+					"newString": "new",
+				}},
+				Content: []parser.ContentBlock{&parser.ToolResultBlock{ToolUseID: "toolu_01", Content: "ok"}}},
+		},
+	}
+	s := session.Transform(res)
+	var result *session.ToolResult
+	for _, b := range s.Turns[0].Blocks {
+		if tr, ok := b.(*session.ToolResult); ok {
+			result = tr
+		}
+	}
+	require.NotNil(t, result)
+	require.NotNil(t, result.Enrichment)
+	e, ok := result.Enrichment.(*session.EditEnrichment)
+	require.True(t, ok, "expected *EditEnrichment, got %T", result.Enrichment)
+	assert.Equal(t, "/src/bar.go", e.FilePath)
+	assert.Equal(t, "updated", e.Action)
+}
+
+// TestTransformGrepEnrichment: Grep tool result produces GrepEnrichment with
+// mode, file count, and line count, varying by grep mode.
+func TestTransformGrepEnrichment(t *testing.T) {
+	ts := time.Date(2025, 1, 15, 10, 0, 0, 0, time.UTC)
+	cases := []struct {
+		name           string
+		toolResult     map[string]any
+		wantMode       string
+		wantNumFiles   int
+		wantNumLines   int
+		wantNumMatches int
+	}{
+		{
+			name: "content mode",
+			toolResult: map[string]any{
+				"mode":      "content",
+				"numFiles":  float64(3),
+				"filenames": []any{},
+				"content":   "file.go:42:matching line",
+				"numLines":  float64(25),
+			},
+			wantMode: "content", wantNumFiles: 3, wantNumLines: 25,
+		},
+		{
+			name: "files_with_matches mode",
+			toolResult: map[string]any{
+				"mode":      "files_with_matches",
+				"numFiles":  float64(7),
+				"filenames": []any{"a.go", "b.go"},
+			},
+			wantMode: "files_with_matches", wantNumFiles: 7,
+		},
+		{
+			name: "count mode",
+			toolResult: map[string]any{
+				"mode":       "count",
+				"numFiles":   float64(0),
+				"filenames":  []any{},
+				"content":    "25",
+				"numMatches": float64(25),
+			},
+			wantMode: "count", wantNumMatches: 25,
+		},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			res := parser.Result{
+				Messages: []parser.Message{
+					{Role: "user", Timestamp: &ts, LineNum: 1,
+						Content: []parser.ContentBlock{&parser.TextBlock{Text: "find it"}}},
+					{Role: "assistant", Timestamp: &ts, LineNum: 2,
+						Content: []parser.ContentBlock{&parser.ToolUseBlock{ID: "toolu_01", Name: "Grep", Input: map[string]any{"pattern": "foo"}}}},
+					{Role: "user", Timestamp: &ts, LineNum: 3,
+						Envelope: parser.Envelope{ToolUseResult: tc.toolResult},
+						Content:  []parser.ContentBlock{&parser.ToolResultBlock{ToolUseID: "toolu_01", Content: "results"}}},
+				},
+			}
+			s := session.Transform(res)
+			var result *session.ToolResult
+			for _, b := range s.Turns[0].Blocks {
+				if tr, ok := b.(*session.ToolResult); ok {
+					result = tr
+				}
+			}
+			require.NotNil(t, result)
+			require.NotNil(t, result.Enrichment)
+			g, ok := result.Enrichment.(*session.GrepEnrichment)
+			require.True(t, ok, "expected *GrepEnrichment, got %T", result.Enrichment)
+			assert.Equal(t, tc.wantMode, g.Mode)
+			assert.Equal(t, tc.wantNumFiles, g.NumFiles)
+			assert.Equal(t, tc.wantNumLines, g.NumLines)
+			assert.Equal(t, tc.wantNumMatches, g.NumMatches)
+		})
+	}
+}
+
+// TestTransformGlobEnrichment: Glob tool result produces GlobEnrichment with
+// file count and truncated flag.
+func TestTransformGlobEnrichment(t *testing.T) {
+	ts := time.Date(2025, 1, 15, 10, 0, 0, 0, time.UTC)
+	cases := []struct {
+		name          string
+		toolResult    map[string]any
+		wantNumFiles  int
+		wantTruncated bool
+	}{
+		{
+			name: "normal",
+			toolResult: map[string]any{
+				"filenames":  []any{"a.go", "b.go"},
+				"durationMs": float64(23),
+				"numFiles":   float64(8),
+				"truncated":  false,
+			},
+			wantNumFiles: 8, wantTruncated: false,
+		},
+		{
+			name: "truncated",
+			toolResult: map[string]any{
+				"filenames":  []any{"a.go"},
+				"durationMs": float64(50),
+				"numFiles":   float64(100),
+				"truncated":  true,
+			},
+			wantNumFiles: 100, wantTruncated: true,
+		},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			res := parser.Result{
+				Messages: []parser.Message{
+					{Role: "user", Timestamp: &ts, LineNum: 1,
+						Content: []parser.ContentBlock{&parser.TextBlock{Text: "list"}}},
+					{Role: "assistant", Timestamp: &ts, LineNum: 2,
+						Content: []parser.ContentBlock{&parser.ToolUseBlock{ID: "toolu_01", Name: "Glob", Input: map[string]any{"pattern": "*.go"}}}},
+					{Role: "user", Timestamp: &ts, LineNum: 3,
+						Envelope: parser.Envelope{ToolUseResult: tc.toolResult},
+						Content:  []parser.ContentBlock{&parser.ToolResultBlock{ToolUseID: "toolu_01", Content: "files"}}},
+				},
+			}
+			s := session.Transform(res)
+			var result *session.ToolResult
+			for _, b := range s.Turns[0].Blocks {
+				if tr, ok := b.(*session.ToolResult); ok {
+					result = tr
+				}
+			}
+			require.NotNil(t, result)
+			require.NotNil(t, result.Enrichment)
+			g, ok := result.Enrichment.(*session.GlobEnrichment)
+			require.True(t, ok, "expected *GlobEnrichment, got %T", result.Enrichment)
+			assert.Equal(t, tc.wantNumFiles, g.NumFiles)
+			assert.Equal(t, tc.wantTruncated, g.Truncated)
+		})
+	}
+}
+
+// TestTransformGlobEnrichment_Malformed: Glob result missing numFiles produces nil enrichment.
+func TestTransformGlobEnrichment_Malformed(t *testing.T) {
+	ts := time.Date(2025, 1, 15, 10, 0, 0, 0, time.UTC)
+	res := parser.Result{
+		Messages: []parser.Message{
+			{Role: "user", Timestamp: &ts, LineNum: 1,
+				Content: []parser.ContentBlock{&parser.TextBlock{Text: "list"}}},
+			{Role: "assistant", Timestamp: &ts, LineNum: 2,
+				Content: []parser.ContentBlock{&parser.ToolUseBlock{ID: "toolu_01", Name: "Glob", Input: map[string]any{}}}},
+			{Role: "user", Timestamp: &ts, LineNum: 3,
+				Envelope: parser.Envelope{ToolUseResult: map[string]any{"truncated": false}},
+				Content:  []parser.ContentBlock{&parser.ToolResultBlock{ToolUseID: "toolu_01", Content: "err"}}},
+		},
+	}
+	s := session.Transform(res)
+	var result *session.ToolResult
+	for _, b := range s.Turns[0].Blocks {
+		if tr, ok := b.(*session.ToolResult); ok {
+			result = tr
+		}
+	}
+	require.NotNil(t, result)
+	assert.Nil(t, result.Enrichment, "glob without numFiles should produce nil enrichment")
+}
+
+// TestTransformGrepEnrichment_NoMode: Grep result without mode field produces nil enrichment.
+func TestTransformGrepEnrichment_NoMode(t *testing.T) {
+	ts := time.Date(2025, 1, 15, 10, 0, 0, 0, time.UTC)
+	res := parser.Result{
+		Messages: []parser.Message{
+			{Role: "user", Timestamp: &ts, LineNum: 1,
+				Content: []parser.ContentBlock{&parser.TextBlock{Text: "find"}}},
+			{Role: "assistant", Timestamp: &ts, LineNum: 2,
+				Content: []parser.ContentBlock{&parser.ToolUseBlock{ID: "toolu_01", Name: "Grep", Input: map[string]any{}}}},
+			{Role: "user", Timestamp: &ts, LineNum: 3,
+				Envelope: parser.Envelope{ToolUseResult: map[string]any{"numFiles": float64(0)}},
+				Content:  []parser.ContentBlock{&parser.ToolResultBlock{ToolUseID: "toolu_01", Content: "no match"}}},
+		},
+	}
+	s := session.Transform(res)
+	var result *session.ToolResult
+	for _, b := range s.Turns[0].Blocks {
+		if tr, ok := b.(*session.ToolResult); ok {
+			result = tr
+		}
+	}
+	require.NotNil(t, result)
+	assert.Nil(t, result.Enrichment, "malformed grep result should produce nil enrichment")
+}
+
+// TestTransformAgentEnrichment: completed Agent tool result produces AgentEnrichment
+// with agent type, status, duration, token count, and tool use count.
+func TestTransformAgentEnrichment(t *testing.T) {
+	ts := time.Date(2025, 1, 15, 10, 0, 0, 0, time.UTC)
+	res := parser.Result{
+		Messages: []parser.Message{
+			{Role: "user", Timestamp: &ts, LineNum: 1,
+				Content: []parser.ContentBlock{&parser.TextBlock{Text: "research this"}}},
+			{Role: "assistant", Timestamp: &ts, LineNum: 2,
+				Content: []parser.ContentBlock{&parser.ToolUseBlock{ID: "toolu_01", Name: "Agent", Input: map[string]any{"prompt": "find it"}}}},
+			{Role: "user", Timestamp: &ts, LineNum: 3,
+				Envelope: parser.Envelope{ToolUseResult: map[string]any{
+					"status":            "completed",
+					"agentId":           "a573d391f7b0477b8",
+					"agentType":         "general-purpose",
+					"prompt":            "find it",
+					"totalDurationMs":   float64(45000),
+					"totalTokens":       float64(12500),
+					"totalToolUseCount": float64(8),
+				}},
+				Content: []parser.ContentBlock{&parser.ToolResultBlock{ToolUseID: "toolu_01", Content: "done"}}},
+		},
+	}
+	s := session.Transform(res)
+	var result *session.ToolResult
+	for _, b := range s.Turns[0].Blocks {
+		if tr, ok := b.(*session.ToolResult); ok {
+			result = tr
+		}
+	}
+	require.NotNil(t, result)
+	require.NotNil(t, result.Enrichment)
+	a, ok := result.Enrichment.(*session.AgentEnrichment)
+	require.True(t, ok, "expected *AgentEnrichment, got %T", result.Enrichment)
+	assert.Equal(t, "general-purpose", a.AgentType)
+	assert.Equal(t, "completed", a.Status)
+	assert.Equal(t, 45000, a.DurationMs)
+	assert.Equal(t, 12500, a.TokenCount)
+	assert.Equal(t, 8, a.ToolUseCount)
+}
+
+// TestTransformAgentEnrichment_AsyncLaunch: async Agent produces nil enrichment.
+func TestTransformAgentEnrichment_AsyncLaunch(t *testing.T) {
+	ts := time.Date(2025, 1, 15, 10, 0, 0, 0, time.UTC)
+	res := parser.Result{
+		Messages: []parser.Message{
+			{Role: "user", Timestamp: &ts, LineNum: 1,
+				Content: []parser.ContentBlock{&parser.TextBlock{Text: "go"}}},
+			{Role: "assistant", Timestamp: &ts, LineNum: 2,
+				Content: []parser.ContentBlock{&parser.ToolUseBlock{ID: "toolu_01", Name: "Agent", Input: map[string]any{}}}},
+			{Role: "user", Timestamp: &ts, LineNum: 3,
+				Envelope: parser.Envelope{ToolUseResult: map[string]any{
+					"isAsync":     true,
+					"status":      "async_launched",
+					"agentId":     "abc123",
+					"description": "background task",
+				}},
+				Content: []parser.ContentBlock{&parser.ToolResultBlock{ToolUseID: "toolu_01", Content: "launched"}}},
+		},
+	}
+	s := session.Transform(res)
+	var result *session.ToolResult
+	for _, b := range s.Turns[0].Blocks {
+		if tr, ok := b.(*session.ToolResult); ok {
+			result = tr
+		}
+	}
+	require.NotNil(t, result)
+	assert.Nil(t, result.Enrichment, "async agent should produce nil enrichment")
+}
+
+// TestTransformAgentEnrichment_StringError: string-type Agent result produces nil enrichment.
+func TestTransformAgentEnrichment_StringError(t *testing.T) {
+	ts := time.Date(2025, 1, 15, 10, 0, 0, 0, time.UTC)
+	res := parser.Result{
+		Messages: []parser.Message{
+			{Role: "user", Timestamp: &ts, LineNum: 1,
+				Content: []parser.ContentBlock{&parser.TextBlock{Text: "go"}}},
+			{Role: "assistant", Timestamp: &ts, LineNum: 2,
+				Content: []parser.ContentBlock{&parser.ToolUseBlock{ID: "toolu_01", Name: "Agent", Input: map[string]any{}}}},
+			{Role: "user", Timestamp: &ts, LineNum: 3,
+				Envelope: parser.Envelope{ToolUseResult: "Error: agent failed"},
+				Content:  []parser.ContentBlock{&parser.ToolResultBlock{ToolUseID: "toolu_01", Content: "error"}}},
+		},
+	}
+	s := session.Transform(res)
+	var result *session.ToolResult
+	for _, b := range s.Turns[0].Blocks {
+		if tr, ok := b.(*session.ToolResult); ok {
+			result = tr
+		}
+	}
+	require.NotNil(t, result)
+	assert.Nil(t, result.Enrichment, "string agent error should produce nil enrichment")
+}
+
 // TestTransformRedactedThinking: RedactedThinkingBlock maps to *session.RedactedThinking.
 func TestTransformRedactedThinking(t *testing.T) {
 	res := parseFixture(t, "redacted_thinking.jsonl")
@@ -755,4 +1321,200 @@ func TestTransformRedactedThinking(t *testing.T) {
 	require.IsType(t, (*session.Thinking)(nil), blocks[1])
 	require.IsType(t, (*session.RedactedThinking)(nil), blocks[2])
 	assert.Equal(t, "redacted-data-xyz", blocks[2].(*session.RedactedThinking).Data)
+}
+
+func TestTransformAskUserQuestionEnrichment(t *testing.T) {
+	ts := time.Date(2025, 1, 15, 10, 0, 0, 0, time.UTC)
+	res := parser.Result{
+		Messages: []parser.Message{
+			{Role: "user", Timestamp: &ts, LineNum: 1,
+				Content: []parser.ContentBlock{&parser.TextBlock{Text: "go"}}},
+			{Role: "assistant", Timestamp: &ts, LineNum: 2,
+				Content: []parser.ContentBlock{&parser.ToolUseBlock{
+					ID: "toolu_01", Name: "AskUserQuestion",
+					Input: map[string]any{"questions": []any{
+						map[string]any{
+							"question":    "Which approach?",
+							"header":      "Strategy",
+							"options":     []any{map[string]any{"label": "Option A"}, map[string]any{"label": "Option B"}},
+							"multiSelect": false,
+						},
+						map[string]any{
+							"question":    "Where to save?",
+							"header":      "Output",
+							"options":     []any{map[string]any{"label": "Desktop"}, map[string]any{"label": "Temp"}},
+							"multiSelect": false,
+						},
+					}},
+				}}},
+			{Role: "user", Timestamp: &ts, LineNum: 3,
+				Envelope: parser.Envelope{ToolUseResult: map[string]any{
+					"questions": []any{
+						map[string]any{
+							"question":    "Which approach?",
+							"header":      "Strategy",
+							"options":     []any{map[string]any{"label": "Option A"}, map[string]any{"label": "Option B"}},
+							"multiSelect": false,
+						},
+						map[string]any{
+							"question":    "Where to save?",
+							"header":      "Output",
+							"options":     []any{map[string]any{"label": "Desktop"}, map[string]any{"label": "Temp"}},
+							"multiSelect": false,
+						},
+					},
+					"answers": map[string]any{
+						"Which approach?": "Option A",
+						"Where to save?":  "Desktop",
+					},
+					"annotations": map[string]any{
+						"Where to save?": map[string]any{"notes": "Put it on ~/Desktop/out.html"},
+					},
+				}},
+				Content: []parser.ContentBlock{&parser.ToolResultBlock{
+					ToolUseID: "toolu_01",
+					Content:   "User has answered your questions.",
+				}}},
+		},
+	}
+	s := session.Transform(res)
+
+	require.Len(t, s.Turns, 1)
+	var result *session.ToolResult
+	for _, b := range s.Turns[0].Blocks {
+		if tr, ok := b.(*session.ToolResult); ok {
+			result = tr
+			break
+		}
+	}
+	require.NotNil(t, result)
+	require.NotNil(t, result.Enrichment)
+
+	ask, ok := result.Enrichment.(*session.AskUserQuestionEnrichment)
+	require.True(t, ok, "enrichment should be *AskUserQuestionEnrichment, got %T", result.Enrichment)
+
+	require.Len(t, ask.Questions, 2)
+
+	q0 := ask.Questions[0]
+	assert.Equal(t, "Strategy", q0.Header)
+	assert.Equal(t, "Which approach?", q0.Question)
+	assert.Equal(t, []string{"Option A", "Option B"}, q0.Options)
+	assert.Equal(t, []string{"Option A"}, q0.Selected)
+	assert.Empty(t, q0.Freetext)
+
+	q1 := ask.Questions[1]
+	assert.Equal(t, "Output", q1.Header)
+	assert.Equal(t, "Where to save?", q1.Question)
+	assert.Equal(t, []string{"Desktop", "Temp"}, q1.Options)
+	assert.Equal(t, []string{"Desktop"}, q1.Selected)
+	assert.Equal(t, "Put it on ~/Desktop/out.html", q1.Freetext)
+}
+
+func TestTransformAskUserQuestionEnrichment_MultiSelect(t *testing.T) {
+	ts := time.Date(2025, 1, 15, 10, 0, 0, 0, time.UTC)
+	res := parser.Result{
+		Messages: []parser.Message{
+			{Role: "user", Timestamp: &ts, LineNum: 1,
+				Content: []parser.ContentBlock{&parser.TextBlock{Text: "go"}}},
+			{Role: "assistant", Timestamp: &ts, LineNum: 2,
+				Content: []parser.ContentBlock{&parser.ToolUseBlock{
+					ID: "toolu_01", Name: "AskUserQuestion",
+					Input: map[string]any{"questions": []any{
+						map[string]any{
+							"question":    "Which features?",
+							"header":      "Features",
+							"options":     []any{map[string]any{"label": "Search"}, map[string]any{"label": "Tasks"}, map[string]any{"label": "Web"}},
+							"multiSelect": true,
+						},
+					}},
+				}}},
+			{Role: "user", Timestamp: &ts, LineNum: 3,
+				Envelope: parser.Envelope{ToolUseResult: map[string]any{
+					"questions": []any{
+						map[string]any{
+							"question":    "Which features?",
+							"header":      "Features",
+							"options":     []any{map[string]any{"label": "Search"}, map[string]any{"label": "Tasks"}, map[string]any{"label": "Web"}},
+							"multiSelect": true,
+						},
+					},
+					"answers": map[string]any{
+						"Which features?": []any{"Search", "Web"},
+					},
+				}},
+				Content: []parser.ContentBlock{&parser.ToolResultBlock{
+					ToolUseID: "toolu_01",
+					Content:   "User has answered your questions.",
+				}}},
+		},
+	}
+	s := session.Transform(res)
+
+	var result *session.ToolResult
+	for _, b := range s.Turns[0].Blocks {
+		if tr, ok := b.(*session.ToolResult); ok {
+			result = tr
+			break
+		}
+	}
+	require.NotNil(t, result)
+	require.NotNil(t, result.Enrichment)
+
+	ask, ok := result.Enrichment.(*session.AskUserQuestionEnrichment)
+	require.True(t, ok)
+	require.Len(t, ask.Questions, 1)
+
+	q := ask.Questions[0]
+	assert.Equal(t, []string{"Search", "Tasks", "Web"}, q.Options)
+	assert.Equal(t, []string{"Search", "Web"}, q.Selected)
+}
+
+func TestTransformAskUserQuestionEnrichment_Malformed(t *testing.T) {
+	ts := time.Date(2025, 1, 15, 10, 0, 0, 0, time.UTC)
+
+	t.Run("string toolUseResult", func(t *testing.T) {
+		res := parser.Result{
+			Messages: []parser.Message{
+				{Role: "user", Timestamp: &ts, LineNum: 1,
+					Content: []parser.ContentBlock{&parser.TextBlock{Text: "go"}}},
+				{Role: "assistant", Timestamp: &ts, LineNum: 2,
+					Content: []parser.ContentBlock{&parser.ToolUseBlock{
+						ID: "toolu_01", Name: "AskUserQuestion",
+						Input: map[string]any{},
+					}}},
+				{Role: "user", Timestamp: &ts, LineNum: 3,
+					Envelope: parser.Envelope{ToolUseResult: "User has answered your questions."},
+					Content:  []parser.ContentBlock{&parser.ToolResultBlock{ToolUseID: "toolu_01", Content: "answered"}}},
+			},
+		}
+		s := session.Transform(res)
+		for _, b := range s.Turns[0].Blocks {
+			if tr, ok := b.(*session.ToolResult); ok {
+				assert.Nil(t, tr.Enrichment, "string toolUseResult → nil enrichment")
+			}
+		}
+	})
+
+	t.Run("missing questions in toolUseResult", func(t *testing.T) {
+		res := parser.Result{
+			Messages: []parser.Message{
+				{Role: "user", Timestamp: &ts, LineNum: 1,
+					Content: []parser.ContentBlock{&parser.TextBlock{Text: "go"}}},
+				{Role: "assistant", Timestamp: &ts, LineNum: 2,
+					Content: []parser.ContentBlock{&parser.ToolUseBlock{
+						ID: "toolu_01", Name: "AskUserQuestion",
+						Input: map[string]any{},
+					}}},
+				{Role: "user", Timestamp: &ts, LineNum: 3,
+					Envelope: parser.Envelope{ToolUseResult: map[string]any{"answers": map[string]any{}}},
+					Content:  []parser.ContentBlock{&parser.ToolResultBlock{ToolUseID: "toolu_01", Content: "answered"}}},
+			},
+		}
+		s := session.Transform(res)
+		for _, b := range s.Turns[0].Blocks {
+			if tr, ok := b.(*session.ToolResult); ok {
+				assert.Nil(t, tr.Enrichment, "missing questions → nil enrichment")
+			}
+		}
+	})
 }

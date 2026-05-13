@@ -10,6 +10,7 @@ import (
 	"html/template"
 	"io"
 	"net/url"
+	"slices"
 	"strings"
 	"time"
 
@@ -191,6 +192,8 @@ func toolIcon(name string) string {
 		return "✓" // ✓
 	case "Task":
 		return "▶▶" // ▶▶
+	case "AskUserQuestion":
+		return "?"
 	}
 	if name == "" {
 		return "?"
@@ -294,10 +297,112 @@ func mcpResultHTML(content string) template.HTML {
 }
 
 func termLabel(r *session.ToolResult) string {
+	name := "tool_result"
 	if r.LinkedCallName != "" {
-		return r.LinkedCallName
+		name = r.LinkedCallName
 	}
-	return "tool_result"
+
+	switch e := r.Enrichment.(type) {
+	case *session.BashEnrichment:
+		if e != nil && e.Interrupted {
+			return name + " · interrupted"
+		}
+	case *session.ReadEnrichment:
+		if e != nil {
+			return name + " · " + readLabel(e)
+		}
+	case *session.WriteEnrichment:
+		if e != nil {
+			return name + " · " + writeEditLabel(basename(e.FilePath), e.Action)
+		}
+	case *session.EditEnrichment:
+		if e != nil {
+			return name + " · " + writeEditLabel(basename(e.FilePath), e.Action)
+		}
+	case *session.GrepEnrichment:
+		if e != nil {
+			return grepLabel(name, e)
+		}
+	case *session.GlobEnrichment:
+		if e != nil {
+			return name + " · " + globLabel(e)
+		}
+	case *session.AgentEnrichment:
+		if e != nil {
+			return name + " · " + agentLabel(e)
+		}
+	}
+
+	return name
+}
+
+func readLabel(e *session.ReadEnrichment) string {
+	base := basename(e.FilePath)
+	if e.LineStart > 0 && e.LineEnd > 0 {
+		return fmt.Sprintf("%s:%d-%d", base, e.LineStart, e.LineEnd)
+	}
+	return base
+}
+
+func writeEditLabel(base, action string) string {
+	if action != "" {
+		return base + " · " + action
+	}
+	return base
+}
+
+func basename(path string) string {
+	if i := strings.LastIndexAny(path, "/\\"); i >= 0 {
+		return path[i+1:]
+	}
+	return path
+}
+
+func grepLabel(name string, e *session.GrepEnrichment) string {
+	switch e.Mode {
+	case "content":
+		if e.NumLines > 0 && e.NumFiles > 0 {
+			return fmt.Sprintf("%s · %d lines in %d files", name, e.NumLines, e.NumFiles)
+		}
+	case "files_with_matches":
+		if e.NumFiles > 0 {
+			return fmt.Sprintf("%s · %d files", name, e.NumFiles)
+		}
+	case "count":
+		if e.NumMatches > 0 {
+			return fmt.Sprintf("%s · %d matches", name, e.NumMatches)
+		}
+	}
+	return name
+}
+
+func globLabel(e *session.GlobEnrichment) string {
+	if e.Truncated {
+		return fmt.Sprintf("%d files (truncated)", e.NumFiles)
+	}
+	return fmt.Sprintf("%d files", e.NumFiles)
+}
+
+func agentLabel(e *session.AgentEnrichment) string {
+	return fmt.Sprintf("%s · %s · %s tokens", e.AgentType, formatAgentDuration(e.DurationMs), formatTokens(e.TokenCount))
+}
+
+func formatAgentDuration(ms int) string {
+	if ms < 1000 {
+		return "<1s"
+	}
+	s := ms / 1000
+	if s < 60 {
+		return fmt.Sprintf("%ds", s)
+	}
+	return fmt.Sprintf("%dm %ds", s/60, s%60)
+}
+
+func formatTokens(n int) string {
+	if n < 1000 {
+		return fmt.Sprintf("%d", n)
+	}
+	return fmt.Sprintf("%.1fk", float64(n)/1000)
 }
 
 func formatOffset(d time.Duration) string {
@@ -393,6 +498,10 @@ func userBashOutputHTML(stdout, stderr string) template.HTML {
 	return safeANSI(combined)
 }
 
+func bashEnrichmentHTML(e *session.BashEnrichment) template.HTML {
+	return userBashOutputHTML(e.Stdout, e.Stderr)
+}
+
 func safeANSI(s string) (result template.HTML) {
 	defer func() {
 		if r := recover(); r != nil {
@@ -452,6 +561,40 @@ func todoPriority(item map[string]any) string {
 		return s
 	}
 	return ""
+}
+
+func askHeader(item map[string]any) string {
+	if s, ok := item["header"].(string); ok {
+		return s
+	}
+	return ""
+}
+
+func askQuestion(item map[string]any) string {
+	if s, ok := item["question"].(string); ok {
+		return s
+	}
+	return ""
+}
+
+func askOptionLabels(item map[string]any) []string {
+	opts, ok := item["options"].([]any)
+	if !ok {
+		return nil
+	}
+	labels := make([]string, 0, len(opts))
+	for _, o := range opts {
+		if m, ok := o.(map[string]any); ok {
+			if l, ok := m["label"].(string); ok {
+				labels = append(labels, l)
+			}
+		}
+	}
+	return labels
+}
+
+func askOptionIsSelected(q session.AskQuestionResult, label string) bool {
+	return slices.Contains(q.Selected, label)
 }
 
 func formatJSON(m map[string]any) string {

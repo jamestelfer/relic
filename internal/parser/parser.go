@@ -96,6 +96,7 @@ type Envelope struct {
 	Cwd               string
 	GitBranch         string
 	Slug              string
+	ToolUseResult     any
 }
 
 // Message represents a single user or assistant message from a session.
@@ -172,6 +173,7 @@ type record struct {
 	GitBranch         string     `json:"gitBranch"`
 	Slug              string     `json:"slug"`
 	Message           msgPayload `json:"message"`
+	ToolUseResult     any        `json:"toolUseResult,omitzero"`
 }
 
 // msgPayload is the nested "message" object inside a record.
@@ -318,6 +320,7 @@ func Parse(r io.Reader) (Result, []ParseError, error) {
 				Cwd:               rec.Cwd,
 				GitBranch:         rec.GitBranch,
 				Slug:              rec.Slug,
+				ToolUseResult:     rec.ToolUseResult,
 			},
 		}
 
