@@ -70,6 +70,24 @@ type AgentEnrichment struct {
 
 func (e *AgentEnrichment) enrichmentType() string { return "agent" }
 
+// AskUserQuestionEnrichment holds structured data from an AskUserQuestion
+// tool result, carrying questions with their selected answers and annotations.
+type AskUserQuestionEnrichment struct {
+	Questions []AskQuestionResult
+}
+
+func (e *AskUserQuestionEnrichment) enrichmentType() string { return "askuserquestion" }
+
+// AskQuestionResult holds a single question with its options, selected
+// answers, and optional free-text annotation.
+type AskQuestionResult struct {
+	Header   string
+	Question string
+	Options  []string
+	Selected []string
+	Freetext string
+}
+
 // interpretEnrichment interprets a raw toolUseResult value based on the tool
 // name and produces a typed ToolEnrichment value. Returns nil when the raw value
 // is not a map (string/array/nil produce no enrichment) or the tool name is
@@ -107,6 +125,10 @@ func interpretEnrichment(toolName string, raw any, callInput map[string]any) Too
 		}
 	case "Agent":
 		if e := interpretAgent(m); e != nil {
+			return e
+		}
+	case "AskUserQuestion":
+		if e := interpretAskUserQuestion(m); e != nil {
 			return e
 		}
 	}
@@ -200,6 +222,60 @@ func interpretAgent(m map[string]any) *AgentEnrichment {
 		TokenCount:   intFromAny(m["totalTokens"]),
 		ToolUseCount: intFromAny(m["totalToolUseCount"]),
 	}
+}
+
+func interpretAskUserQuestion(m map[string]any) *AskUserQuestionEnrichment {
+	questions, ok := m["questions"].([]any)
+	if !ok || len(questions) == 0 {
+		return nil
+	}
+
+	answers, _ := m["answers"].(map[string]any)
+	annotations, _ := m["annotations"].(map[string]any)
+
+	results := make([]AskQuestionResult, 0, len(questions))
+	for _, q := range questions {
+		qm, ok := q.(map[string]any)
+		if !ok {
+			continue
+		}
+		questionText, _ := qm["question"].(string)
+		header, _ := qm["header"].(string)
+
+		var optionLabels []string
+		if opts, ok := qm["options"].([]any); ok {
+			for _, o := range opts {
+				if om, ok := o.(map[string]any); ok {
+					if l, ok := om["label"].(string); ok {
+						optionLabels = append(optionLabels, l)
+					}
+				}
+			}
+		}
+
+		var selected []string
+		if answer, ok := answers[questionText].(string); ok && answer != "" {
+			selected = []string{answer}
+		}
+
+		var freetext string
+		if ann, ok := annotations[questionText].(map[string]any); ok {
+			freetext, _ = ann["notes"].(string)
+		}
+
+		results = append(results, AskQuestionResult{
+			Header:   header,
+			Question: questionText,
+			Options:  optionLabels,
+			Selected: selected,
+			Freetext: freetext,
+		})
+	}
+
+	if len(results) == 0 {
+		return nil
+	}
+	return &AskUserQuestionEnrichment{Questions: results}
 }
 
 func interpretBash(m map[string]any) *BashEnrichment {

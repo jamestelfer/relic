@@ -834,3 +834,64 @@ func TestRender_ToolResult_NilTypedEnrichment_NoPanic(t *testing.T) {
 	out := render(t, s, renderer.Options{Name: "test"})
 	assert.Contains(t, out, `<span class="label">Read</span>`, "should fall back to tool name when enrichment is typed nil")
 }
+
+func TestRender_AskUserQuestion_ResultWithEnrichment(t *testing.T) {
+	s := session.Session{
+		Turns: []session.Turn{{Index: 1, Blocks: []session.Block{
+			&session.ToolResult{
+				ToolUseID: "toolu_ask", Content: "User has answered your questions.",
+				LinkedCallID: new("toolu_ask"), LinkedCallName: "AskUserQuestion",
+				Enrichment: &session.AskUserQuestionEnrichment{
+					Questions: []session.AskQuestionResult{
+						{Header: "Scope", Question: "Which approach?", Options: []string{"Option A", "Option B"}, Selected: []string{"Option B"}},
+					},
+				},
+			},
+		}}},
+	}
+	out := render(t, s, renderer.Options{Name: "test"})
+
+	assert.Contains(t, out, `class="ask-result"`, "should render ask-result container")
+	assert.Contains(t, out, `class="ask-result-item"`, "should render ask-result-item")
+	assert.Contains(t, out, `class="ask-header"`, "should render header")
+	assert.Contains(t, out, `class="ask-question"`, "should render question")
+	assert.Contains(t, out, `class="ask-option selected"`, "selected option has selected class")
+	assert.Contains(t, out, `class="ask-option"`, "unselected option has no selected class")
+	assert.NotContains(t, out, `class="term"`, "ask-result should not use terminal chrome")
+}
+
+func TestRender_AskUserQuestion_ResultWithFreetext(t *testing.T) {
+	s := session.Session{
+		Turns: []session.Turn{{Index: 1, Blocks: []session.Block{
+			&session.ToolResult{
+				ToolUseID: "toolu_ask_ft", Content: "User has answered.",
+				LinkedCallID: new("toolu_ask_ft"), LinkedCallName: "AskUserQuestion",
+				Enrichment: &session.AskUserQuestionEnrichment{
+					Questions: []session.AskQuestionResult{
+						{Header: "Output", Question: "Where to save?", Options: []string{"Desktop", "Temp"}, Selected: []string{"Desktop"}, Freetext: "Put it on ~/Desktop/out.html"},
+					},
+				},
+			},
+		}}},
+	}
+	out := render(t, s, renderer.Options{Name: "test"})
+
+	assert.Contains(t, out, `class="ask-freetext"`, "should render freetext block")
+	assert.Contains(t, out, "Put it on ~/Desktop/out.html", "freetext content present")
+}
+
+func TestRender_AskUserQuestion_NilEnrichment_FallsBack(t *testing.T) {
+	s := session.Session{
+		Turns: []session.Turn{{Index: 1, Blocks: []session.Block{
+			&session.ToolResult{
+				ToolUseID: "toolu_ask_nil", Content: "User has answered your questions.",
+				LinkedCallID: new("toolu_ask_nil"), LinkedCallName: "AskUserQuestion",
+			},
+		}}},
+	}
+	out := render(t, s, renderer.Options{Name: "test"})
+
+	assert.NotContains(t, out, `class="ask-result"`, "no ask-result when enrichment is nil")
+	assert.Contains(t, out, `class="term"`, "falls back to terminal chrome")
+	assert.Contains(t, out, "User has answered your questions.", "raw content shown in fallback")
+}

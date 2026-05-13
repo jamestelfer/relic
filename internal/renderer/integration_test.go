@@ -90,6 +90,16 @@ func TestIntegration_AllBlockTypes(t *testing.T) {
 								"multiSelect": false,
 							},
 						}},
+						LinkedResultID: new("toolu_09ASK"),
+					},
+					&session.ToolResult{
+						ToolUseID: "toolu_09ASK", Content: "User has answered your questions.",
+						LinkedCallID: new("toolu_09ASK"), LinkedCallName: "AskUserQuestion",
+						Enrichment: &session.AskUserQuestionEnrichment{
+							Questions: []session.AskQuestionResult{
+								{Header: "Strategy", Question: "Which approach should we take?", Options: []string{"Option A", "Option B"}, Selected: []string{"Option B"}},
+							},
+						},
 					},
 					&session.ToolCall{
 						ID: "toolu_10MCP", Name: "mcp__github__create_issue",
@@ -182,11 +192,16 @@ func TestIntegration_AllBlockTypes(t *testing.T) {
 	assert.Contains(t, out, `class="todo-check"`)
 	assert.Contains(t, out, `class="todo-text"`)
 
-	// AskUserQuestion body structure
+	// AskUserQuestion tool_use body structure
 	assert.Contains(t, out, `class="ask-list"`)
 	assert.Contains(t, out, `class="ask-header"`)
 	assert.Contains(t, out, `class="ask-question"`)
 	assert.Contains(t, out, `class="ask-option"`)
+
+	// AskUserQuestion tool_result body structure
+	assert.Contains(t, out, `class="ask-result"`)
+	assert.Contains(t, out, `class="ask-result-item"`)
+	assert.Contains(t, out, `class="ask-option selected"`)
 
 	// MCP body structure
 	assert.Contains(t, out, `class="mcp-server"`)
@@ -229,6 +244,7 @@ func TestIntegration_AllBlockTypes(t *testing.T) {
 	assert.Contains(t, css, ".todo-list")
 	assert.Contains(t, css, ".plan-body")
 	assert.Contains(t, css, ".ask-list")
+	assert.Contains(t, css, ".ask-result")
 	assert.Contains(t, css, ".mcp-server")
 	assert.Contains(t, css, ".diff-body")
 	assert.Contains(t, css, ".image-card")

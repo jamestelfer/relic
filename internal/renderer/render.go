@@ -10,6 +10,7 @@ import (
 	"html/template"
 	"io"
 	"net/url"
+	"slices"
 	"strings"
 	"time"
 
@@ -590,6 +591,10 @@ func askOptionLabels(item map[string]any) []string {
 		}
 	}
 	return labels
+}
+
+func askOptionIsSelected(q session.AskQuestionResult, label string) bool {
+	return slices.Contains(q.Selected, label)
 }
 
 func formatJSON(m map[string]any) string {

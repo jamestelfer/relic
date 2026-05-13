@@ -1322,3 +1322,140 @@ func TestTransformRedactedThinking(t *testing.T) {
 	require.IsType(t, (*session.RedactedThinking)(nil), blocks[2])
 	assert.Equal(t, "redacted-data-xyz", blocks[2].(*session.RedactedThinking).Data)
 }
+
+func TestTransformAskUserQuestionEnrichment(t *testing.T) {
+	ts := time.Date(2025, 1, 15, 10, 0, 0, 0, time.UTC)
+	res := parser.Result{
+		Messages: []parser.Message{
+			{Role: "user", Timestamp: &ts, LineNum: 1,
+				Content: []parser.ContentBlock{&parser.TextBlock{Text: "go"}}},
+			{Role: "assistant", Timestamp: &ts, LineNum: 2,
+				Content: []parser.ContentBlock{&parser.ToolUseBlock{
+					ID: "toolu_01", Name: "AskUserQuestion",
+					Input: map[string]any{"questions": []any{
+						map[string]any{
+							"question":    "Which approach?",
+							"header":      "Strategy",
+							"options":     []any{map[string]any{"label": "Option A"}, map[string]any{"label": "Option B"}},
+							"multiSelect": false,
+						},
+						map[string]any{
+							"question":    "Where to save?",
+							"header":      "Output",
+							"options":     []any{map[string]any{"label": "Desktop"}, map[string]any{"label": "Temp"}},
+							"multiSelect": false,
+						},
+					}},
+				}}},
+			{Role: "user", Timestamp: &ts, LineNum: 3,
+				Envelope: parser.Envelope{ToolUseResult: map[string]any{
+					"questions": []any{
+						map[string]any{
+							"question":    "Which approach?",
+							"header":      "Strategy",
+							"options":     []any{map[string]any{"label": "Option A"}, map[string]any{"label": "Option B"}},
+							"multiSelect": false,
+						},
+						map[string]any{
+							"question":    "Where to save?",
+							"header":      "Output",
+							"options":     []any{map[string]any{"label": "Desktop"}, map[string]any{"label": "Temp"}},
+							"multiSelect": false,
+						},
+					},
+					"answers": map[string]any{
+						"Which approach?": "Option A",
+						"Where to save?":  "Desktop",
+					},
+					"annotations": map[string]any{
+						"Where to save?": map[string]any{"notes": "Put it on ~/Desktop/out.html"},
+					},
+				}},
+				Content: []parser.ContentBlock{&parser.ToolResultBlock{
+					ToolUseID: "toolu_01",
+					Content:   "User has answered your questions.",
+				}}},
+		},
+	}
+	s := session.Transform(res)
+
+	require.Len(t, s.Turns, 1)
+	var result *session.ToolResult
+	for _, b := range s.Turns[0].Blocks {
+		if tr, ok := b.(*session.ToolResult); ok {
+			result = tr
+			break
+		}
+	}
+	require.NotNil(t, result)
+	require.NotNil(t, result.Enrichment)
+
+	ask, ok := result.Enrichment.(*session.AskUserQuestionEnrichment)
+	require.True(t, ok, "enrichment should be *AskUserQuestionEnrichment, got %T", result.Enrichment)
+
+	require.Len(t, ask.Questions, 2)
+
+	q0 := ask.Questions[0]
+	assert.Equal(t, "Strategy", q0.Header)
+	assert.Equal(t, "Which approach?", q0.Question)
+	assert.Equal(t, []string{"Option A", "Option B"}, q0.Options)
+	assert.Equal(t, []string{"Option A"}, q0.Selected)
+	assert.Empty(t, q0.Freetext)
+
+	q1 := ask.Questions[1]
+	assert.Equal(t, "Output", q1.Header)
+	assert.Equal(t, "Where to save?", q1.Question)
+	assert.Equal(t, []string{"Desktop", "Temp"}, q1.Options)
+	assert.Equal(t, []string{"Desktop"}, q1.Selected)
+	assert.Equal(t, "Put it on ~/Desktop/out.html", q1.Freetext)
+}
+
+func TestTransformAskUserQuestionEnrichment_Malformed(t *testing.T) {
+	ts := time.Date(2025, 1, 15, 10, 0, 0, 0, time.UTC)
+
+	t.Run("string toolUseResult", func(t *testing.T) {
+		res := parser.Result{
+			Messages: []parser.Message{
+				{Role: "user", Timestamp: &ts, LineNum: 1,
+					Content: []parser.ContentBlock{&parser.TextBlock{Text: "go"}}},
+				{Role: "assistant", Timestamp: &ts, LineNum: 2,
+					Content: []parser.ContentBlock{&parser.ToolUseBlock{
+						ID: "toolu_01", Name: "AskUserQuestion",
+						Input: map[string]any{},
+					}}},
+				{Role: "user", Timestamp: &ts, LineNum: 3,
+					Envelope: parser.Envelope{ToolUseResult: "User has answered your questions."},
+					Content:  []parser.ContentBlock{&parser.ToolResultBlock{ToolUseID: "toolu_01", Content: "answered"}}},
+			},
+		}
+		s := session.Transform(res)
+		for _, b := range s.Turns[0].Blocks {
+			if tr, ok := b.(*session.ToolResult); ok {
+				assert.Nil(t, tr.Enrichment, "string toolUseResult → nil enrichment")
+			}
+		}
+	})
+
+	t.Run("missing questions in toolUseResult", func(t *testing.T) {
+		res := parser.Result{
+			Messages: []parser.Message{
+				{Role: "user", Timestamp: &ts, LineNum: 1,
+					Content: []parser.ContentBlock{&parser.TextBlock{Text: "go"}}},
+				{Role: "assistant", Timestamp: &ts, LineNum: 2,
+					Content: []parser.ContentBlock{&parser.ToolUseBlock{
+						ID: "toolu_01", Name: "AskUserQuestion",
+						Input: map[string]any{},
+					}}},
+				{Role: "user", Timestamp: &ts, LineNum: 3,
+					Envelope: parser.Envelope{ToolUseResult: map[string]any{"answers": map[string]any{}}},
+					Content:  []parser.ContentBlock{&parser.ToolResultBlock{ToolUseID: "toolu_01", Content: "answered"}}},
+			},
+		}
+		s := session.Transform(res)
+		for _, b := range s.Turns[0].Blocks {
+			if tr, ok := b.(*session.ToolResult); ok {
+				assert.Nil(t, tr.Enrichment, "missing questions → nil enrichment")
+			}
+		}
+	})
+}
