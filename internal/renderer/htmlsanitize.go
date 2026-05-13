@@ -10,7 +10,11 @@ import (
 	"github.com/yuin/goldmark/util"
 )
 
-var sanitizePolicy = bluemonday.UGCPolicy()
+var sanitizePolicy = func() *bluemonday.Policy {
+	p := bluemonday.UGCPolicy()
+	p.AllowElements("kbd")
+	return p
+}()
 
 type htmlSanitizer struct{}
 

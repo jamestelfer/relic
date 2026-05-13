@@ -1,6 +1,6 @@
 
 [TestRender_HTMLSanitization_Snapshot - 1]
-class="body"><p>Inline: press &lt;kbd&gt;Ctrl+C&lt;/kbd&gt; to cancel.</p>
+class="body"><p>Inline: press <kbd>Ctrl+C</kbd> to cancel.</p>
 &lt;script&gt;alert(&#39;xss&#39;)&lt;/script&gt;
 <div>safe block div</div>
 &lt;iframe src=&#34;http://evil.com&#34;&gt;&lt;/iframe&gt;

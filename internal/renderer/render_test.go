@@ -881,14 +881,14 @@ func TestRender_AskUserQuestion_ResultWithFreetext(t *testing.T) {
 	assert.Contains(t, out, "Put it on ~/Desktop/out.html", "freetext content present")
 }
 
-func TestRender_InlineHTML_Escaped(t *testing.T) {
+func TestRender_InlineHTML_SafeKbdRendered(t *testing.T) {
 	s := session.Session{
 		Turns: []session.Turn{{Index: 1, Blocks: []session.Block{
 			&session.AssistantText{Text: "Press <kbd>Ctrl+C</kbd> to cancel."},
 		}}},
 	}
 	out := render(t, s, renderer.Options{Name: "test"})
-	assert.Contains(t, out, "&lt;kbd&gt;Ctrl+C&lt;/kbd&gt;", "inline HTML should be escaped")
+	assert.Contains(t, out, "<kbd>Ctrl+C</kbd>", "safe kbd element rendered as HTML")
 	assert.NotContains(t, out, "<!-- raw HTML omitted -->", "no omit comment")
 }
 
@@ -916,15 +916,15 @@ func TestRender_BlockHTML_SafeDivRendered(t *testing.T) {
 	assert.NotContains(t, out, "<!-- raw HTML omitted -->", "no omit comment")
 }
 
-func TestRender_MixedHTML_AllEscaped(t *testing.T) {
+func TestRender_MixedHTML_SafeAndUnsafe(t *testing.T) {
 	s := session.Session{
 		Turns: []session.Turn{{Index: 1, Blocks: []session.Block{
 			&session.AssistantText{Text: "Use <kbd>Enter</kbd> to continue.\n\n<iframe src=\"evil\"></iframe>\n\nDone."},
 		}}},
 	}
 	out := render(t, s, renderer.Options{Name: "test"})
-	assert.Contains(t, out, "&lt;kbd&gt;Enter&lt;/kbd&gt;", "inline kbd escaped")
-	assert.Contains(t, out, "&lt;iframe", "block iframe escaped")
+	assert.Contains(t, out, "<kbd>Enter</kbd>", "safe kbd rendered as HTML")
+	assert.Contains(t, out, "&lt;iframe", "unsafe iframe escaped")
 	assert.NotContains(t, out, "<!-- raw HTML omitted -->", "no omit comment")
 }
 
@@ -938,6 +938,38 @@ func TestRender_NormalMarkdown_Unaffected(t *testing.T) {
 	assert.Contains(t, out, "<strong>bold</strong>", "bold renders as HTML")
 	assert.Contains(t, out, `<a href="http://example.com">link</a>`, "link renders as HTML")
 	assert.Contains(t, out, "chroma", "code block gets syntax highlighting")
+}
+
+func TestRender_KbdElement_RenderedAsHTML(t *testing.T) {
+	s := session.Session{
+		Turns: []session.Turn{{Index: 1, Blocks: []session.Block{
+			&session.AssistantText{Text: "Press <kbd>Ctrl+C</kbd> to cancel."},
+		}}},
+	}
+	out := render(t, s, renderer.Options{Name: "test"})
+	assert.Contains(t, out, "<kbd>Ctrl+C</kbd>", "kbd element rendered as HTML")
+	assert.NotContains(t, out, "&lt;kbd&gt;", "kbd should not be escaped")
+}
+
+func TestRender_EmptyBluemondayOutput_EscapesOriginal(t *testing.T) {
+	s := session.Session{
+		Turns: []session.Turn{{Index: 1, Blocks: []session.Block{
+			&session.AssistantText{Text: "Danger:\n\n<script></script>\n\nEnd."},
+		}}},
+	}
+	out := render(t, s, renderer.Options{Name: "test"})
+	assert.Contains(t, out, "&lt;script&gt;&lt;/script&gt;", "empty script tag is escaped, not empty output")
+}
+
+func TestRender_InvalidMarkdown_NosCrash(t *testing.T) {
+	s := session.Session{
+		Turns: []session.Turn{{Index: 1, Blocks: []session.Block{
+			&session.AssistantText{Text: "```\nunclosed code block with <script>alert(1)</script>"},
+		}}},
+	}
+	out := render(t, s, renderer.Options{Name: "test"})
+	assert.NotEmpty(t, out, "should render without crashing")
+	assert.NotContains(t, out, `<script>alert(1)</script>`, "script in code block must not render as HTML")
 }
 
 func TestRender_SafeAnchor_RenderedAsHTML(t *testing.T) {
