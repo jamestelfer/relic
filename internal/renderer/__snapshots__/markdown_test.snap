@@ -1,0 +1,11 @@
+
+[TestRender_HTMLSanitization_Snapshot - 1]
+class="body"><p>Inline: press <kbd>Ctrl+C</kbd> to cancel.</p>
+&lt;script&gt;alert(&#39;xss&#39;)&lt;/script&gt;
+<div>safe block div</div>
+&lt;iframe src=&#34;http://evil.com&#34;&gt;&lt;/iframe&gt;
+<p>Link: <a href="http://example.com" rel="nofollow">safe link</a> here.</p>
+<details><summary>Expand</summary>Detail content</details>
+<p>Safe markdown: <strong>bold</strong> and <code>code</code>.</p>
+</div></div><button class="clamp-toggle" type="button"><span class="label">Show more</span></button></div></article><div class="turn-foot"><span class="spacer"></span> <span class="end">end of session</span></div></section><footer class="session-foot"><span>END OF SESSION · 1 turn</span> <span><a href="https://github.com/jamestelfer/relic">relic vdev</a></span></footer>
+---

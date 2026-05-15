@@ -15,15 +15,9 @@ import (
 	"time"
 
 	"github.com/a-h/templ"
-	chromahtml "github.com/alecthomas/chroma/v2/formatters/html"
 	"github.com/jamestelfer/relic/internal/ansi"
 	"github.com/jamestelfer/relic/internal/highlight"
 	"github.com/jamestelfer/relic/internal/session"
-	"github.com/yuin/goldmark"
-	highlighting "github.com/yuin/goldmark-highlighting/v2"
-	"github.com/yuin/goldmark/extension"
-	"github.com/yuin/goldmark/parser"
-	"github.com/yuin/goldmark/renderer/html"
 )
 
 //go:embed assets/colors_and_type.css
@@ -43,24 +37,6 @@ var highlightCSS string
 
 //go:embed assets/favicon.svg
 var faviconSVG string
-
-var md = goldmark.New(
-	goldmark.WithExtensions(
-		extension.GFM,
-		highlighting.NewHighlighting(
-			highlighting.WithCustomStyle(highlight.Style()),
-			highlighting.WithFormatOptions(
-				chromahtml.WithClasses(true),
-			),
-		),
-	),
-	goldmark.WithParserOptions(
-		parser.WithAutoHeadingID(),
-	),
-	goldmark.WithRendererOptions(
-		html.WithHardWraps(),
-	),
-)
 
 // Version is the build label stamped into the session footer.
 var Version = "dev"
@@ -132,39 +108,6 @@ func faviconLinkComponent() templ.Component {
 			encoded)
 		return err
 	})
-}
-
-func renderMarkdown(text string) template.HTML {
-	var buf bytes.Buffer
-	if err := md.Convert([]byte(text), &buf); err != nil {
-		return template.HTML(template.HTMLEscapeString(text)) //nolint:gosec
-	}
-	out := injectCopyButtons(buf.String())
-	return template.HTML(out) //nolint:gosec
-}
-
-func injectCopyButtons(html string) string {
-	const button = `<button class="copy-btn">copy</button>`
-	var result strings.Builder
-	remaining := html
-	for {
-		start := strings.Index(remaining, "<pre")
-		if start < 0 {
-			result.WriteString(remaining)
-			break
-		}
-		result.WriteString(remaining[:start])
-		end := strings.Index(remaining[start:], ">")
-		if end < 0 {
-			result.WriteString(remaining[start:])
-			break
-		}
-		end += start + 1
-		result.WriteString(remaining[start:end])
-		result.WriteString(button)
-		remaining = remaining[end:]
-	}
-	return result.String()
 }
 
 func pairIDLabel(id string) string {
