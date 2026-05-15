@@ -1,4 +1,3 @@
-// Package gist publishes rendered HTML to a GitHub Gist via the gh CLI.
 package gist
 
 import (

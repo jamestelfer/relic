@@ -1,6 +1,3 @@
-// Package highlight wraps Chroma to provide syntax highlighting for code blocks.
-// It produces class-based HTML (no inline styles) and generates a CSS rule set
-// from an embedded style definition for injection into <head>.
 package highlight
 
 import (

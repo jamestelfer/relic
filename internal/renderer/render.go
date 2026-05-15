@@ -1,4 +1,3 @@
-// Package renderer converts a session.Session into a self-contained HTML document.
 package renderer
 
 import (

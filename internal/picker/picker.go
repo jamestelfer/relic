@@ -1,5 +1,3 @@
-// Package picker discovers Claude Code session JSONL files and presents an
-// interactive two-step selection menu (project then session) to the user.
 package picker
 
 import (

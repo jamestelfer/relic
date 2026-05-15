@@ -1,4 +1,3 @@
-// Package ansi converts ANSI escape sequences in terminal output to HTML spans.
 package ansi
 
 import (
