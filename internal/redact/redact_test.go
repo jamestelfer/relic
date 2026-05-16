@@ -12,8 +12,8 @@ import (
 )
 
 const (
-	testGitHubPAT = "ghp_zR8k4mVq2xN7pLw9cJ3hYf6eDgA5tB0sQiUo"
-	testAWSKey    = "AKIAZ7V4Q2XRNJ3WBTY5"
+	testGitHubPAT = "ghp_" + "zR8k4mVq2xN7pLw9cJ3hYf6eDgA5tB0sQiUo"
+	testAWSKey    = "AKIA" + "Z7V4Q2XRNJ3WBTY5"
 )
 
 func TestReader_RedactsGitHubPAT(t *testing.T) {

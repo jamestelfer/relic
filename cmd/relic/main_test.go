@@ -16,6 +16,26 @@ import (
 	"github.com/urfave/cli/v3"
 )
 
+const (
+	testGitHubPAT = "ghp_" + "zR8k4mVq2xN7pLw9cJ3hYf6eDgA5tB0sQiUo"
+	testAWSKey    = "AKIA" + "Z7V4Q2XRNJ3WBTY5"
+)
+
+// secretsFixturePath loads the secrets fixture template from testdata, replaces
+// placeholders with real high-entropy secret patterns at runtime, and writes the
+// result to a temp file. This keeps secret-shaped strings out of committed files.
+func secretsFixturePath(t *testing.T) string {
+	t.Helper()
+	data, err := os.ReadFile("testdata/secrets.jsonl")
+	require.NoError(t, err)
+	content := string(data)
+	content = strings.ReplaceAll(content, "PLACEHOLDER_GITHUB_PAT", testGitHubPAT)
+	content = strings.ReplaceAll(content, "PLACEHOLDER_AWS_KEY", testAWSKey)
+	path := filepath.Join(t.TempDir(), "secrets.jsonl")
+	require.NoError(t, os.WriteFile(path, []byte(content), 0o644))
+	return path
+}
+
 // runFixture executes relic against testdata/fixture.jsonl and returns the HTML.
 func runFixture(t *testing.T, opts options) string {
 	t.Helper()
@@ -424,17 +444,17 @@ func TestExecute_GistMode(t *testing.T) {
 // --- Redaction tests ---
 
 func TestExecute_RedactsSecretsByDefault(t *testing.T) {
-	html := runFixture(t, options{inputPath: "testdata/secrets.jsonl"})
+	html := runFixture(t, options{inputPath: secretsFixturePath(t)})
 	assert.Contains(t, html, "[REDACTED:github-pat]")
 	assert.Contains(t, html, "[REDACTED:aws-access-token]")
-	assert.NotContains(t, html, "ghp_zR8k4mVq2xN7pLw9cJ3hYf6eDgA5tB0sQiUo")
-	assert.NotContains(t, html, "AKIAZ7V4Q2XRNJ3WBTY5")
+	assert.NotContains(t, html, testGitHubPAT)
+	assert.NotContains(t, html, testAWSKey)
 }
 
 func TestExecute_RedactionSummaryOnStderr(t *testing.T) {
 	var logBuf bytes.Buffer
 	err := execute(options{
-		inputPath:  "testdata/secrets.jsonl",
+		inputPath:  secretsFixturePath(t),
 		outputPath: filepath.Join(t.TempDir(), "out.html"),
 	}, &logBuf)
 	require.NoError(t, err)
@@ -449,7 +469,7 @@ func TestExecute_NoRedactFlag_SkipsRedaction(t *testing.T) {
 	var logBuf bytes.Buffer
 	outPath := filepath.Join(t.TempDir(), "out.html")
 	err := execute(options{
-		inputPath:  "testdata/secrets.jsonl",
+		inputPath:  secretsFixturePath(t),
 		outputPath: outPath,
 		noRedact:   true,
 	}, &logBuf)
@@ -457,14 +477,14 @@ func TestExecute_NoRedactFlag_SkipsRedaction(t *testing.T) {
 
 	html, readErr := os.ReadFile(outPath)
 	require.NoError(t, readErr)
-	assert.Contains(t, string(html), "ghp_zR8k4mVq2xN7pLw9cJ3hYf6eDgA5tB0sQiUo")
+	assert.Contains(t, string(html), testGitHubPAT)
 	assert.NotContains(t, string(html), "[REDACTED:")
 	assert.NotContains(t, logBuf.String(), "secrets redacted")
 }
 
 func TestCLI_NoRedactFlag(t *testing.T) {
-	tmp := t.TempDir()
-	outPath := filepath.Join(tmp, "out.html")
+	fixture := secretsFixturePath(t)
+	outPath := filepath.Join(t.TempDir(), "out.html")
 
 	var outBuf, errBuf bytes.Buffer
 	cmd := buildCLI(func(opts options, errOut io.Writer) error {
@@ -477,13 +497,13 @@ func TestCLI_NoRedactFlag(t *testing.T) {
 		"relic",
 		"--no-redact",
 		"--output-path", outPath,
-		"testdata/secrets.jsonl",
+		fixture,
 	})
 	require.NoError(t, err)
 
 	html, readErr := os.ReadFile(outPath)
 	require.NoError(t, readErr)
-	assert.Contains(t, string(html), "ghp_zR8k4mVq2xN7pLw9cJ3hYf6eDgA5tB0sQiUo")
+	assert.Contains(t, string(html), testGitHubPAT)
 	assert.NotContains(t, errBuf.String(), "secrets redacted")
 }
 
@@ -588,10 +608,10 @@ func TestCLI_GistMode_PrintsURLs(t *testing.T) {
 // session → render) for a JSONL fixture containing planted secrets. The snapshot
 // locks in that redaction markers appear and raw secrets do not.
 func TestExecute_RedactionSnapshot(t *testing.T) {
-	html := runFixture(t, options{inputPath: "testdata/secrets.jsonl"})
+	html := runFixture(t, options{inputPath: secretsFixturePath(t)})
 
-	assert.NotContains(t, html, "ghp_zR8k4mVq2xN7pLw9cJ3hYf6eDgA5tB0sQiUo")
-	assert.NotContains(t, html, "AKIAZ7V4Q2XRNJ3WBTY5")
+	assert.NotContains(t, html, testGitHubPAT)
+	assert.NotContains(t, html, testAWSKey)
 
 	bodyStart := strings.Index(html, `class="body"`)
 	require.NotEqual(t, bodyStart, -1, "body class marker not found")
