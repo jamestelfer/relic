@@ -142,6 +142,12 @@
 
   --error-bg: light-dark(#FBE9E9, rgba(217, 56, 56, 0.12));
 
+  /* Keycap (kbd) */
+  --kbd-fg:           light-dark(var(--ink-700), var(--fg-on-dark));
+  --kbd-bg:           light-dark(var(--bg-paper), var(--ink-700));
+  --kbd-border:       light-dark(var(--ink-300), var(--ink-600));
+  --kbd-border-depth: light-dark(var(--ink-400), var(--ink-500));
+
   /* Status — success (green), danger (red), warning (amber) */
   --success-bg:     light-dark(oklch(0.94 0.04 145), oklch(0.20 0.04 145));
   --success-fg:     light-dark(oklch(0.42 0.12 145), oklch(0.75 0.12 145));
@@ -189,6 +195,22 @@ html, body {
 * { box-sizing: border-box; }
 
 a { color: var(--link); text-decoration-thickness: 1px; text-underline-offset: 2px; }
+
+kbd {
+  display: inline-block;
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  font-weight: 500;
+  line-height: 1;
+  padding: 2px 7px 3px;
+  white-space: nowrap;
+  vertical-align: 0.1em;
+  color: var(--kbd-fg);
+  background: var(--kbd-bg);
+  border: 1px solid var(--kbd-border);
+  border-bottom: 2px solid var(--kbd-border-depth);
+  border-radius: var(--radius-sm);
+}
 
 /* Display class shortcuts */
 .display     { font-family: var(--font-display); font-weight: 400; letter-spacing: var(--tracking-tight); line-height: var(--leading-tight); }

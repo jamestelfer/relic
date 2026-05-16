@@ -251,3 +251,33 @@ a { color: var(--link); text-decoration-thickness: 1px; text-underline-offset: 2
 .mono        { font-family: var(--font-mono); font-variant-ligatures: contextual common-ligatures; }
 .eyebrow     { font-family: var(--font-ui); font-size: var(--text-xs); font-weight: 600; letter-spacing: var(--tracking-wide); text-transform: uppercase; color: var(--fg-muted); }
 .cataloged   { font-family: var(--font-mono); font-size: var(--text-xs); letter-spacing: 0.02em; color: var(--fg-muted); }
+
+/* ── Keyboard keycaps ─────────────────────────────────────────────
+   Keycap-style kbd. Depth via heavier border-bottom (light: darker
+   step-shadow; dark: lighter ledge — mirrors physical key geometry).
+   ─────────────────────────────────────────────────────────────── */
+kbd {
+  display: inline-block;
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);        /* 12px — fixed regardless of parent size */
+  font-weight: 500;
+  line-height: 1;
+  padding: 2px 7px 3px;             /* extra bottom pad extends the keycap face */
+  white-space: nowrap;
+  vertical-align: 0.1em;            /* optical lift to sit on the text baseline */
+
+  color: var(--ink-700);
+  background: var(--bg-paper);
+  border: 1px solid var(--ink-300);
+  border-bottom: 2px solid var(--ink-400);   /* shadow step — the physical depth */
+  border-radius: var(--radius-sm);            /* 5px */
+}
+
+@media (prefers-color-scheme: dark) {
+  kbd {
+    color: var(--fg-on-dark);           /* #E5E9F4 */
+    background: var(--ink-700);         /* #2A3142 — raised above ink-900 page */
+    border: 1px solid var(--ink-600);   /* #3F4759 */
+    border-bottom: 2px solid var(--ink-500);  /* lighter ledge = catching ambient light */
+  }
+}

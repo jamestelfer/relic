@@ -131,14 +131,7 @@ aside.rail {
 
 .rail .kbd { margin-top: 24px; font-size: 12px; color: var(--fg-muted); }
 .rail kbd {
-  font-family: var(--font-mono);
   font-size: 11px;
-  padding: 2px 6px;
-  border: 1px solid var(--border);
-  border-bottom-width: 2px;
-  border-radius: 4px;
-  background: var(--bg-paper);
-  color: var(--fg);
 }
 
 /* Session header ----------------------------------------------------------- */
