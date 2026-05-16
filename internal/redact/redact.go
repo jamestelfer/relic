@@ -47,12 +47,18 @@ type accumulator struct {
 	lineCount   int
 }
 
+// newDetector creates the gitleaks detector. Replaced in tests to simulate
+// initialization failures.
+var newDetector = func() (*detect.Detector, error) {
+	return detect.NewDetectorDefaultConfig()
+}
+
 // NewReader creates a redacting reader that scans lines for secrets using
 // gitleaks default rules. Returns an error if the detector cannot be initialized.
 func NewReader(r io.Reader) (*Reader, error) {
 	logging.Logger = zerolog.New(io.Discard)
 
-	d, err := detect.NewDetectorDefaultConfig()
+	d, err := newDetector()
 	if err != nil {
 		return nil, fmt.Errorf("initialize secret detector: %w (use --no-redact to skip redaction)", err)
 	}

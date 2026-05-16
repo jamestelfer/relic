@@ -10,6 +10,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/gkampitakis/go-snaps/snaps"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/urfave/cli/v3"
@@ -581,6 +582,24 @@ func TestCLI_GistMode_PrintsURLs(t *testing.T) {
 	assert.Contains(t, out, "https://gist.github.com/user/testid")
 	assert.Contains(t, out, "Preview:")
 	assert.Contains(t, out, "https://gisthost.github.io/?testid/fixture.html")
+}
+
+// TestExecute_RedactionSnapshot captures the full-pipeline output (redact → parse →
+// session → render) for a JSONL fixture containing planted secrets. The snapshot
+// locks in that redaction markers appear and raw secrets do not.
+func TestExecute_RedactionSnapshot(t *testing.T) {
+	html := runFixture(t, options{inputPath: "testdata/secrets.jsonl"})
+
+	assert.NotContains(t, html, "ghp_zR8k4mVq2xN7pLw9cJ3hYf6eDgA5tB0sQiUo")
+	assert.NotContains(t, html, "AKIAZ7V4Q2XRNJ3WBTY5")
+
+	bodyStart := strings.Index(html, `class="body"`)
+	require.NotEqual(t, bodyStart, -1, "body class marker not found")
+	bodyEnd := strings.Index(html[bodyStart:], `</main>`)
+	require.NotEqual(t, bodyEnd, -1, "body end marker not found")
+	body := html[bodyStart : bodyStart+bodyEnd]
+
+	snaps.MatchSnapshot(t, body)
 }
 
 // TestCLI_OutputMode_GistAccepted verifies that --output gist and --output public-gist

@@ -1,13 +1,14 @@
-package redact_test
+package redact
 
 import (
+	"errors"
 	"io"
 	"strings"
 	"testing"
 
-	"github.com/jamestelfer/relic/internal/redact"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"github.com/zricethezav/gitleaks/v8/detect"
 )
 
 const (
@@ -18,7 +19,7 @@ const (
 func TestReader_RedactsGitHubPAT(t *testing.T) {
 	line := `{"type":"assistant","message":{"role":"assistant","content":"token: ` + testGitHubPAT + `"}}` + "\n"
 
-	r, err := redact.NewReader(strings.NewReader(line))
+	r, err := NewReader(strings.NewReader(line))
 	require.NoError(t, err)
 
 	out, err := io.ReadAll(r)
@@ -32,7 +33,7 @@ func TestReader_RedactsGitHubPAT(t *testing.T) {
 func TestReader_RedactsAWSAccessKey(t *testing.T) {
 	line := `{"type":"assistant","message":{"role":"assistant","content":"key: ` + testAWSKey + `"}}` + "\n"
 
-	r, err := redact.NewReader(strings.NewReader(line))
+	r, err := NewReader(strings.NewReader(line))
 	require.NoError(t, err)
 
 	out, err := io.ReadAll(r)
@@ -46,7 +47,7 @@ func TestReader_RedactsAWSAccessKey(t *testing.T) {
 func TestReader_PassesThroughNonSecretContent(t *testing.T) {
 	line := `{"type":"user","message":{"role":"user","content":"hello world"}}` + "\n"
 
-	r, err := redact.NewReader(strings.NewReader(line))
+	r, err := NewReader(strings.NewReader(line))
 	require.NoError(t, err)
 
 	out, err := io.ReadAll(r)
@@ -62,7 +63,7 @@ func TestReader_PreservesLineCount(t *testing.T) {
 		`{"type":"user","message":{"role":"user","content":"thanks"}}`,
 	}, "\n") + "\n"
 
-	r, err := redact.NewReader(strings.NewReader(lines))
+	r, err := NewReader(strings.NewReader(lines))
 	require.NoError(t, err)
 
 	out, err := io.ReadAll(r)
@@ -76,7 +77,7 @@ func TestReader_SummaryDeduplicatesSameSecret(t *testing.T) {
 	line := `{"type":"assistant","message":{"role":"assistant","content":"token: ` + testGitHubPAT + `"}}` + "\n"
 	input := line + line + line
 
-	r, err := redact.NewReader(strings.NewReader(input))
+	r, err := NewReader(strings.NewReader(input))
 	require.NoError(t, err)
 
 	_, err = io.ReadAll(r)
@@ -91,7 +92,7 @@ func TestReader_SummaryDeduplicatesSameSecret(t *testing.T) {
 func TestReader_SummaryIsEmptyForNoSecrets(t *testing.T) {
 	line := `{"type":"user","message":{"role":"user","content":"hello"}}` + "\n"
 
-	r, err := redact.NewReader(strings.NewReader(line))
+	r, err := NewReader(strings.NewReader(line))
 	require.NoError(t, err)
 
 	_, err = io.ReadAll(r)
@@ -107,7 +108,7 @@ func TestReader_SummaryContainsNoRawSecrets(t *testing.T) {
 		`{"type":"assistant","message":{"role":"assistant","content":"key: ` + testAWSKey + `"}}`,
 	}, "\n") + "\n"
 
-	r, err := redact.NewReader(strings.NewReader(lines))
+	r, err := NewReader(strings.NewReader(lines))
 	require.NoError(t, err)
 
 	_, err = io.ReadAll(r)
@@ -120,4 +121,36 @@ func TestReader_SummaryContainsNoRawSecrets(t *testing.T) {
 		assert.NotContains(t, f.Description, testGitHubPAT)
 		assert.NotContains(t, f.Description, testAWSKey)
 	}
+}
+
+func TestReader_MalformedJSONAfterRedaction(t *testing.T) {
+	// A line where the secret value is also a JSON structural element won't
+	// happen in practice (secrets are alphanumeric tokens), but this verifies
+	// the reader doesn't hide errors — the caller (parser) handles malformed
+	// lines in its own error path.
+	line := `{"key":"` + testGitHubPAT + `"}` + "\n"
+
+	r, err := NewReader(strings.NewReader(line))
+	require.NoError(t, err)
+
+	out, err := io.ReadAll(r)
+	require.NoError(t, err)
+
+	result := string(out)
+	assert.NotContains(t, result, testGitHubPAT)
+	assert.Contains(t, result, "[REDACTED:github-pat]")
+}
+
+func TestNewReader_DetectorInitFailure(t *testing.T) {
+	orig := newDetector
+	t.Cleanup(func() { newDetector = orig })
+
+	newDetector = func() (*detect.Detector, error) {
+		return nil, errors.New("config broken")
+	}
+
+	_, err := NewReader(strings.NewReader(""))
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "--no-redact")
+	assert.Contains(t, err.Error(), "config broken")
 }
