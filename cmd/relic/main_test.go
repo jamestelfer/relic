@@ -420,6 +420,92 @@ func TestExecute_GistMode(t *testing.T) {
 	assert.Empty(t, matches, "gist mode must not write a local .html file")
 }
 
+// --- Redaction tests ---
+
+func TestExecute_RedactsSecretsByDefault(t *testing.T) {
+	html := runFixture(t, options{inputPath: "testdata/secrets.jsonl"})
+	assert.Contains(t, html, "[REDACTED:github-pat]")
+	assert.Contains(t, html, "[REDACTED:aws-access-token]")
+	assert.NotContains(t, html, "ghp_zR8k4mVq2xN7pLw9cJ3hYf6eDgA5tB0sQiUo")
+	assert.NotContains(t, html, "AKIAZ7V4Q2XRNJ3WBTY5")
+}
+
+func TestExecute_RedactionSummaryOnStderr(t *testing.T) {
+	var logBuf bytes.Buffer
+	err := execute(options{
+		inputPath:  "testdata/secrets.jsonl",
+		outputPath: filepath.Join(t.TempDir(), "out.html"),
+	}, &logBuf)
+	require.NoError(t, err)
+
+	stderr := logBuf.String()
+	assert.Contains(t, stderr, "secrets redacted")
+	assert.Contains(t, stderr, "github-pat")
+	assert.Contains(t, stderr, "aws-access-token")
+}
+
+func TestExecute_NoRedactFlag_SkipsRedaction(t *testing.T) {
+	var logBuf bytes.Buffer
+	outPath := filepath.Join(t.TempDir(), "out.html")
+	err := execute(options{
+		inputPath:  "testdata/secrets.jsonl",
+		outputPath: outPath,
+		noRedact:   true,
+	}, &logBuf)
+	require.NoError(t, err)
+
+	html, readErr := os.ReadFile(outPath)
+	require.NoError(t, readErr)
+	assert.Contains(t, string(html), "ghp_zR8k4mVq2xN7pLw9cJ3hYf6eDgA5tB0sQiUo")
+	assert.NotContains(t, string(html), "[REDACTED:")
+	assert.NotContains(t, logBuf.String(), "secrets redacted")
+}
+
+func TestCLI_NoRedactFlag(t *testing.T) {
+	tmp := t.TempDir()
+	outPath := filepath.Join(tmp, "out.html")
+
+	var outBuf, errBuf bytes.Buffer
+	cmd := buildCLI(func(opts options, errOut io.Writer) error {
+		return execute(opts, errOut)
+	})
+	cmd.Writer = &outBuf
+	cmd.ErrWriter = &errBuf
+
+	err := cmd.Run(context.Background(), []string{
+		"relic",
+		"--no-redact",
+		"--output-path", outPath,
+		"testdata/secrets.jsonl",
+	})
+	require.NoError(t, err)
+
+	html, readErr := os.ReadFile(outPath)
+	require.NoError(t, readErr)
+	assert.Contains(t, string(html), "ghp_zR8k4mVq2xN7pLw9cJ3hYf6eDgA5tB0sQiUo")
+	assert.NotContains(t, errBuf.String(), "secrets redacted")
+}
+
+func TestCLI_Help_ListsNoRedact(t *testing.T) {
+	var outBuf bytes.Buffer
+	cmd := buildCLI(func(opts options, errOut io.Writer) error {
+		return execute(opts, errOut)
+	})
+	cmd.Writer = &outBuf
+	_ = cmd.Run(context.Background(), []string{"relic", "--help"})
+	assert.Contains(t, outBuf.String(), "--no-redact")
+}
+
+func TestExecute_NoSecrets_NoSummary(t *testing.T) {
+	var logBuf bytes.Buffer
+	err := execute(options{
+		inputPath:  "testdata/fixture.jsonl",
+		outputPath: filepath.Join(t.TempDir(), "out.html"),
+	}, &logBuf)
+	require.NoError(t, err)
+	assert.NotContains(t, logBuf.String(), "secrets redacted")
+}
+
 // stubGistRunner is a test double for gist publishing used in execute() tests.
 type stubGistRunner struct {
 	gistURL    string

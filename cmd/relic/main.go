@@ -15,6 +15,7 @@ import (
 	"github.com/jamestelfer/relic/internal/gist"
 	"github.com/jamestelfer/relic/internal/parser"
 	"github.com/jamestelfer/relic/internal/picker"
+	"github.com/jamestelfer/relic/internal/redact"
 	"github.com/jamestelfer/relic/internal/renderer"
 	"github.com/jamestelfer/relic/internal/session"
 	"github.com/urfave/cli/v3"
@@ -42,6 +43,7 @@ type options struct {
 	outputPath string
 	name       string
 	debug      bool
+	noRedact   bool
 	// stdout is the stdout writer: it receives HTML content (outputPath=="-"),
 	// Gist URL lines (gist modes), or the absolute output path echo
 	// (default HTML-file mode).
@@ -82,7 +84,25 @@ func execute(opts options, errOut io.Writer) (retErr error) {
 	}
 	defer func() { _ = f.Close() }()
 
-	res, parseErrs, err := parser.Parse(f)
+	var (
+		input      io.Reader = f
+		redactRead *redact.Reader
+	)
+	if !opts.noRedact {
+		redactRead, err = redact.NewReader(f)
+		if err != nil {
+			return fmt.Errorf("secret redaction: %w", err)
+		}
+		input = redactRead
+		defer func() {
+			if retErr != nil {
+				return
+			}
+			printRedactionSummary(errOut, redactRead.Summary())
+		}()
+	}
+
+	res, parseErrs, err := parser.Parse(input)
 	if err != nil {
 		return fmt.Errorf("parse %s: %w", opts.inputPath, err)
 	}
@@ -255,6 +275,10 @@ func buildCLI(run func(opts options, errOut io.Writer) error) *cli.Command {
 				Name:  "debug",
 				Usage: "enable debug-level logging on stderr",
 			},
+			&cli.BoolFlag{
+				Name:  "no-redact",
+				Usage: "disable automatic secret redaction",
+			},
 		},
 		Action: func(ctx context.Context, cmd *cli.Command) error {
 			inputPath := cmd.Args().First()
@@ -284,6 +308,7 @@ func buildCLI(run func(opts options, errOut io.Writer) error) *cli.Command {
 				outputPath: outputPath,
 				name:       name,
 				debug:      cmd.Bool("debug"),
+				noRedact:   cmd.Bool("no-redact"),
 				stdout:     cmd.Root().Writer,
 			}
 
@@ -316,6 +341,24 @@ func unwrapAll(err error) error {
 		}
 		err = next
 	}
+}
+
+func printRedactionSummary(w io.Writer, summary redact.Summary) {
+	if len(summary.Findings) == 0 {
+		return
+	}
+
+	parts := make([]string, len(summary.Findings))
+	for i, f := range summary.Findings {
+		noun := "lines"
+		if f.LineCount == 1 {
+			noun = "line"
+		}
+		parts[i] = fmt.Sprintf("%s (%d %s)", f.RuleID, f.LineCount, noun)
+	}
+
+	_, _ = fmt.Fprintf(w, "%d secrets redacted: %s\n",
+		len(summary.Findings), strings.Join(parts, ", "))
 }
 
 func main() {
