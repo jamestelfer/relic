@@ -627,12 +627,12 @@ func TestExecute_RedactionSnapshot(t *testing.T) {
 func TestCLI_OutputMode_GistAccepted(t *testing.T) {
 	for _, mode := range []string{"gist", "public-gist"} {
 		t.Run(mode, func(t *testing.T) {
-			origExiter := cli.OsExiter
-			defer func() { cli.OsExiter = origExiter }()
-			cli.OsExiter = func(int) {}
-
 			var outBuf, errBuf bytes.Buffer
 			cmd := buildCLI(func(opts options, errOut io.Writer) error {
+				opts.gistRunner = &stubGistRunner{
+					gistURL:    "https://gist.github.com/user/fake",
+					previewURL: "https://gisthost.github.io/?fake/fixture.html",
+				}
 				return execute(opts, errOut)
 			})
 			cmd.Writer = &outBuf
@@ -643,10 +643,7 @@ func TestCLI_OutputMode_GistAccepted(t *testing.T) {
 				"--mode", mode,
 				"testdata/fixture.jsonl",
 			})
-			if err != nil {
-				assert.NotContains(t, err.Error(), "unknown output mode",
-					"--mode %q must be accepted by the flag parser", mode)
-			}
+			require.NoError(t, err, "--mode %q must be accepted by the flag parser", mode)
 		})
 	}
 }
