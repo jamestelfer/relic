@@ -460,7 +460,7 @@ func TestExecute_RedactionSummaryOnStderr(t *testing.T) {
 	require.NoError(t, err)
 
 	stderr := logBuf.String()
-	assert.Contains(t, stderr, "secrets redacted")
+	assert.Contains(t, stderr, "secrets found")
 	assert.Contains(t, stderr, "github-pat")
 	assert.Contains(t, stderr, "aws-access-token")
 }
@@ -479,7 +479,7 @@ func TestExecute_NoRedactFlag_SkipsRedaction(t *testing.T) {
 	require.NoError(t, readErr)
 	assert.Contains(t, string(html), testGitHubPAT)
 	assert.NotContains(t, string(html), "[REDACTED:")
-	assert.NotContains(t, logBuf.String(), "secrets redacted")
+	assert.NotContains(t, logBuf.String(), "secrets found")
 }
 
 func TestCLI_NoRedactFlag(t *testing.T) {
@@ -504,7 +504,7 @@ func TestCLI_NoRedactFlag(t *testing.T) {
 	html, readErr := os.ReadFile(outPath)
 	require.NoError(t, readErr)
 	assert.Contains(t, string(html), testGitHubPAT)
-	assert.NotContains(t, errBuf.String(), "secrets redacted")
+	assert.NotContains(t, errBuf.String(), "secrets found")
 }
 
 func TestCLI_Help_ListsNoRedact(t *testing.T) {
@@ -524,7 +524,7 @@ func TestExecute_NoSecrets_NoSummary(t *testing.T) {
 		outputPath: filepath.Join(t.TempDir(), "out.html"),
 	}, &logBuf)
 	require.NoError(t, err)
-	assert.NotContains(t, logBuf.String(), "secrets redacted")
+	assert.NotContains(t, logBuf.String(), "secrets found")
 }
 
 // stubGistRunner is a test double for gist publishing used in execute() tests.

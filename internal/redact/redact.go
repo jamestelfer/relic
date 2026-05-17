@@ -6,6 +6,7 @@ import (
 	_ "embed"
 	"fmt"
 	"io"
+	"slices"
 	"strings"
 
 	"github.com/rs/zerolog"
@@ -30,20 +31,22 @@ func resetCache() {
 	cachedErr = nil
 }
 
-// Finding records a single deduplicated secret detection. It carries the rule
-// ID, a human-readable description, and the number of JSONL lines the secret
-// appeared on. It never contains the raw secret value.
-type Finding struct {
-	RuleID      string
-	Description string
-	LineCount   int
+// RuleCount pairs a rule ID with the number of distinct secrets it matched.
+type RuleCount struct {
+	RuleID string
+	Count  int
 }
 
-// Summary holds the deduplicated redaction findings after a reader has been
-// fully consumed. Entries are keyed by the combination of secret value and
-// rule ID during accumulation, then the secret is discarded before export.
+// LineFinding records which rules matched on a single JSONL line.
+type LineFinding struct {
+	Line  int
+	Rules []RuleCount
+}
+
+// Summary holds the redaction findings after a reader has been fully consumed.
 type Summary struct {
-	Findings []Finding
+	SecretCount int
+	Lines       []LineFinding
 }
 
 // Reader wraps an io.Reader, scanning each JSONL line for secrets and
@@ -53,15 +56,10 @@ type Reader struct {
 	scanner  *bufio.Scanner
 	buf      bytes.Buffer
 	done     bool
+	line     int
 
-	// findings accumulates detections keyed by secret value for deduplication.
-	findings map[string]*accumulator
-}
-
-type accumulator struct {
-	ruleID      string
-	description string
-	lineCount   int
+	secrets map[string]struct{}
+	lines   []LineFinding
 }
 
 // newDetector creates the gitleaks detector with embedded custom rules merged
@@ -108,7 +106,7 @@ func NewReader(r io.Reader) (*Reader, error) {
 	return &Reader{
 		detector: d,
 		scanner:  scanner,
-		findings: make(map[string]*accumulator),
+		secrets:  make(map[string]struct{}),
 	}, nil
 }
 
@@ -135,6 +133,8 @@ func (rd *Reader) Read(p []byte) (int, error) {
 }
 
 func (rd *Reader) redactLine(line string) string {
+	rd.line++
+
 	findings := rd.detector.DetectString(line)
 	if len(findings) == 0 {
 		return line
@@ -150,29 +150,35 @@ func (rd *Reader) redactLine(line string) string {
 }
 
 func (rd *Reader) accumulate(findings []report.Finding) {
+	ruleSecrets := make(map[string]map[string]struct{}, len(findings))
 	for _, f := range findings {
-		if acc, ok := rd.findings[f.Secret]; ok {
-			acc.lineCount++
-		} else {
-			rd.findings[f.Secret] = &accumulator{
-				ruleID:      f.RuleID,
-				description: f.Description,
-				lineCount:   1,
-			}
+		rd.secrets[f.Secret] = struct{}{}
+
+		if ruleSecrets[f.RuleID] == nil {
+			ruleSecrets[f.RuleID] = make(map[string]struct{})
 		}
+		ruleSecrets[f.RuleID][f.Secret] = struct{}{}
 	}
+
+	rules := make([]RuleCount, 0, len(ruleSecrets))
+	for ruleID, secrets := range ruleSecrets {
+		rules = append(rules, RuleCount{RuleID: ruleID, Count: len(secrets)})
+	}
+	slices.SortFunc(rules, func(a, b RuleCount) int {
+		return strings.Compare(a.RuleID, b.RuleID)
+	})
+
+	rd.lines = append(rd.lines, LineFinding{
+		Line:  rd.line,
+		Rules: rules,
+	})
 }
 
-// Summary returns the deduplicated redaction findings. Call after the reader
-// has been fully consumed.
+// Summary returns the redaction findings. Call after the reader has been fully
+// consumed.
 func (rd *Reader) Summary() Summary {
-	findings := make([]Finding, 0, len(rd.findings))
-	for _, acc := range rd.findings {
-		findings = append(findings, Finding{
-			RuleID:      acc.ruleID,
-			Description: acc.description,
-			LineCount:   acc.lineCount,
-		})
+	return Summary{
+		SecretCount: len(rd.secrets),
+		Lines:       rd.lines,
 	}
-	return Summary{Findings: findings}
 }

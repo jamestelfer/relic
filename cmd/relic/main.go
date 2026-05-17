@@ -98,7 +98,7 @@ func execute(opts options, errOut io.Writer) (retErr error) {
 			if retErr != nil {
 				return
 			}
-			printRedactionSummary(errOut, redactRead.Summary())
+			printRedactionSummary(errOut, opts.inputPath, redactRead.Summary())
 		}()
 	}
 
@@ -343,22 +343,20 @@ func unwrapAll(err error) error {
 	}
 }
 
-func printRedactionSummary(w io.Writer, summary redact.Summary) {
-	if len(summary.Findings) == 0 {
+func printRedactionSummary(w io.Writer, inputPath string, summary redact.Summary) {
+	if summary.SecretCount == 0 {
 		return
 	}
 
-	parts := make([]string, len(summary.Findings))
-	for i, f := range summary.Findings {
-		noun := "lines"
-		if f.LineCount == 1 {
-			noun = "line"
+	_, _ = fmt.Fprintf(w, "WARNING: %d secrets found in the session and redacted from the output.\n\nFound in %s:\n\n",
+		summary.SecretCount, inputPath)
+	for _, lf := range summary.Lines {
+		parts := make([]string, len(lf.Rules))
+		for i, rc := range lf.Rules {
+			parts[i] = fmt.Sprintf("%s(%d)", rc.RuleID, rc.Count)
 		}
-		parts[i] = fmt.Sprintf("%s (%d %s)", f.RuleID, f.LineCount, noun)
+		_, _ = fmt.Fprintf(w, "  L%d: %s\n", lf.Line, strings.Join(parts, ", "))
 	}
-
-	_, _ = fmt.Fprintf(w, "%d secrets redacted: %s\n",
-		len(summary.Findings), strings.Join(parts, ", "))
 }
 
 func main() {

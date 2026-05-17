@@ -116,20 +116,45 @@ func TestReader_PreservesLineCount(t *testing.T) {
 	assert.Len(t, outLines, 3)
 }
 
-func TestReader_SummaryDeduplicatesSameSecret(t *testing.T) {
-	line := `{"type":"assistant","message":{"role":"assistant","content":"token: ` + testGitHubPAT + `"}}` + "\n"
-	input := line + line + line
+func TestReader_SummaryTracksLineNumbers(t *testing.T) {
+	lines := strings.Join([]string{
+		`{"type":"user","message":{"role":"user","content":"hello"}}`,
+		`{"type":"assistant","message":{"role":"assistant","content":"token: ` + testGitHubPAT + `"}}`,
+		`{"type":"user","message":{"role":"user","content":"thanks"}}`,
+		`{"type":"assistant","message":{"role":"assistant","content":"token: ` + testGitHubPAT + `"}}`,
+	}, "\n") + "\n"
 
-	r, err := NewReader(strings.NewReader(input))
+	r, err := NewReader(strings.NewReader(lines))
 	require.NoError(t, err)
 
 	_, err = io.ReadAll(r)
 	require.NoError(t, err)
 
 	summary := r.Summary()
-	assert.Len(t, summary.Findings, 1)
-	assert.Equal(t, "github-pat", summary.Findings[0].RuleID)
-	assert.Equal(t, 3, summary.Findings[0].LineCount)
+	assert.Equal(t, 1, summary.SecretCount)
+	assert.Equal(t, []LineFinding{
+		{Line: 2, Rules: []RuleCount{{RuleID: "github-pat", Count: 1}}},
+		{Line: 4, Rules: []RuleCount{{RuleID: "github-pat", Count: 1}}},
+	}, summary.Lines)
+}
+
+func TestReader_SummaryMultipleSecretsOnOneLine(t *testing.T) {
+	line := `{"type":"assistant","message":{"role":"assistant","content":"token: ` + testGitHubPAT + ` key: ` + testAWSKey + `"}}` + "\n"
+
+	r, err := NewReader(strings.NewReader(line))
+	require.NoError(t, err)
+
+	_, err = io.ReadAll(r)
+	require.NoError(t, err)
+
+	summary := r.Summary()
+	assert.Equal(t, 2, summary.SecretCount)
+	require.Len(t, summary.Lines, 1)
+	assert.Equal(t, 1, summary.Lines[0].Line)
+	assert.Equal(t, []RuleCount{
+		{RuleID: "aws-access-token", Count: 1},
+		{RuleID: "github-pat", Count: 1},
+	}, summary.Lines[0].Rules)
 }
 
 func TestReader_SummaryIsEmptyForNoSecrets(t *testing.T) {
@@ -142,7 +167,8 @@ func TestReader_SummaryIsEmptyForNoSecrets(t *testing.T) {
 	require.NoError(t, err)
 
 	summary := r.Summary()
-	assert.Empty(t, summary.Findings)
+	assert.Equal(t, 0, summary.SecretCount)
+	assert.Empty(t, summary.Lines)
 }
 
 func TestReader_SummaryContainsNoRawSecrets(t *testing.T) {
@@ -158,11 +184,11 @@ func TestReader_SummaryContainsNoRawSecrets(t *testing.T) {
 	require.NoError(t, err)
 
 	summary := r.Summary()
-	for _, f := range summary.Findings {
-		assert.NotContains(t, f.RuleID, testGitHubPAT)
-		assert.NotContains(t, f.RuleID, testAWSKey)
-		assert.NotContains(t, f.Description, testGitHubPAT)
-		assert.NotContains(t, f.Description, testAWSKey)
+	for _, lf := range summary.Lines {
+		for _, rc := range lf.Rules {
+			assert.NotContains(t, rc.RuleID, testGitHubPAT)
+			assert.NotContains(t, rc.RuleID, testAWSKey)
+		}
 	}
 }
 
