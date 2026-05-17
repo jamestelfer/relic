@@ -84,22 +84,22 @@ The rendered HTML is a single-page document structured around conversation
 turns. Each turn starts with a user prompt and contains the assistant's
 response, including any tool calls and their results.
 
-![Session header with outline rail, metadata grid, and first user turn](design-system/screenshots/header.png)
+<img alt="Session header with outline rail, metadata grid, and first user turn" src="design-system/screenshots/header.png" width="75%">
 
 Tool calls show syntax-highlighted source, shell commands, and structured
 parameters. Results render in a terminal chrome with collapsible output.
 
-![Tool results: file contents with line numbers, bash output, ToolSearch results](design-system/screenshots/tool-results.png)
+<img alt="Tool results: file contents with line numbers, bash output, ToolSearch results" src="design-system/screenshots/tool-results.png" width="75%">
 
-![Tool calls: Write with Go syntax highlighting, WebFetch, Bash](design-system/screenshots/tool-calls.png)
+<img alt="Tool calls: Write with Go syntax highlighting, WebFetch, Bash" src="design-system/screenshots/tool-calls.png" width="75%">
 
 Skills, hook injections, and agent sub-tasks each get their own block type.
 
-![Skill invocation, hook injection, agent tool use and result](design-system/screenshots/slash-and-hooks.png)
+<img alt="Skill invocation, hook injection, agent tool use and result" src="design-system/screenshots/slash-and-hooks.png" width="75%">
 
 User bash commands (`! cmd`) and interactive slash commands are also captured.
 
-![User bash blocks and markdown rendering](design-system/screenshots/user-bash.png)
+<img alt="User bash blocks and markdown rendering" src="design-system/screenshots/user-bash.png" width="75%">
 
 ## Built with
 
