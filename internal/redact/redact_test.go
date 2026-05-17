@@ -12,9 +12,11 @@ import (
 )
 
 const (
-	testGitHubPAT = "ghp_" + "zR8k4mVq2xN7pLw9cJ3hYf6eDgA5tB0sQiUo"
-	testAWSKey    = "AKIA" + "Z7V4Q2XRNJ3WBTY5"
-	testNpmToken  = "NpmToken." + "f00df00d-f00d-f00d-f00d-f00df00df00d"
+	testGitHubPAT      = "ghp_" + "zR8k4mVq2xN7pLw9cJ3hYf6eDgA5tB0sQiUo"
+	testAWSKey         = "AKIA" + "Z7V4Q2XRNJ3WBTY5"
+	testNpmToken       = "NpmToken." + "f00df00d-f00d-f00d-f00d-f00df00df00d"
+	testBuildkiteAPI   = "bkua_" + "a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6ab"
+	testBuildkiteAgent = "bkaa_" + "a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d"
 )
 
 func TestReader_RedactsGitHubPAT(t *testing.T) {
@@ -57,6 +59,32 @@ func TestReader_RedactsClassicNpmToken(t *testing.T) {
 	result := string(out)
 	assert.NotContains(t, result, testNpmToken)
 	assert.Contains(t, result, "[REDACTED:npm-access-token-classic]")
+}
+
+func TestReader_RedactsBuildkiteTokens(t *testing.T) {
+	tests := []struct {
+		name   string
+		token  string
+		ruleID string
+	}{
+		{"api token", testBuildkiteAPI, "buildkite-api-token"},
+		{"agent session token", testBuildkiteAgent, "buildkite-agent-session-token"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			line := `{"type":"assistant","message":{"role":"assistant","content":"token: ` + tt.token + `"}}` + "\n"
+
+			r, err := NewReader(strings.NewReader(line))
+			require.NoError(t, err)
+
+			out, err := io.ReadAll(r)
+			require.NoError(t, err)
+
+			result := string(out)
+			assert.NotContains(t, result, tt.token)
+			assert.Contains(t, result, "[REDACTED:"+tt.ruleID+"]")
+		})
+	}
 }
 
 func TestReader_PassesThroughNonSecretContent(t *testing.T) {
