@@ -930,6 +930,32 @@ func TestRender_FormatXML_Broken(t *testing.T) {
 	assert.Contains(t, out, "&lt;broken", "broken XML escaped in output")
 }
 
+func TestRender_TaskNotification_LabelValuePairs(t *testing.T) {
+	s := session.Session{
+		Turns: []session.Turn{{Index: 1, Blocks: []session.Block{
+			&session.TaskNotification{
+				TaskID:     "abc123",
+				ToolUseID:  "toolu_01",
+				OutputFile: "/tmp/out.txt",
+				Status:     "completed",
+				Summary:    "Agent finished",
+				Result:     "All done",
+				Usage:      session.TaskNotificationUsage{TotalTokens: 5000, ToolUses: 3, DurationMs: 12000},
+				LineNum:    1,
+			},
+		}}},
+	}
+	out := render(t, s, renderer.Options{Name: "test"})
+
+	assert.Contains(t, out, `class="block meta"`, "rendered as meta block")
+	assert.Contains(t, out, "task_notification", "label shown")
+	assert.Contains(t, out, "abc123", "task-id shown")
+	assert.Contains(t, out, "completed", "status shown")
+	assert.Contains(t, out, "Agent finished", "summary shown")
+	assert.Contains(t, out, "All done", "result shown")
+	assert.Contains(t, out, "5.0k tokens", "usage tokens shown")
+}
+
 func TestRender_AskUserQuestion_NilEnrichment_FallsBack(t *testing.T) {
 	s := session.Session{
 		Turns: []session.Turn{{Index: 1, Blocks: []session.Block{

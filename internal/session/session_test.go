@@ -1630,6 +1630,103 @@ func TestClassifySystemXML(t *testing.T) {
 	}
 }
 
+// TestClassifyTaskNotification: origin.kind = "task-notification" with valid
+// XML produces a TaskNotification block; malformed XML falls through to SystemXML.
+func TestClassifyTaskNotification(t *testing.T) {
+	ts := time.Date(2025, 5, 1, 10, 0, 0, 0, time.UTC)
+
+	tests := []struct {
+		name     string
+		content  string
+		wantType string
+	}{
+		{
+			name: "valid task-notification",
+			content: `<task-notification>
+<task-id>abc123</task-id>
+<tool-use-id>toolu_01</tool-use-id>
+<output-file>/tmp/out.txt</output-file>
+<status>completed</status>
+<summary>Agent finished</summary>
+<result>All done</result>
+<usage><total_tokens>5000</total_tokens><tool_uses>3</tool_uses><duration_ms>12000</duration_ms></usage>
+</task-notification>`,
+			wantType: "task_notification",
+		},
+		{
+			name: "task-notification without usage",
+			content: `<task-notification>
+<task-id>def456</task-id>
+<tool-use-id>toolu_02</tool-use-id>
+<status>running</status>
+<summary>Still working</summary>
+</task-notification>`,
+			wantType: "task_notification",
+		},
+		{
+			name:     "malformed inner XML falls through to SystemXML",
+			content:  "<task-notification>\n<status>ok<unclosed\n</task-notification>",
+			wantType: "system_xml",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			res := parser.Result{
+				Messages: []parser.Message{
+					{
+						Role: "user", Timestamp: &ts, LineNum: 1,
+						Content: []parser.ContentBlock{&parser.TextBlock{Text: "open turn"}},
+					},
+					{
+						Role: "user", Timestamp: &ts, LineNum: 2,
+						Envelope: parser.Envelope{
+							Origin: parser.Origin{Kind: "task-notification"},
+						},
+						Content: []parser.ContentBlock{&parser.TextBlock{Text: tt.content}},
+					},
+				},
+			}
+			s := session.Transform(res)
+
+			require.Len(t, s.Turns, 1, "task-notification must not create a new turn")
+
+			var found session.Block
+			for _, b := range s.Turns[0].Blocks {
+				if b.BlockType() == tt.wantType {
+					found = b
+				}
+			}
+
+			require.NotNil(t, found, "expected %s block", tt.wantType)
+
+			if tt.wantType == "task_notification" {
+				tn := found.(*session.TaskNotification)
+				assert.Equal(t, 2, tn.LineNum)
+
+				switch tt.name {
+				case "valid task-notification":
+					assert.Equal(t, "abc123", tn.TaskID)
+					assert.Equal(t, "toolu_01", tn.ToolUseID)
+					assert.Equal(t, "/tmp/out.txt", tn.OutputFile)
+					assert.Equal(t, "completed", tn.Status)
+					assert.Equal(t, "Agent finished", tn.Summary)
+					assert.Equal(t, "All done", tn.Result)
+					assert.Equal(t, 5000, tn.Usage.TotalTokens)
+					assert.Equal(t, 3, tn.Usage.ToolUses)
+					assert.Equal(t, 12000, tn.Usage.DurationMs)
+				case "task-notification without usage":
+					assert.Equal(t, "def456", tn.TaskID)
+					assert.Equal(t, "running", tn.Status)
+					assert.Zero(t, tn.Usage.TotalTokens)
+					assert.Zero(t, tn.Usage.ToolUses)
+					assert.Zero(t, tn.Usage.DurationMs)
+				}
+			}
+		})
+	}
+}
+
 // TestSystemXML_NoNewTurn: system-classified XML messages do not create
 // new sidebar entries (turns).
 func TestSystemXML_NoNewTurn(t *testing.T) {

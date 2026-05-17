@@ -1,6 +1,7 @@
 package session
 
 import (
+	"encoding/xml"
 	"fmt"
 	"regexp"
 	"sort"
@@ -286,6 +287,28 @@ type SystemXML struct {
 
 func (b *SystemXML) BlockType() string { return "system_xml" }
 func (b *SystemXML) sealedBlock()      {}
+
+// TaskNotificationUsage holds optional resource usage metrics from a task.
+type TaskNotificationUsage struct {
+	TotalTokens int `json:"total_tokens"`
+	ToolUses    int `json:"tool_uses"`
+	DurationMs  int `json:"duration_ms"`
+}
+
+// TaskNotification is a parsed task-notification system message with typed fields.
+type TaskNotification struct {
+	TaskID     string                `json:"task_id"`
+	ToolUseID  string                `json:"tool_use_id"`
+	OutputFile string                `json:"output_file"`
+	Status     string                `json:"status"`
+	Summary    string                `json:"summary"`
+	Result     string                `json:"result"`
+	Usage      TaskNotificationUsage `json:"usage"`
+	LineNum    int                   `json:"line_num"`
+}
+
+func (b *TaskNotification) BlockType() string { return "task_notification" }
+func (b *TaskNotification) sealedBlock()      {}
 
 // Turn groups one user-initiated exchange with all subsequent assistant messages
 // up to the next user turn boundary.
@@ -693,9 +716,16 @@ func classifyUserMessage(msg parser.Message) []Block {
 		}}
 	}
 
-	// 5. Origin-based classification — known types are handled by later phases.
-	// This step is a placeholder; Phases 2/3 add typed handlers here.
-	// If an origin-bearing message has no typed handler, fall through to step 6.
+	// 5. Origin-based classification — typed handlers for known origin kinds.
+	if kind := msg.Envelope.Origin.Kind; kind != "" {
+		switch kind {
+		case "task-notification":
+			if b := parseTaskNotification(content, msg.LineNum); b != nil {
+				return []Block{b}
+			}
+		}
+		// Unknown origin kind or parse failure: fall through to generic XML.
+	}
 
 	// 6. Generic XML heuristic: content is a single XML element with matching tags.
 	if tagName := matchXMLWrap(content); tagName != "" {
@@ -842,4 +872,48 @@ func crossReferenceTools(turn *Turn) {
 		input.LinkedResultID = &result.ID
 		result.LinkedCallID = &input.ID
 	}
+}
+
+// taskNotificationXML mirrors the XML structure of a <task-notification> element
+// for encoding/xml unmarshal.
+type taskNotificationXML struct {
+	XMLName    xml.Name `xml:"task-notification"`
+	TaskID     string   `xml:"task-id"`
+	ToolUseID  string   `xml:"tool-use-id"`
+	OutputFile string   `xml:"output-file"`
+	Status     string   `xml:"status"`
+	Summary    string   `xml:"summary"`
+	Result     string   `xml:"result"`
+	Usage      *struct {
+		TotalTokens int `xml:"total_tokens"`
+		ToolUses    int `xml:"tool_uses"`
+		DurationMs  int `xml:"duration_ms"`
+	} `xml:"usage"`
+}
+
+// parseTaskNotification attempts to parse content as a <task-notification> XML
+// element. Returns nil if parsing fails, allowing the cascade to continue to
+// the generic XML fallback.
+func parseTaskNotification(content string, lineNum int) *TaskNotification {
+	var tn taskNotificationXML
+	if err := xml.Unmarshal([]byte(content), &tn); err != nil {
+		return nil
+	}
+	b := &TaskNotification{
+		TaskID:     tn.TaskID,
+		ToolUseID:  tn.ToolUseID,
+		OutputFile: tn.OutputFile,
+		Status:     tn.Status,
+		Summary:    tn.Summary,
+		Result:     tn.Result,
+		LineNum:    lineNum,
+	}
+	if tn.Usage != nil {
+		b.Usage = TaskNotificationUsage{
+			TotalTokens: tn.Usage.TotalTokens,
+			ToolUses:    tn.Usage.ToolUses,
+			DurationMs:  tn.Usage.DurationMs,
+		}
+	}
+	return b
 }
