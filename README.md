@@ -116,6 +116,21 @@ Key visual elements:
 - **Image zoom** — inline images (e.g. screenshots read by Claude) can be
   clicked to view full-size.
 
+## Built with
+
+Relic leans on a number of high-quality open source libraries:
+
+| Library | Role |
+|---|---|
+| [goldmark](https://github.com/yuin/goldmark) | Markdown rendering for assistant responses |
+| [Chroma](https://github.com/alecthomas/chroma) | Syntax highlighting for fenced code blocks and tool output |
+| [bluemonday](https://github.com/microcosm-cc/bluemonday) | HTML sanitization — allowlists safe markup in Markdown to prevent XSS |
+| [gitleaks](https://github.com/gitleaks/gitleaks) | Secret detection rules powering automatic redaction |
+| [terminal-to-html](https://github.com/buildkite/terminal-to-html) | ANSI escape sequence rendering for terminal output |
+| [templ](https://github.com/a-h/templ) | Type-safe HTML templating |
+| [huh](https://github.com/charmbracelet/huh) | Interactive terminal UI for the session picker |
+| [urfave/cli](https://github.com/urfave/cli) | CLI framework |
+
 ## License
 
 Apache 2.0 — see [LICENSE](LICENSE).
