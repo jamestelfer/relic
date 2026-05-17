@@ -1518,3 +1518,128 @@ func TestTransformAskUserQuestionEnrichment_Malformed(t *testing.T) {
 		}
 	})
 }
+
+// TestClassifySystemXML: XML-wrapped user messages (without isMeta) produce
+// SystemXML blocks; plain text is left unclassified.
+func TestClassifySystemXML(t *testing.T) {
+	ts := time.Date(2025, 5, 1, 10, 0, 0, 0, time.UTC)
+
+	tests := []struct {
+		name      string
+		content   string
+		origin    parser.Origin
+		isMeta    bool
+		wantType  string
+		wantLabel string
+		wantTag   string
+	}{
+		{
+			name:      "XML content with matching tags, no origin",
+			content:   "<system-reminder>\nYou are a helpful assistant.\n</system-reminder>",
+			wantType:  "system_xml",
+			wantLabel: "system-reminder",
+			wantTag:   "system-reminder",
+		},
+		{
+			name:      "XML content with origin.kind overrides tag name",
+			content:   "<unknown-tag attr=\"val\">\nSome content\n</unknown-tag>",
+			origin:    parser.Origin{Kind: "test-type"},
+			wantType:  "system_xml",
+			wantLabel: "test-type",
+			wantTag:   "unknown-tag",
+		},
+		{
+			name:     "plain text is unclassified",
+			content:  "This is plain text, not XML",
+			wantType: "user_text",
+		},
+		{
+			name:     "isMeta takes precedence over XML detection",
+			content:  "<system-reminder>wake up</system-reminder>",
+			isMeta:   true,
+			wantType: "hook_injection",
+		},
+		{
+			name:     "XML with mismatched tags is unclassified",
+			content:  "<open-tag>content</close-tag>",
+			wantType: "user_text",
+		},
+		{
+			name:      "XML with attributes on open tag",
+			content:   "<teammate-message teammate_id=\"agent-1\">\nHello\n</teammate-message>",
+			wantType:  "system_xml",
+			wantLabel: "teammate-message",
+			wantTag:   "teammate-message",
+		},
+		{
+			name:     "partial XML (no close tag) is unclassified",
+			content:  "<broken",
+			wantType: "user_text",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			res := parser.Result{
+				Messages: []parser.Message{
+					{
+						Role: "user", Timestamp: &ts, LineNum: 1,
+						Content: []parser.ContentBlock{&parser.TextBlock{Text: "open turn"}},
+					},
+					{
+						Role:      "user",
+						Timestamp: &ts,
+						LineNum:   2,
+						IsMeta:    tt.isMeta,
+						Envelope: parser.Envelope{
+							IsMeta: tt.isMeta,
+							Origin: tt.origin,
+						},
+						Content: []parser.ContentBlock{&parser.TextBlock{Text: tt.content}},
+					},
+				},
+			}
+			s := session.Transform(res)
+
+			// Find the block produced from line 2 (the test message).
+			var found session.Block
+			for _, turn := range s.Turns {
+				for _, b := range turn.Blocks {
+					if b.BlockType() == tt.wantType && b.BlockType() != "user_text" {
+						found = b
+					}
+				}
+			}
+
+			switch tt.wantType {
+			case "system_xml":
+				require.Len(t, s.Turns, 1, "system XML must not create a new turn")
+				require.NotNil(t, found, "expected SystemXML block")
+				sxml := found.(*session.SystemXML)
+				assert.Equal(t, tt.wantLabel, sxml.Label)
+				assert.Equal(t, tt.wantTag, sxml.TagName)
+				assert.Equal(t, tt.content, sxml.Content)
+				assert.Equal(t, 2, sxml.LineNum)
+			case "hook_injection":
+				require.Len(t, s.Turns, 1, "hook injection must not create a new turn")
+				require.NotNil(t, found, "expected HookInjection block")
+			case "user_text":
+				require.Len(t, s.Turns, 2, "unclassified text creates a new turn")
+			}
+		})
+	}
+}
+
+// TestSystemXML_NoNewTurn: system-classified XML messages do not create
+// new sidebar entries (turns).
+func TestSystemXML_NoNewTurn(t *testing.T) {
+	res := parseFixture(t, "system_xml.jsonl")
+	s := session.Transform(res)
+
+	// The fixture has: user text, assistant text, system-reminder XML,
+	// unknown-tag XML with origin, plain text (new turn), assistant text.
+	// Only user text messages (lines 1 and 5) create turns.
+	require.Len(t, s.Turns, 2, "system XML messages must not create new turns")
+	assert.Equal(t, "Hello, what can you do?", s.Turns[0].Title)
+	assert.Equal(t, "This is plain text, not XML", s.Turns[1].Title)
+}

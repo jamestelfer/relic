@@ -274,6 +274,19 @@ type Image struct {
 func (b *Image) BlockType() string { return "image" }
 func (b *Image) sealedBlock()      {}
 
+// SystemXML is a system-generated XML message detected by content structure
+// or origin metadata. Label is origin.kind if present, otherwise the root
+// XML tag name.
+type SystemXML struct {
+	TagName string `json:"tag_name"`
+	Label   string `json:"label"`
+	Content string `json:"content"`
+	LineNum int    `json:"line_num"`
+}
+
+func (b *SystemXML) BlockType() string { return "system_xml" }
+func (b *SystemXML) sealedBlock()      {}
+
 // Turn groups one user-initiated exchange with all subsequent assistant messages
 // up to the next user turn boundary.
 type Turn struct {
@@ -566,6 +579,24 @@ var (
 	bashStderrRE = regexp.MustCompile(`(?s)<bash-stderr>(.*?)</bash-stderr>`)
 )
 
+// xmlOpenTagRE extracts the tag name from content that starts with an XML open
+// tag. Used by matchXMLWrap to detect single-element XML content.
+var xmlOpenTagRE = regexp.MustCompile(`(?s)^\s*<([\w][\w.-]*)(?:\s[^>]*)?>`)
+
+// matchXMLWrap checks whether content is a single XML element with matching
+// open/close tags. Returns the tag name if matched, empty string otherwise.
+func matchXMLWrap(content string) string {
+	m := xmlOpenTagRE.FindStringSubmatch(content)
+	if m == nil {
+		return ""
+	}
+	tagName := m[1]
+	if strings.HasSuffix(strings.TrimSpace(content), "</"+tagName+">") {
+		return tagName
+	}
+	return ""
+}
+
 // classifyUserMessage routes a user message per the spec's detection cascade:
 //  1. Envelope flags: isApiErrorMessage, isCompactSummary
 //  2. Content patterns: <command-name>, <local-command-stdout>, <local-command-caveat>
@@ -657,6 +688,24 @@ func classifyUserMessage(msg parser.Message) []Block {
 	// 4. isMeta fallback: unrecognized meta content is a hook injection.
 	if msg.IsMeta {
 		return []Block{&HookInjection{
+			Content: content,
+			LineNum: msg.LineNum,
+		}}
+	}
+
+	// 5. Origin-based classification — known types are handled by later phases.
+	// This step is a placeholder; Phases 2/3 add typed handlers here.
+	// If an origin-bearing message has no typed handler, fall through to step 6.
+
+	// 6. Generic XML heuristic: content is a single XML element with matching tags.
+	if tagName := matchXMLWrap(content); tagName != "" {
+		label := tagName
+		if msg.Envelope.Origin.Kind != "" {
+			label = msg.Envelope.Origin.Kind
+		}
+		return []Block{&SystemXML{
+			TagName: tagName,
+			Label:   label,
 			Content: content,
 			LineNum: msg.LineNum,
 		}}

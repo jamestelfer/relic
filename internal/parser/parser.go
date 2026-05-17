@@ -85,6 +85,14 @@ type ParseError struct {
 	Err  error  // underlying decode error
 }
 
+// Origin holds provenance metadata from the "origin" field of a JSONL record.
+// Zero-valued when absent.
+type Origin struct {
+	Kind string
+	From string
+	To   string
+}
+
 // Envelope holds top-level metadata fields present on every JSONL record.
 // Absent fields produce zero values — no error is raised.
 type Envelope struct {
@@ -97,6 +105,7 @@ type Envelope struct {
 	GitBranch         string
 	Slug              string
 	ToolUseResult     any
+	Origin            Origin
 }
 
 // Message represents a single user or assistant message from a session.
@@ -174,6 +183,11 @@ type record struct {
 	Slug              string     `json:"slug"`
 	Message           msgPayload `json:"message"`
 	ToolUseResult     any        `json:"toolUseResult,omitzero"`
+	Origin            struct {
+		Kind string `json:"kind"`
+		From string `json:"from"`
+		To   string `json:"to"`
+	} `json:"origin"`
 }
 
 // msgPayload is the nested "message" object inside a record.
@@ -321,6 +335,11 @@ func Parse(r io.Reader) (Result, []ParseError, error) {
 				GitBranch:         rec.GitBranch,
 				Slug:              rec.Slug,
 				ToolUseResult:     rec.ToolUseResult,
+				Origin: Origin{
+					Kind: rec.Origin.Kind,
+					From: rec.Origin.From,
+					To:   rec.Origin.To,
+				},
 			},
 		}
 

@@ -188,6 +188,8 @@ templ blockComponent(block session.Block) {
 			@requestInterruptedBlock(b)
 		case *session.SessionResult:
 			@sessionResultBlock(b)
+		case *session.SystemXML:
+			@systemXMLBlock(b)
 		case *session.Raw:
 			@rawBlock(b)
 	}
@@ -568,6 +570,23 @@ templ hookInjectionBlock(b *session.HookInjection) {
 			<span class="icon">⚙</span>
 			<span>hook_injection</span>
 			<span class="detail">{ truncateHookDetail(b.Content) }</span>
+		</div>
+	</article>
+}
+
+templ systemXMLBlock(b *session.SystemXML) {
+	<article class="block meta">
+		<div class="meta-bar">
+			<span class="icon">⚙</span>
+			<span>{ b.Label }</span>
+		</div>
+		<div class="clamp">
+			<div class="clamp-body">
+				@templ.Raw(string(highlightXML(formatXML(b.Content))))
+			</div>
+			<button class="clamp-toggle" type="button">
+				<span class="label">Show more</span>
+			</button>
 		</div>
 	</article>
 }

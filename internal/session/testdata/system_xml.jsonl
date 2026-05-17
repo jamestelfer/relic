@@ -1,0 +1,6 @@
+{"type":"user","timestamp":"2025-05-01T10:00:00Z","message":{"role":"user","content":"Hello, what can you do?"}}
+{"type":"assistant","timestamp":"2025-05-01T10:00:01Z","message":{"role":"assistant","content":[{"type":"text","text":"I can help with many things."}]}}
+{"type":"user","timestamp":"2025-05-01T10:00:02Z","message":{"role":"user","content":"<system-reminder>\nYou are a helpful assistant.\n</system-reminder>"}}
+{"type":"user","timestamp":"2025-05-01T10:00:03Z","message":{"role":"user","content":"<unknown-tag attr=\"val\">\nSome content here\n</unknown-tag>"},"origin":{"kind":"test-type"}}
+{"type":"user","timestamp":"2025-05-01T10:00:04Z","message":{"role":"user","content":"This is plain text, not XML"}}
+{"type":"assistant","timestamp":"2025-05-01T10:00:05Z","message":{"role":"assistant","content":[{"type":"text","text":"Sure, I understand."}]}}

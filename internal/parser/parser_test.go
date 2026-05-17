@@ -410,6 +410,53 @@ func TestParseToolUseResult_Absent(t *testing.T) {
 	assert.Nil(t, res.Messages[3].Envelope.ToolUseResult)
 }
 
+// TestParseOrigin verifies that the "origin" field is extracted into
+// Envelope.Origin with Kind, From, To sub-fields. Records without origin
+// produce a zero-valued Origin.
+func TestParseOrigin(t *testing.T) {
+	res, _, err := parser.Parse(openFixture(t, "origin.jsonl"))
+	require.NoError(t, err)
+	require.Len(t, res.Messages, 3)
+
+	tests := []struct {
+		name string
+		msg  parser.Message
+		kind string
+		from string
+		to   string
+	}{
+		{
+			name: "full origin",
+			msg:  res.Messages[0],
+			kind: "system-reminder",
+			from: "agent-1",
+			to:   "agent-2",
+		},
+		{
+			name: "absent origin",
+			msg:  res.Messages[1],
+			kind: "",
+			from: "",
+			to:   "",
+		},
+		{
+			name: "partial origin (kind only)",
+			msg:  res.Messages[2],
+			kind: "task-notification",
+			from: "",
+			to:   "",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equal(t, tt.kind, tt.msg.Envelope.Origin.Kind)
+			assert.Equal(t, tt.from, tt.msg.Envelope.Origin.From)
+			assert.Equal(t, tt.to, tt.msg.Envelope.Origin.To)
+		})
+	}
+}
+
 // TestParseToolUseResult_StringAndArray: string and array toolUseResult variants
 // are extracted as-is (string stays string, array stays []any).
 func TestParseToolUseResult_StringAndArray(t *testing.T) {

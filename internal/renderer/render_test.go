@@ -880,6 +880,56 @@ func TestRender_AskUserQuestion_ResultWithFreetext(t *testing.T) {
 	assert.Contains(t, out, "Put it on ~/Desktop/out.html", "freetext content present")
 }
 
+func TestRender_SystemXML_Highlighted(t *testing.T) {
+	s := session.Session{
+		Turns: []session.Turn{{Index: 1, Blocks: []session.Block{
+			&session.SystemXML{
+				TagName: "system-reminder",
+				Label:   "system-reminder",
+				Content: "<system-reminder>\nYou are a helpful assistant.\n</system-reminder>",
+				LineNum: 1,
+			},
+		}}},
+	}
+	out := render(t, s, renderer.Options{Name: "test"})
+
+	assert.Contains(t, out, `class="block meta"`, "rendered as meta block")
+	assert.Contains(t, out, "system-reminder", "label shown")
+	assert.Contains(t, out, `class="chroma"`, "Chroma highlighting applied")
+}
+
+func TestRender_SystemXML_OriginKindLabel(t *testing.T) {
+	s := session.Session{
+		Turns: []session.Turn{{Index: 1, Blocks: []session.Block{
+			&session.SystemXML{
+				TagName: "unknown-tag",
+				Label:   "custom-origin",
+				Content: "<unknown-tag>content</unknown-tag>",
+				LineNum: 1,
+			},
+		}}},
+	}
+	out := render(t, s, renderer.Options{Name: "test"})
+
+	assert.Contains(t, out, "custom-origin", "origin.kind label shown")
+}
+
+func TestRender_FormatXML_Broken(t *testing.T) {
+	s := session.Session{
+		Turns: []session.Turn{{Index: 1, Blocks: []session.Block{
+			&session.SystemXML{
+				TagName: "broken",
+				Label:   "broken",
+				Content: "<broken",
+				LineNum: 1,
+			},
+		}}},
+	}
+	out := render(t, s, renderer.Options{Name: "test"})
+
+	assert.Contains(t, out, "&lt;broken", "broken XML escaped in output")
+}
+
 func TestRender_AskUserQuestion_NilEnrichment_FallsBack(t *testing.T) {
 	s := session.Session{
 		Turns: []session.Turn{{Index: 1, Blocks: []session.Block{

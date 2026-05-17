@@ -5,6 +5,7 @@ import (
 	"context"
 	_ "embed"
 	"encoding/json"
+	"encoding/xml"
 	"fmt"
 	"html/template"
 	"io"
@@ -597,6 +598,40 @@ func imageMetaLabel(b *session.Image) string {
 		mt = "image"
 	}
 	return strings.ToUpper(strings.TrimPrefix(mt, "image/"))
+}
+
+func formatXML(s string) string {
+	dec := xml.NewDecoder(strings.NewReader(s))
+	var buf bytes.Buffer
+	enc := xml.NewEncoder(&buf)
+	enc.Indent("", "  ")
+	for {
+		tok, err := dec.Token()
+		if err != nil {
+			break
+		}
+		if err := enc.EncodeToken(tok); err != nil {
+			return s
+		}
+	}
+	if err := enc.Flush(); err != nil {
+		return s
+	}
+	if buf.Len() == 0 {
+		return s
+	}
+	return buf.String()
+}
+
+func highlightXML(xmlStr string) template.HTML {
+	if xmlStr == "" {
+		return ""
+	}
+	h, err := highlight.Highlight(xmlStr, "xml", "")
+	if err != nil {
+		return template.HTML(fmt.Sprintf("<pre><code>%s</code></pre>", template.HTMLEscapeString(xmlStr))) //nolint:gosec
+	}
+	return h
 }
 
 func formatRawJSON(data []byte) string {
