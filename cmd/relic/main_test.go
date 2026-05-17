@@ -60,7 +60,7 @@ func TestExecuteE2E(t *testing.T) {
 	assert.Contains(t, html, "</html>")
 }
 
-// TestExecute_DefaultOutputPath_CWD verifies that when no --output-path is set
+// TestExecute_DefaultOutputPath_CWD verifies that when no --output is set
 // the HTML file is written to CWD/<stem>.html (not next to the input) and the
 // absolute path is echoed to stdout on its own line.
 func TestExecute_DefaultOutputPath_CWD(t *testing.T) {
@@ -167,7 +167,7 @@ func TestCLI_DebugFlag(t *testing.T) {
 	err := cmd.Run(context.Background(), []string{
 		"relic",
 		"--debug",
-		"--output-path", outPath,
+		"--output", outPath,
 		"testdata/fixture.jsonl",
 	})
 	require.NoError(t, err)
@@ -185,7 +185,7 @@ func TestMissingFile_ExitCode(t *testing.T) {
 	require.Error(t, err)
 }
 
-// TestCLI_OutputMode_Invalid verifies that --output <bad-value> via the CLI exits
+// TestCLI_OutputMode_Invalid verifies that --mode <bad-value> via the CLI exits
 // non-zero and prints a message listing html, gist, and public-gist.
 func TestCLI_OutputMode_Invalid(t *testing.T) {
 	origExiter := cli.OsExiter
@@ -201,7 +201,7 @@ func TestCLI_OutputMode_Invalid(t *testing.T) {
 
 	err := cmd.Run(context.Background(), []string{
 		"relic",
-		"--output", "bad",
+		"--mode", "bad",
 		"testdata/fixture.jsonl",
 	})
 	require.Error(t, err)
@@ -211,7 +211,7 @@ func TestCLI_OutputMode_Invalid(t *testing.T) {
 	assert.Contains(t, msg, "public-gist")
 }
 
-// TestCLI_OutputPathStdout verifies that --output-path - writes HTML to stdout.
+// TestCLI_OutputPathStdout verifies that --output - writes HTML to stdout.
 func TestCLI_OutputPathStdout(t *testing.T) {
 	var outBuf, errBuf bytes.Buffer
 	cmd := buildCLI(func(opts options, errOut io.Writer) error {
@@ -222,14 +222,14 @@ func TestCLI_OutputPathStdout(t *testing.T) {
 
 	err := cmd.Run(context.Background(), []string{
 		"relic",
-		"--output-path", "-",
+		"--output", "-",
 		"testdata/fixture.jsonl",
 	})
 	require.NoError(t, err)
 	assert.Contains(t, outBuf.String(), "<!doctype html")
 }
 
-// TestCLI_OutputPath verifies that --output-path <file> writes HTML to that path.
+// TestCLI_OutputPath verifies that --output <file> writes HTML to that path.
 func TestCLI_OutputPath(t *testing.T) {
 	tmp := t.TempDir()
 	outPath := filepath.Join(tmp, "explicit.html")
@@ -243,7 +243,7 @@ func TestCLI_OutputPath(t *testing.T) {
 
 	err := cmd.Run(context.Background(), []string{
 		"relic",
-		"--output-path", outPath,
+		"--output", outPath,
 		"testdata/fixture.jsonl",
 	})
 	require.NoError(t, err)
@@ -262,8 +262,8 @@ func TestCLI_Help(t *testing.T) {
 	cmd.Writer = &outBuf
 	_ = cmd.Run(context.Background(), []string{"relic", "--help"})
 	help := outBuf.String()
+	assert.Contains(t, help, "--mode")
 	assert.Contains(t, help, "--output")
-	assert.Contains(t, help, "--output-path")
 	assert.Contains(t, help, "--name")
 }
 
@@ -389,7 +389,7 @@ func TestExecute_GistFilename(t *testing.T) {
 		"gist filename must be derived from the session name stem + .html")
 }
 
-// TestExecute_PublicGistMode verifies that --output public-gist passes public=true
+// TestExecute_PublicGistMode verifies that --mode public-gist passes public=true
 // to the publisher.
 func TestExecute_PublicGistMode(t *testing.T) {
 	stub := &stubGistRunner{
@@ -408,7 +408,7 @@ func TestExecute_PublicGistMode(t *testing.T) {
 	assert.True(t, stub.capturedPublic, "public-gist mode must call Publish with public=true")
 }
 
-// TestExecute_GistMode verifies that --output gist renders to memory, prints
+// TestExecute_GistMode verifies that --mode gist renders to memory, prints
 // Gist: and Preview: URLs to stdout, and writes no local .html file.
 func TestExecute_GistMode(t *testing.T) {
 	tmp := t.TempDir()
@@ -496,7 +496,7 @@ func TestCLI_NoRedactFlag(t *testing.T) {
 	err := cmd.Run(context.Background(), []string{
 		"relic",
 		"--no-redact",
-		"--output-path", outPath,
+		"--output", outPath,
 		fixture,
 	})
 	require.NoError(t, err)
@@ -545,7 +545,7 @@ func (s *stubGistRunner) Publish(html []byte, filename string, public bool) (str
 	return s.gistURL, s.previewURL, s.err
 }
 
-// TestOutputMode_Invalid verifies that an unrecognised --output mode returns an error
+// TestOutputMode_Invalid verifies that an unrecognised --mode value returns an error
 // that lists all valid mode values.
 func TestOutputMode_Invalid(t *testing.T) {
 	var logBuf bytes.Buffer
@@ -560,7 +560,7 @@ func TestOutputMode_Invalid(t *testing.T) {
 	assert.Contains(t, err.Error(), "public-gist")
 }
 
-// TestOutputMode_HTMLExplicit verifies that --output html produces the same result
+// TestOutputMode_HTMLExplicit verifies that --mode html produces the same result
 // as the default (no --output flag).
 func TestOutputMode_HTMLExplicit(t *testing.T) {
 	tmp := t.TempDir()
@@ -576,7 +576,7 @@ func TestOutputMode_HTMLExplicit(t *testing.T) {
 	assert.Contains(t, string(html), "<!doctype html")
 }
 
-// TestCLI_GistMode_PrintsURLs verifies that the CLI routes --output gist to execute
+// TestCLI_GistMode_PrintsURLs verifies that the CLI routes --mode gist to execute
 // and the Gist:/Preview: lines appear on stdout.
 func TestCLI_GistMode_PrintsURLs(t *testing.T) {
 	var outBuf, errBuf bytes.Buffer
@@ -592,7 +592,7 @@ func TestCLI_GistMode_PrintsURLs(t *testing.T) {
 
 	err := cmd.Run(context.Background(), []string{
 		"relic",
-		"--output", "gist",
+		"--mode", "gist",
 		"testdata/fixture.jsonl",
 	})
 	require.NoError(t, err)
@@ -622,7 +622,7 @@ func TestExecute_RedactionSnapshot(t *testing.T) {
 	snaps.MatchSnapshot(t, body)
 }
 
-// TestCLI_OutputMode_GistAccepted verifies that --output gist and --output public-gist
+// TestCLI_OutputMode_GistAccepted verifies that --mode gist and --mode public-gist
 // are accepted by the flag parser without a parse error.
 func TestCLI_OutputMode_GistAccepted(t *testing.T) {
 	for _, mode := range []string{"gist", "public-gist"} {
@@ -640,12 +640,12 @@ func TestCLI_OutputMode_GistAccepted(t *testing.T) {
 
 			err := cmd.Run(context.Background(), []string{
 				"relic",
-				"--output", mode,
+				"--mode", mode,
 				"testdata/fixture.jsonl",
 			})
 			if err != nil {
 				assert.NotContains(t, err.Error(), "unknown output mode",
-					"--output %q must be accepted by the flag parser", mode)
+					"--mode %q must be accepted by the flag parser", mode)
 			}
 		})
 	}
