@@ -84,40 +84,22 @@ The rendered HTML is a single-page document structured around conversation
 turns. Each turn starts with a user prompt and contains the assistant's
 response, including any tool calls and their results.
 
-```
-┌─────────────────────────────────────────────────────┐
-│  Outline · 12 turns                     ◑ theme     │
-│  ┌────────────────┐ ┌─────────────────────────────┐ │
-│  │ 1. Fix parser  │ │ ■ User                      │ │
-│  │ 2. Add tests   │ │   Fix the parser to handle  │ │
-│  │ 3. Refactor    │ │   empty lines gracefully.   │ │
-│  │ ...            │ │                             │ │
-│  │                │ │ ■ Assistant                  │ │
-│  │ Roles          │ │   I'll look at the parser.  │ │
-│  │  user  prompt  │ │                             │ │
-│  │  asst  reply   │ │ ▸ Tool: Read parser.go      │ │
-│  │  tool  calls   │ │ ▸ Tool: Edit parser.go      │ │
-│  │  think reason  │ │                             │ │
-│  │                │ │   Fixed. The parser now      │ │
-│  │ [ prev ] next  │ │   skips blank lines...      │ │
-│  └────────────────┘ └─────────────────────────────┘ │
-└─────────────────────────────────────────────────────┘
-```
+![Session header with outline rail, metadata grid, and first user turn](design-system/screenshots/header.png)
 
-Key visual elements:
+Tool calls show syntax-highlighted source, shell commands, and structured
+parameters. Results render in a terminal chrome with collapsible output.
 
-- **Sidebar outline** — lists each turn with a title derived from the user's
-  prompt. Collapses to a disclosure on narrow viewports.
-- **Role-colored blocks** — user prompts, assistant text, tool calls, and
-  thinking blocks each have a distinct visual treatment.
-- **Collapsible tool calls** — Bash commands, file reads, edits, and other
-  tool interactions are shown with their inputs and results, collapsed by
-  default for long outputs.
-- **Code highlighting** — fenced code blocks and tool output are
-  syntax-highlighted with a theme matched to the light/dark mode.
-- **Copy buttons** — code blocks include a one-click copy button.
-- **Image zoom** — inline images (e.g. screenshots read by Claude) can be
-  clicked to view full-size.
+![Tool results: file contents with line numbers, bash output, ToolSearch results](design-system/screenshots/tool-results.png)
+
+![Tool calls: Write with Go syntax highlighting, WebFetch, Bash](design-system/screenshots/tool-calls.png)
+
+Skills, hook injections, and agent sub-tasks each get their own block type.
+
+![Skill invocation, hook injection, agent tool use and result](design-system/screenshots/slash-and-hooks.png)
+
+User bash commands (`! cmd`) and interactive slash commands are also captured.
+
+![User bash blocks and markdown rendering](design-system/screenshots/user-bash.png)
 
 ## Built with
 
