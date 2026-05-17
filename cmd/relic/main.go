@@ -256,20 +256,43 @@ func buildCLI(run func(opts options, errOut io.Writer) error) *cli.Command {
 		Name:      "relic",
 		Usage:     "Convert a Claude Code session JSONL file to shareable HTML",
 		ArgsUsage: "[session.jsonl]",
+		Description: `Renders a Claude Code session JSONL file as a self-contained HTML
+document with syntax highlighting, all CSS/JS inlined.
+
+When no file argument is given, an interactive picker shows recent
+sessions from ~/.claude/projects/.
+
+Output defaults to <session-name>.html in the current directory.
+Use -o to write elsewhere, or -o - to write HTML to stdout.
+
+To publish as a GitHub Gist (requires the gh CLI), use --mode gist
+or --mode public-gist.
+
+API keys, tokens, and other secrets are automatically detected and
+redacted. Use --no-redact to disable.
+
+Examples:
+  relic                              # pick a session interactively
+  relic session.jsonl                # render to session.html in CWD
+  relic -o out.html session.jsonl    # render to a specific file
+  relic -o - session.jsonl           # render to stdout
+  relic -m gist session.jsonl        # publish as a secret GitHub Gist
+  relic -m public-gist session.jsonl # publish as a public GitHub Gist`,
 		Flags: []cli.Flag{
+			&cli.StringFlag{
+				Name:    "mode",
+				Aliases: []string{"m"},
+				Usage:   "output destination: html (default), gist, or public-gist",
+			},
 			&cli.StringFlag{
 				Name:    "output",
 				Aliases: []string{"o"},
-				Usage:   "output mode: html (default), gist, or public-gist",
-			},
-			&cli.StringFlag{
-				Name:  "output-path",
-				Usage: "explicit output file path; use '-' to write HTML to stdout (html mode only)",
+				Usage:   "write HTML to `FILE`; defaults to <session>.html in CWD; use '-' for stdout",
 			},
 			&cli.StringFlag{
 				Name:    "name",
 				Aliases: []string{"n"},
-				Usage:   "override the session name shown in the banner",
+				Usage:   "override the session name shown in the rendered banner and title",
 			},
 			&cli.BoolFlag{
 				Name:  "debug",
@@ -277,7 +300,7 @@ func buildCLI(run func(opts options, errOut io.Writer) error) *cli.Command {
 			},
 			&cli.BoolFlag{
 				Name:  "no-redact",
-				Usage: "disable automatic secret redaction",
+				Usage: "disable automatic secret redaction (API keys, tokens, etc.)",
 			},
 		},
 		Action: func(ctx context.Context, cmd *cli.Command) error {
@@ -298,8 +321,8 @@ func buildCLI(run func(opts options, errOut io.Writer) error) *cli.Command {
 				inputPath = chosen
 			}
 
-			mode := outputMode(cmd.String("output"))
-			outputPath := cmd.String("output-path")
+			mode := outputMode(cmd.String("mode"))
+			outputPath := cmd.String("output")
 			name := cmd.String("name")
 
 			opts := options{
