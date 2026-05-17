@@ -1,0 +1,8 @@
+[extend]
+useDefault = true
+
+[[rules]]
+id = "npm-access-token-classic"
+description = "Classic npm access token (NpmToken.<uuid> format)."
+regex = '''NpmToken\.[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}'''
+keywords = ["npmtoken"]

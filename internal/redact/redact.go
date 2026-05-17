@@ -3,15 +3,32 @@ package redact
 import (
 	"bufio"
 	"bytes"
+	_ "embed"
 	"fmt"
 	"io"
 	"strings"
 
 	"github.com/rs/zerolog"
+	"github.com/spf13/viper"
+	"github.com/zricethezav/gitleaks/v8/config"
 	"github.com/zricethezav/gitleaks/v8/detect"
 	"github.com/zricethezav/gitleaks/v8/logging"
 	"github.com/zricethezav/gitleaks/v8/report"
 )
+
+//go:embed rules.toml
+var rulesConfig string
+
+var (
+	cachedDetector *detect.Detector
+	cachedErr      error
+)
+
+// resetCache clears the detector cache. Used for testing only.
+func resetCache() {
+	cachedDetector = nil
+	cachedErr = nil
+}
 
 // Finding records a single deduplicated secret detection. It carries the rule
 // ID, a human-readable description, and the number of JSONL lines the secret
@@ -47,10 +64,32 @@ type accumulator struct {
 	lineCount   int
 }
 
-// newDetector creates the gitleaks detector. Replaced in tests to simulate
-// initialization failures.
+// newDetector creates the gitleaks detector with embedded custom rules merged
+// with gitleaks defaults. The detector is created once and cached. Replaced in
+// tests to simulate initialization failures.
 var newDetector = func() (*detect.Detector, error) {
-	return detect.NewDetectorDefaultConfig()
+	if cachedDetector != nil || cachedErr != nil {
+		return cachedDetector, cachedErr
+	}
+
+	v := viper.New()
+	v.SetConfigType("toml")
+	if err := v.ReadConfig(strings.NewReader(rulesConfig)); err != nil {
+		cachedErr = err
+		return nil, err
+	}
+	var vc config.ViperConfig
+	if err := v.Unmarshal(&vc); err != nil {
+		cachedErr = err
+		return nil, err
+	}
+	cfg, err := vc.Translate()
+	if err != nil {
+		cachedErr = err
+		return nil, err
+	}
+	cachedDetector = detect.NewDetector(cfg)
+	return cachedDetector, nil
 }
 
 // NewReader creates a redacting reader that scans lines for secrets using

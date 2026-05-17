@@ -14,6 +14,7 @@ import (
 const (
 	testGitHubPAT = "ghp_" + "zR8k4mVq2xN7pLw9cJ3hYf6eDgA5tB0sQiUo"
 	testAWSKey    = "AKIA" + "Z7V4Q2XRNJ3WBTY5"
+	testNpmToken  = "NpmToken." + "f00df00d-f00d-f00d-f00d-f00df00df00d"
 )
 
 func TestReader_RedactsGitHubPAT(t *testing.T) {
@@ -42,6 +43,20 @@ func TestReader_RedactsAWSAccessKey(t *testing.T) {
 	result := string(out)
 	assert.NotContains(t, result, testAWSKey)
 	assert.Contains(t, result, "[REDACTED:aws-access-token]")
+}
+
+func TestReader_RedactsClassicNpmToken(t *testing.T) {
+	line := `{"type":"assistant","message":{"role":"assistant","content":"token: ` + testNpmToken + `"}}` + "\n"
+
+	r, err := NewReader(strings.NewReader(line))
+	require.NoError(t, err)
+
+	out, err := io.ReadAll(r)
+	require.NoError(t, err)
+
+	result := string(out)
+	assert.NotContains(t, result, testNpmToken)
+	assert.Contains(t, result, "[REDACTED:npm-access-token-classic]")
 }
 
 func TestReader_PassesThroughNonSecretContent(t *testing.T) {
@@ -143,8 +158,12 @@ func TestReader_MalformedJSONAfterRedaction(t *testing.T) {
 
 func TestNewReader_DetectorInitFailure(t *testing.T) {
 	orig := newDetector
-	t.Cleanup(func() { newDetector = orig })
+	t.Cleanup(func() {
+		newDetector = orig
+		resetCache()
+	})
 
+	resetCache()
 	newDetector = func() (*detect.Detector, error) {
 		return nil, errors.New("config broken")
 	}
