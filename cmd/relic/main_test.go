@@ -10,10 +10,31 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/gkampitakis/go-snaps/snaps"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/urfave/cli/v3"
 )
+
+const (
+	testGitHubPAT = "ghp_" + "zR8k4mVq2xN7pLw9cJ3hYf6eDgA5tB0sQiUo"
+	testAWSKey    = "AKIA" + "Z7V4Q2XRNJ3WBTY5"
+)
+
+// secretsFixturePath loads the secrets fixture template from testdata, replaces
+// placeholders with real high-entropy secret patterns at runtime, and writes the
+// result to a temp file. This keeps secret-shaped strings out of committed files.
+func secretsFixturePath(t *testing.T) string {
+	t.Helper()
+	data, err := os.ReadFile("testdata/secrets.jsonl")
+	require.NoError(t, err)
+	content := string(data)
+	content = strings.ReplaceAll(content, "PLACEHOLDER_GITHUB_PAT", testGitHubPAT)
+	content = strings.ReplaceAll(content, "PLACEHOLDER_AWS_KEY", testAWSKey)
+	path := filepath.Join(t.TempDir(), "secrets.jsonl")
+	require.NoError(t, os.WriteFile(path, []byte(content), 0o644))
+	return path
+}
 
 // runFixture executes relic against testdata/fixture.jsonl and returns the HTML.
 func runFixture(t *testing.T, opts options) string {
@@ -420,6 +441,92 @@ func TestExecute_GistMode(t *testing.T) {
 	assert.Empty(t, matches, "gist mode must not write a local .html file")
 }
 
+// --- Redaction tests ---
+
+func TestExecute_RedactsSecretsByDefault(t *testing.T) {
+	html := runFixture(t, options{inputPath: secretsFixturePath(t)})
+	assert.Contains(t, html, "[REDACTED:github-pat]")
+	assert.Contains(t, html, "[REDACTED:aws-access-token]")
+	assert.NotContains(t, html, testGitHubPAT)
+	assert.NotContains(t, html, testAWSKey)
+}
+
+func TestExecute_RedactionSummaryOnStderr(t *testing.T) {
+	var logBuf bytes.Buffer
+	err := execute(options{
+		inputPath:  secretsFixturePath(t),
+		outputPath: filepath.Join(t.TempDir(), "out.html"),
+	}, &logBuf)
+	require.NoError(t, err)
+
+	stderr := logBuf.String()
+	assert.Contains(t, stderr, "secrets found")
+	assert.Contains(t, stderr, "github-pat")
+	assert.Contains(t, stderr, "aws-access-token")
+}
+
+func TestExecute_NoRedactFlag_SkipsRedaction(t *testing.T) {
+	var logBuf bytes.Buffer
+	outPath := filepath.Join(t.TempDir(), "out.html")
+	err := execute(options{
+		inputPath:  secretsFixturePath(t),
+		outputPath: outPath,
+		noRedact:   true,
+	}, &logBuf)
+	require.NoError(t, err)
+
+	html, readErr := os.ReadFile(outPath)
+	require.NoError(t, readErr)
+	assert.Contains(t, string(html), testGitHubPAT)
+	assert.NotContains(t, string(html), "[REDACTED:")
+	assert.NotContains(t, logBuf.String(), "secrets found")
+}
+
+func TestCLI_NoRedactFlag(t *testing.T) {
+	fixture := secretsFixturePath(t)
+	outPath := filepath.Join(t.TempDir(), "out.html")
+
+	var outBuf, errBuf bytes.Buffer
+	cmd := buildCLI(func(opts options, errOut io.Writer) error {
+		return execute(opts, errOut)
+	})
+	cmd.Writer = &outBuf
+	cmd.ErrWriter = &errBuf
+
+	err := cmd.Run(context.Background(), []string{
+		"relic",
+		"--no-redact",
+		"--output-path", outPath,
+		fixture,
+	})
+	require.NoError(t, err)
+
+	html, readErr := os.ReadFile(outPath)
+	require.NoError(t, readErr)
+	assert.Contains(t, string(html), testGitHubPAT)
+	assert.NotContains(t, errBuf.String(), "secrets found")
+}
+
+func TestCLI_Help_ListsNoRedact(t *testing.T) {
+	var outBuf bytes.Buffer
+	cmd := buildCLI(func(opts options, errOut io.Writer) error {
+		return execute(opts, errOut)
+	})
+	cmd.Writer = &outBuf
+	_ = cmd.Run(context.Background(), []string{"relic", "--help"})
+	assert.Contains(t, outBuf.String(), "--no-redact")
+}
+
+func TestExecute_NoSecrets_NoSummary(t *testing.T) {
+	var logBuf bytes.Buffer
+	err := execute(options{
+		inputPath:  "testdata/fixture.jsonl",
+		outputPath: filepath.Join(t.TempDir(), "out.html"),
+	}, &logBuf)
+	require.NoError(t, err)
+	assert.NotContains(t, logBuf.String(), "secrets found")
+}
+
 // stubGistRunner is a test double for gist publishing used in execute() tests.
 type stubGistRunner struct {
 	gistURL    string
@@ -495,6 +602,24 @@ func TestCLI_GistMode_PrintsURLs(t *testing.T) {
 	assert.Contains(t, out, "https://gist.github.com/user/testid")
 	assert.Contains(t, out, "Preview:")
 	assert.Contains(t, out, "https://gisthost.github.io/?testid/fixture.html")
+}
+
+// TestExecute_RedactionSnapshot captures the full-pipeline output (redact → parse →
+// session → render) for a JSONL fixture containing planted secrets. The snapshot
+// locks in that redaction markers appear and raw secrets do not.
+func TestExecute_RedactionSnapshot(t *testing.T) {
+	html := runFixture(t, options{inputPath: secretsFixturePath(t)})
+
+	assert.NotContains(t, html, testGitHubPAT)
+	assert.NotContains(t, html, testAWSKey)
+
+	bodyStart := strings.Index(html, `class="body"`)
+	require.NotEqual(t, bodyStart, -1, "body class marker not found")
+	bodyEnd := strings.Index(html[bodyStart:], `</main>`)
+	require.NotEqual(t, bodyEnd, -1, "body end marker not found")
+	body := html[bodyStart : bodyStart+bodyEnd]
+
+	snaps.MatchSnapshot(t, body)
 }
 
 // TestCLI_OutputMode_GistAccepted verifies that --output gist and --output public-gist

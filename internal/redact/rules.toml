@@ -1,0 +1,56 @@
+[extend]
+useDefault = true
+
+[[rules]]
+id = "npm-access-token-classic"
+description = "Classic npm access token (NpmToken.<uuid> format)."
+regex = '''NpmToken\.[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}'''
+keywords = ["npmtoken"]
+
+[[rules]]
+id = "buildkite-api-token"
+description = "Buildkite API Access Token"
+regex = '''(?i)(bkua_[a-z0-9]{50,})'''
+keywords = ["bkua_"]
+
+[[rules]]
+id = "buildkite-agent-session-token"
+description = "Buildkite Agent Session Token"
+regex = '''(?i)(bkaa_[a-z0-9]{75,})'''
+keywords = ["bkaa_"]
+
+[[rules]]
+id = "buildkite-agent-job-token"
+description = "Buildkite Agent Job Token"
+regex = '''(?i)(bkaj_[a-z0-9]{240,})'''
+keywords = ["bkaj_"]
+
+[[rules]]
+id = "buildkite-unclustered-agent-token"
+description = "Buildkite Unclustered Agent Token"
+regex = '''(?i)(bkar_[a-z0-9]{70,})'''
+keywords = ["bkar_"]
+
+[[rules]]
+id = "buildkite-cluster-token"
+description = "Buildkite Agent/Cluster Token"
+regex = '''(?i)(bkct_[a-z0-9]{70,})'''
+keywords = ["bkct_"]
+
+[[rules]]
+id = "buildkite-registry-token"
+description = "Buildkite Registry/Package Registry Token"
+regex = '''(?i)(bkpt_[a-z0-9]{85,})'''
+keywords = ["bkpt_"]
+
+[[rules]]
+id = "buildkite-portal-access-token"
+description = "Buildkite Portal Access Token"
+regex = '''(?i)(bkpat_[a-z0-9]{45,})'''
+keywords = ["bkpat_"]
+
+[[rules]]
+id = "buildkite-portal-secret"
+description = "Buildkite Portal Secret"
+regex = '''(?i)(bkps_[a-z0-9]{55,})'''
+keywords = ["bkps_"]
