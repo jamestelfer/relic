@@ -956,6 +956,27 @@ func TestRender_TaskNotification_LabelValuePairs(t *testing.T) {
 	assert.Contains(t, out, "5.0k tokens", "usage tokens shown")
 }
 
+func TestRender_TeammateMessage_MarkdownBody(t *testing.T) {
+	s := session.Session{
+		Turns: []session.Turn{{Index: 1, Blocks: []session.Block{
+			&session.TeammateMessage{
+				TeammateID: "agent-1",
+				From:       "parent",
+				To:         "main",
+				Content:    "## Summary\n\n- Item 1\n- Item 2",
+				LineNum:    1,
+			},
+		}}},
+	}
+	out := render(t, s, renderer.Options{Name: "test"})
+
+	assert.Contains(t, out, `class="block meta"`, "rendered as meta block")
+	assert.Contains(t, out, "teammate", "label shown")
+	assert.Contains(t, out, "agent-1", "teammate ID shown")
+	assert.Contains(t, out, "Summary</h2>", "markdown heading rendered to HTML")
+	assert.Contains(t, out, "<li>Item 1", "markdown list rendered")
+}
+
 func TestRender_AskUserQuestion_NilEnrichment_FallsBack(t *testing.T) {
 	s := session.Session{
 		Turns: []session.Turn{{Index: 1, Blocks: []session.Block{

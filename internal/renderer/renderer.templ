@@ -192,6 +192,8 @@ templ blockComponent(block session.Block) {
 			@systemXMLBlock(b)
 		case *session.TaskNotification:
 			@taskNotificationBlock(b)
+		case *session.TeammateMessage:
+			@teammateMessageBlock(b)
 		case *session.Raw:
 			@rawBlock(b)
 	}
@@ -628,6 +630,28 @@ templ taskNotificationBlock(b *session.TaskNotification) {
 						<dd>{ fmt.Sprintf("%s tokens · %d tool uses · %s", formatTokens(b.Usage.TotalTokens), b.Usage.ToolUses, formatDurationMS(b.Usage.DurationMs)) }</dd>
 					}
 				</dl>
+			</div>
+			<button class="clamp-toggle" type="button">
+				<span class="label">Show more</span>
+			</button>
+		</div>
+	</article>
+}
+
+templ teammateMessageBlock(b *session.TeammateMessage) {
+	<article class="block meta">
+		<div class="meta-bar">
+			<span class="icon">⚙</span>
+			<span>teammate</span>
+			if b.TeammateID != "" {
+				<span class="detail">{ b.TeammateID }</span>
+			}
+		</div>
+		<div class="clamp">
+			<div class="clamp-body">
+				<div class="body">
+					@templ.Raw(string(renderMarkdown(b.Content)))
+				</div>
 			</div>
 			<button class="clamp-toggle" type="button">
 				<span class="label">Show more</span>

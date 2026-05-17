@@ -1727,6 +1727,91 @@ func TestClassifyTaskNotification(t *testing.T) {
 	}
 }
 
+// TestClassifyTeammateMessage: origin.kind = "teammate-message" with valid
+// XML produces a TeammateMessage block; malformed XML falls through to SystemXML.
+func TestClassifyTeammateMessage(t *testing.T) {
+	ts := time.Date(2025, 5, 1, 10, 0, 0, 0, time.UTC)
+
+	tests := []struct {
+		name       string
+		content    string
+		origin     parser.Origin
+		wantType   string
+		wantTeamID string
+		wantFrom   string
+		wantTo     string
+		wantBody   string
+	}{
+		{
+			name:    "valid teammate-message",
+			content: `<teammate-message teammate_id="agent-1">Hello from the agent!</teammate-message>`,
+			origin: parser.Origin{
+				Kind: "teammate-message",
+				From: "parent-agent",
+				To:   "main-agent",
+			},
+			wantType:   "teammate_message",
+			wantTeamID: "agent-1",
+			wantFrom:   "parent-agent",
+			wantTo:     "main-agent",
+			wantBody:   "Hello from the agent!",
+		},
+		{
+			name:       "teammate-message with markdown body",
+			content:    "<teammate-message teammate_id=\"reviewer\">\n## Summary\n\n- Item 1\n- Item 2\n</teammate-message>",
+			origin:     parser.Origin{Kind: "teammate-message"},
+			wantType:   "teammate_message",
+			wantTeamID: "reviewer",
+			wantBody:   "## Summary\n\n- Item 1\n- Item 2",
+		},
+		{
+			name:     "malformed XML falls through to SystemXML",
+			content:  "<teammate-message>\n<broken inner<\n</teammate-message>",
+			origin:   parser.Origin{Kind: "teammate-message"},
+			wantType: "system_xml",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			res := parser.Result{
+				Messages: []parser.Message{
+					{
+						Role: "user", Timestamp: &ts, LineNum: 1,
+						Content: []parser.ContentBlock{&parser.TextBlock{Text: "open turn"}},
+					},
+					{
+						Role: "user", Timestamp: &ts, LineNum: 2,
+						Envelope: parser.Envelope{Origin: tt.origin},
+						Content:  []parser.ContentBlock{&parser.TextBlock{Text: tt.content}},
+					},
+				},
+			}
+			s := session.Transform(res)
+
+			require.Len(t, s.Turns, 1, "teammate-message must not create a new turn")
+
+			var found session.Block
+			for _, b := range s.Turns[0].Blocks {
+				if b.BlockType() == tt.wantType {
+					found = b
+				}
+			}
+
+			require.NotNil(t, found, "expected %s block", tt.wantType)
+
+			if tt.wantType == "teammate_message" {
+				tm := found.(*session.TeammateMessage)
+				assert.Equal(t, tt.wantTeamID, tm.TeammateID)
+				assert.Equal(t, tt.wantFrom, tm.From)
+				assert.Equal(t, tt.wantTo, tm.To)
+				assert.Equal(t, tt.wantBody, tm.Content)
+				assert.Equal(t, 2, tm.LineNum)
+			}
+		})
+	}
+}
+
 // TestSystemXML_NoNewTurn: system-classified XML messages do not create
 // new sidebar entries (turns).
 func TestSystemXML_NoNewTurn(t *testing.T) {

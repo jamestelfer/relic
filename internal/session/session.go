@@ -310,6 +310,19 @@ type TaskNotification struct {
 func (b *TaskNotification) BlockType() string { return "task_notification" }
 func (b *TaskNotification) sealedBlock()      {}
 
+// TeammateMessage is a parsed teammate-message system message from multi-agent
+// collaboration. Content is markdown-formatted conversational text.
+type TeammateMessage struct {
+	TeammateID string `json:"teammate_id"`
+	From       string `json:"from"`
+	To         string `json:"to"`
+	Content    string `json:"content"`
+	LineNum    int    `json:"line_num"`
+}
+
+func (b *TeammateMessage) BlockType() string { return "teammate_message" }
+func (b *TeammateMessage) sealedBlock()      {}
+
 // Turn groups one user-initiated exchange with all subsequent assistant messages
 // up to the next user turn boundary.
 type Turn struct {
@@ -723,6 +736,10 @@ func classifyUserMessage(msg parser.Message) []Block {
 			if b := parseTaskNotification(content, msg.LineNum); b != nil {
 				return []Block{b}
 			}
+		case "teammate-message":
+			if b := parseTeammateMessage(content, msg.Envelope.Origin, msg.LineNum); b != nil {
+				return []Block{b}
+			}
 		}
 		// Unknown origin kind or parse failure: fall through to generic XML.
 	}
@@ -916,4 +933,27 @@ func parseTaskNotification(content string, lineNum int) *TaskNotification {
 		}
 	}
 	return b
+}
+
+// teammateMessageXML mirrors the XML structure of a <teammate-message> element.
+type teammateMessageXML struct {
+	XMLName    xml.Name `xml:"teammate-message"`
+	TeammateID string   `xml:"teammate_id,attr"`
+	Body       string   `xml:",chardata"`
+}
+
+// parseTeammateMessage attempts to parse content as a <teammate-message> XML
+// element. Returns nil if parsing fails, allowing the cascade to continue.
+func parseTeammateMessage(content string, origin parser.Origin, lineNum int) *TeammateMessage {
+	var tm teammateMessageXML
+	if err := xml.Unmarshal([]byte(content), &tm); err != nil {
+		return nil
+	}
+	return &TeammateMessage{
+		TeammateID: tm.TeammateID,
+		From:       origin.From,
+		To:         origin.To,
+		Content:    strings.TrimSpace(tm.Body),
+		LineNum:    lineNum,
+	}
 }
