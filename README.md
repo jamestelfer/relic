@@ -1,4 +1,7 @@
-# Relic
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="design-system/logo-dark.png">
+  <img alt="Relic" src="design-system/logo-light.png" width="240">
+</picture>
 
 Convert [Claude Code](https://docs.anthropic.com/en/docs/claude-code) session
 logs into shareable, self-contained HTML documents.
