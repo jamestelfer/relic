@@ -1825,3 +1825,44 @@ func TestSystemXML_NoNewTurn(t *testing.T) {
 	assert.Equal(t, "Hello, what can you do?", s.Turns[0].Title)
 	assert.Equal(t, "This is plain text, not XML", s.Turns[1].Title)
 }
+
+// TestTransformToolResult_IsError: the IsError field propagates from parser to
+// session ToolResult block.
+func TestTransformToolResult_IsError(t *testing.T) {
+	ts := time.Date(2025, 1, 15, 10, 0, 0, 0, time.UTC)
+
+	tests := []struct {
+		name    string
+		isError bool
+	}{
+		{name: "is_error true", isError: true},
+		{name: "is_error false", isError: false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			res := parser.Result{
+				Messages: []parser.Message{
+					{Role: "user", Timestamp: &ts, LineNum: 1,
+						Content: []parser.ContentBlock{&parser.TextBlock{Text: "do something"}}},
+					{Role: "assistant", Timestamp: &ts, LineNum: 2,
+						Content: []parser.ContentBlock{&parser.ToolUseBlock{ID: "toolu_01", Name: "Bash", Input: map[string]any{"command": "ls"}}}},
+					{Role: "user", Timestamp: &ts, LineNum: 3,
+						Content: []parser.ContentBlock{&parser.ToolResultBlock{ToolUseID: "toolu_01", Content: "output", IsError: tt.isError}}},
+				},
+			}
+			s := session.Transform(res)
+
+			require.Len(t, s.Turns, 1)
+			var result *session.ToolResult
+			for _, b := range s.Turns[0].Blocks {
+				if tr, ok := b.(*session.ToolResult); ok {
+					result = tr
+					break
+				}
+			}
+			require.NotNil(t, result)
+			assert.Equal(t, tt.isError, result.IsError)
+		})
+	}
+}

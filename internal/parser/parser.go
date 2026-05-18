@@ -35,6 +35,7 @@ func (b *TextBlock) BlockType() string { return "text" }
 type ToolResultBlock struct {
 	ToolUseID string
 	Content   string // may contain ANSI escape sequences
+	IsError   bool
 }
 
 func (b *ToolResultBlock) BlockType() string { return "tool_result" }
@@ -456,11 +457,13 @@ func decodeBlock(raw jsontext.Value) ContentBlock {
 		var tr struct {
 			ToolUseID string         `json:"tool_use_id"`
 			Content   jsontext.Value `json:"content"`
+			IsError   bool           `json:"is_error"`
 		}
 		if err := json.Unmarshal([]byte(raw), &tr); err == nil {
 			return &ToolResultBlock{
 				ToolUseID: tr.ToolUseID,
 				Content:   toolResultContent(tr.Content),
+				IsError:   tr.IsError,
 			}
 		}
 	case "tool_use":
