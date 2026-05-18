@@ -310,6 +310,37 @@ func TestParseCustomTitleMulti(t *testing.T) {
 	assert.Equal(t, 2, res.Messages[0].LineNum)
 }
 
+// TestParseAITitleSingle verifies that an ai-title top-level record
+// is exposed via Result.AITitles with Text and 1-indexed LineNum.
+func TestParseAITitleSingle(t *testing.T) {
+	res, _, err := parser.Parse(openFixture(t, "ai_title_single.jsonl"))
+	require.NoError(t, err)
+
+	require.Len(t, res.AITitles, 1)
+	assert.Equal(t, "auto generated title", res.AITitles[0].Text)
+	assert.Equal(t, 1, res.AITitles[0].LineNum)
+	assert.Empty(t, res.Messages, "ai-title is not a message")
+}
+
+// TestParseAITitleMulti verifies that multiple ai-title records are
+// emitted in source order with their 1-indexed LineNum values intact.
+func TestParseAITitleMulti(t *testing.T) {
+	res, _, err := parser.Parse(openFixture(t, "ai_title_multi.jsonl"))
+	require.NoError(t, err)
+
+	require.Len(t, res.AITitles, 3)
+	assert.Equal(t, "first ai", res.AITitles[0].Text)
+	assert.Equal(t, 1, res.AITitles[0].LineNum)
+	assert.Equal(t, "second ai", res.AITitles[1].Text)
+	assert.Equal(t, 3, res.AITitles[1].LineNum)
+	assert.Equal(t, "third ai", res.AITitles[2].Text)
+	assert.Equal(t, 4, res.AITitles[2].LineNum)
+
+	// The interleaved user message on line 2 comes through unaffected.
+	require.Len(t, res.Messages, 1)
+	assert.Equal(t, 2, res.Messages[0].LineNum)
+}
+
 // TestParseEnvelope_IsSidechain: JSONL line with isSidechain:true populates Envelope.
 func TestParseEnvelope_IsSidechain(t *testing.T) {
 	res, _, err := parser.Parse(openFixture(t, "envelope.jsonl"))

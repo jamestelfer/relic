@@ -530,6 +530,8 @@ func Transform(res parser.Result) Session {
 	var embeddedName string
 	if n := len(res.CustomTitles); n > 0 {
 		embeddedName = res.CustomTitles[n-1].Text
+	} else if n := len(res.AITitles); n > 0 {
+		embeddedName = res.AITitles[n-1].Text
 	}
 
 	return Session{
