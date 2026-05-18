@@ -1,0 +1,4 @@
+{"type":"ai-title","aiTitle":"first ai title","sessionId":"s1"}
+{"type":"user","timestamp":"2025-01-15T10:00:01.000Z","message":{"role":"user","content":"hi"}}
+{"type":"ai-title","aiTitle":"latest ai title","sessionId":"s1"}
+{"type":"assistant","timestamp":"2025-01-15T10:00:02.000Z","message":{"role":"assistant","content":[{"type":"text","text":"hello"}]}}

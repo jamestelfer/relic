@@ -289,6 +289,29 @@ func TestExecute_CustomTitle_FilenameFallback(t *testing.T) {
 	assert.Contains(t, html, "custom_title_none")
 }
 
+// TestExecute_AITitle_Only: when only ai-title records exist (no custom-title),
+// the ai-title is used as the page title.
+func TestExecute_AITitle_Only(t *testing.T) {
+	html := runFixture(t, options{inputPath: "testdata/ai_title_only.jsonl"})
+	assert.Contains(t, html, "AI generated session")
+}
+
+// TestExecute_AITitle_CustomTitleWins: when both ai-title and custom-title
+// records exist, custom-title always wins.
+func TestExecute_AITitle_CustomTitleWins(t *testing.T) {
+	html := runFixture(t, options{inputPath: "testdata/ai_title_with_custom.jsonl"})
+	assert.Contains(t, html, "user chosen title")
+	assert.NotContains(t, html, "AI generated session")
+}
+
+// TestExecute_AITitle_LastRecordWins: when multiple ai-title records appear
+// (no custom-title), the last one in source order becomes the title.
+func TestExecute_AITitle_LastRecordWins(t *testing.T) {
+	html := runFixture(t, options{inputPath: "testdata/ai_title_multi.jsonl"})
+	assert.Contains(t, html, "<title>latest ai title")
+	assert.NotContains(t, html, "<title>first ai title")
+}
+
 // TestExecute_Debug_UnhandledContentBlock: `--debug` logs one line per
 // unrecognised content block (RawBlock), with line + type + role fields.
 func TestExecute_Debug_UnhandledContentBlock(t *testing.T) {

@@ -131,6 +131,13 @@ type CustomTitleRecord struct {
 	LineNum int
 }
 
+// AITitleRecord carries a top-level "ai-title" record's text with its source
+// line number. Emitted as part of parser.Result.
+type AITitleRecord struct {
+	Text    string
+	LineNum int
+}
+
 // SystemRecord carries a top-level "system" record's subtype + content with
 // its source line number. Emitted as part of parser.Result; the session layer
 // decides how to render each subtype.
@@ -152,19 +159,21 @@ type ResultRecord struct {
 }
 
 // SkippedRecord flags a top-level JSONL record whose "type" is not one of
-// user/assistant/system/custom-title/result. Phase 7 debug logging surfaces
-// these so schema drift in the session format is visible rather than silent.
+// user/assistant/system/custom-title/ai-title/result. Phase 7 debug logging
+// surfaces these so schema drift in the session format is visible rather than
+// silent.
 type SkippedRecord struct {
 	LineNum int
 	Type    string
 }
 
-// Result is the structured output of Parse. Messages, CustomTitles,
-// SystemRecords, ResultRecords, and SkippedRecords are the five record streams
+// Result is the structured output of Parse. Messages, CustomTitles, AITitles,
+// SystemRecords, ResultRecords, and SkippedRecords are the record streams
 // extracted from a JSONL session.
 type Result struct {
 	Messages       []Message
 	CustomTitles   []CustomTitleRecord
+	AITitles       []AITitleRecord
 	SystemRecords  []SystemRecord
 	ResultRecords  []ResultRecord
 	SkippedRecords []SkippedRecord
@@ -202,6 +211,12 @@ type msgPayload struct {
 type customTitleRecord struct {
 	Type        string `json:"type"`
 	CustomTitle string `json:"customTitle"`
+}
+
+// aiTitleRecord mirrors a top-level ai-title JSONL line.
+type aiTitleRecord struct {
+	Type    string `json:"type"`
+	AITitle string `json:"aiTitle"`
 }
 
 // systemRecord mirrors a top-level system JSONL line.
@@ -278,6 +293,17 @@ func Parse(r io.Reader) (Result, []ParseError, error) {
 			if err := json.Unmarshal(line, &ct); err == nil && ct.CustomTitle != "" {
 				res.CustomTitles = append(res.CustomTitles, CustomTitleRecord{
 					Text:    ct.CustomTitle,
+					LineNum: lineNum,
+				})
+			}
+			continue
+		}
+
+		if rec.Type == "ai-title" {
+			var at aiTitleRecord
+			if err := json.Unmarshal(line, &at); err == nil && at.AITitle != "" {
+				res.AITitles = append(res.AITitles, AITitleRecord{
+					Text:    at.AITitle,
 					LineNum: lineNum,
 				})
 			}

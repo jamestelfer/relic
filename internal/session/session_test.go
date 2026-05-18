@@ -236,6 +236,34 @@ func TestTransformEmbeddedName_NoCustomTitle(t *testing.T) {
 	assert.Empty(t, s.EmbeddedName)
 }
 
+// TestTransformEmbeddedName_AITitleUsedWhenNoCustomTitle: when no custom-title
+// records exist but ai-title records do, the last ai-title becomes EmbeddedName.
+func TestTransformEmbeddedName_AITitleUsedWhenNoCustomTitle(t *testing.T) {
+	res := parser.Result{
+		AITitles: []parser.AITitleRecord{
+			{Text: "ai first", LineNum: 1},
+			{Text: "ai last", LineNum: 5},
+		},
+	}
+	s := session.Transform(res)
+	assert.Equal(t, "ai last", s.EmbeddedName)
+}
+
+// TestTransformEmbeddedName_CustomTitleOverridesAITitle: when both custom-title
+// and ai-title records exist, custom-title always wins regardless of order.
+func TestTransformEmbeddedName_CustomTitleOverridesAITitle(t *testing.T) {
+	res := parser.Result{
+		AITitles: []parser.AITitleRecord{
+			{Text: "ai title", LineNum: 10},
+		},
+		CustomTitles: []parser.CustomTitleRecord{
+			{Text: "custom title", LineNum: 2},
+		},
+	}
+	s := session.Transform(res)
+	assert.Equal(t, "custom title", s.EmbeddedName)
+}
+
 // TestTransformSystemRecords_RoutingAndOrdering: system records route by
 // subtype (local_command → LocalCommand, turn_duration → omitted,
 // else → System) and interleave with messages in source-line order.
