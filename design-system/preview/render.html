@@ -1921,6 +1921,45 @@ ok    github.com/jamestelfer/relic/internal/renderer    <span class="dim">0.42s<
         </details>
       </article>
 
+      <!-- ASSISTANT — table summary (markdown table rendering demo) -->
+      <article class="block conversation assistant">
+        <div class="role"><span class="tag">assistant</span><time>16:08 · 2m later</time></div>
+        <div class="body">
+          <p><strong>Summary:</strong></p>
+          <table>
+            <thead>
+              <tr>
+                <th>Metric</th>
+                <th>Value</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Total issues relabelled</td>
+                <td>55</td>
+              </tr>
+              <tr>
+                <td>Batches</td>
+                <td>2 (10 agents, then 9 agents)</td>
+              </tr>
+              <tr>
+                <td>Succeeded</td>
+                <td>55</td>
+              </tr>
+              <tr>
+                <td>Failed</td>
+                <td>0</td>
+              </tr>
+              <tr>
+                <td>Label change</td>
+                <td><code>health:requires-triage</code> → <code>health:requires-info</code></td>
+              </tr>
+            </tbody>
+          </table>
+          <p>All 55 JIRA issues have been relabelled. The JQL query <code>labels = "health:requires-info"</code> should return the full set once Jira's index catches up (typically a few minutes). Ready to continue.</p>
+        </div>
+      </article>
+
       <div class="turn-foot">
         <a href="#turn-6">← prev · new block types</a>
         <span class="spacer"></span>
