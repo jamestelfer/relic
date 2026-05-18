@@ -1518,3 +1518,310 @@ func TestTransformAskUserQuestionEnrichment_Malformed(t *testing.T) {
 		}
 	})
 }
+
+// TestClassifySystemXML: XML-wrapped user messages (without isMeta) produce
+// SystemXML blocks; plain text is left unclassified.
+func TestClassifySystemXML(t *testing.T) {
+	ts := time.Date(2025, 5, 1, 10, 0, 0, 0, time.UTC)
+
+	tests := []struct {
+		name      string
+		content   string
+		origin    parser.Origin
+		isMeta    bool
+		wantType  string
+		wantLabel string
+		wantTag   string
+	}{
+		{
+			name:      "XML content with matching tags, no origin",
+			content:   "<system-reminder>\nYou are a helpful assistant.\n</system-reminder>",
+			wantType:  "system_xml",
+			wantLabel: "system-reminder",
+			wantTag:   "system-reminder",
+		},
+		{
+			name:      "XML content with origin.kind overrides tag name",
+			content:   "<unknown-tag attr=\"val\">\nSome content\n</unknown-tag>",
+			origin:    parser.Origin{Kind: "test-type"},
+			wantType:  "system_xml",
+			wantLabel: "test-type",
+			wantTag:   "unknown-tag",
+		},
+		{
+			name:     "plain text is unclassified",
+			content:  "This is plain text, not XML",
+			wantType: "user_text",
+		},
+		{
+			name:     "isMeta takes precedence over XML detection",
+			content:  "<system-reminder>wake up</system-reminder>",
+			isMeta:   true,
+			wantType: "hook_injection",
+		},
+		{
+			name:     "XML with mismatched tags is unclassified",
+			content:  "<open-tag>content</close-tag>",
+			wantType: "user_text",
+		},
+		{
+			name:      "XML with attributes on open tag",
+			content:   "<teammate-message teammate_id=\"agent-1\">\nHello\n</teammate-message>",
+			wantType:  "system_xml",
+			wantLabel: "teammate-message",
+			wantTag:   "teammate-message",
+		},
+		{
+			name:     "partial XML (no close tag) is unclassified",
+			content:  "<broken",
+			wantType: "user_text",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			res := parser.Result{
+				Messages: []parser.Message{
+					{
+						Role: "user", Timestamp: &ts, LineNum: 1,
+						Content: []parser.ContentBlock{&parser.TextBlock{Text: "open turn"}},
+					},
+					{
+						Role:      "user",
+						Timestamp: &ts,
+						LineNum:   2,
+						IsMeta:    tt.isMeta,
+						Envelope: parser.Envelope{
+							IsMeta: tt.isMeta,
+							Origin: tt.origin,
+						},
+						Content: []parser.ContentBlock{&parser.TextBlock{Text: tt.content}},
+					},
+				},
+			}
+			s := session.Transform(res)
+
+			// Find the block produced from line 2 (the test message).
+			var found session.Block
+			for _, turn := range s.Turns {
+				for _, b := range turn.Blocks {
+					if b.BlockType() == tt.wantType && b.BlockType() != "user_text" {
+						found = b
+					}
+				}
+			}
+
+			switch tt.wantType {
+			case "system_xml":
+				require.Len(t, s.Turns, 1, "system XML must not create a new turn")
+				require.NotNil(t, found, "expected SystemXML block")
+				sxml := found.(*session.SystemXML)
+				assert.Equal(t, tt.wantLabel, sxml.Label)
+				assert.Equal(t, tt.wantTag, sxml.TagName)
+				assert.Equal(t, tt.content, sxml.Content)
+				assert.Equal(t, 2, sxml.LineNum)
+			case "hook_injection":
+				require.Len(t, s.Turns, 1, "hook injection must not create a new turn")
+				require.NotNil(t, found, "expected HookInjection block")
+			case "user_text":
+				require.Len(t, s.Turns, 2, "unclassified text creates a new turn")
+			}
+		})
+	}
+}
+
+// TestClassifyTaskNotification: origin.kind = "task-notification" with valid
+// XML produces a TaskNotification block; malformed XML falls through to SystemXML.
+func TestClassifyTaskNotification(t *testing.T) {
+	ts := time.Date(2025, 5, 1, 10, 0, 0, 0, time.UTC)
+
+	tests := []struct {
+		name     string
+		content  string
+		wantType string
+	}{
+		{
+			name: "valid task-notification",
+			content: `<task-notification>
+<task-id>abc123</task-id>
+<tool-use-id>toolu_01</tool-use-id>
+<output-file>/tmp/out.txt</output-file>
+<status>completed</status>
+<summary>Agent finished</summary>
+<result>All done</result>
+<usage><total_tokens>5000</total_tokens><tool_uses>3</tool_uses><duration_ms>12000</duration_ms></usage>
+</task-notification>`,
+			wantType: "task_notification",
+		},
+		{
+			name: "task-notification without usage",
+			content: `<task-notification>
+<task-id>def456</task-id>
+<tool-use-id>toolu_02</tool-use-id>
+<status>running</status>
+<summary>Still working</summary>
+</task-notification>`,
+			wantType: "task_notification",
+		},
+		{
+			name:     "malformed inner XML falls through to SystemXML",
+			content:  "<task-notification>\n<status>ok<unclosed\n</task-notification>",
+			wantType: "system_xml",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			res := parser.Result{
+				Messages: []parser.Message{
+					{
+						Role: "user", Timestamp: &ts, LineNum: 1,
+						Content: []parser.ContentBlock{&parser.TextBlock{Text: "open turn"}},
+					},
+					{
+						Role: "user", Timestamp: &ts, LineNum: 2,
+						Envelope: parser.Envelope{
+							Origin: parser.Origin{Kind: "task-notification"},
+						},
+						Content: []parser.ContentBlock{&parser.TextBlock{Text: tt.content}},
+					},
+				},
+			}
+			s := session.Transform(res)
+
+			require.Len(t, s.Turns, 1, "task-notification must not create a new turn")
+
+			var found session.Block
+			for _, b := range s.Turns[0].Blocks {
+				if b.BlockType() == tt.wantType {
+					found = b
+				}
+			}
+
+			require.NotNil(t, found, "expected %s block", tt.wantType)
+
+			if tt.wantType == "task_notification" {
+				tn := found.(*session.TaskNotification)
+				assert.Equal(t, 2, tn.LineNum)
+
+				switch tt.name {
+				case "valid task-notification":
+					assert.Equal(t, "abc123", tn.TaskID)
+					assert.Equal(t, "toolu_01", tn.ToolUseID)
+					assert.Equal(t, "/tmp/out.txt", tn.OutputFile)
+					assert.Equal(t, "completed", tn.Status)
+					assert.Equal(t, "Agent finished", tn.Summary)
+					assert.Equal(t, "All done", tn.Result)
+					assert.Equal(t, 5000, tn.Usage.TotalTokens)
+					assert.Equal(t, 3, tn.Usage.ToolUses)
+					assert.Equal(t, 12000, tn.Usage.DurationMs)
+				case "task-notification without usage":
+					assert.Equal(t, "def456", tn.TaskID)
+					assert.Equal(t, "running", tn.Status)
+					assert.Zero(t, tn.Usage.TotalTokens)
+					assert.Zero(t, tn.Usage.ToolUses)
+					assert.Zero(t, tn.Usage.DurationMs)
+				}
+			}
+		})
+	}
+}
+
+// TestClassifyTeammateMessage: origin.kind = "teammate-message" with valid
+// XML produces a TeammateMessage block; malformed XML falls through to SystemXML.
+func TestClassifyTeammateMessage(t *testing.T) {
+	ts := time.Date(2025, 5, 1, 10, 0, 0, 0, time.UTC)
+
+	tests := []struct {
+		name       string
+		content    string
+		origin     parser.Origin
+		wantType   string
+		wantTeamID string
+		wantFrom   string
+		wantTo     string
+		wantBody   string
+	}{
+		{
+			name:    "valid teammate-message",
+			content: `<teammate-message teammate_id="agent-1">Hello from the agent!</teammate-message>`,
+			origin: parser.Origin{
+				Kind: "teammate-message",
+				From: "parent-agent",
+				To:   "main-agent",
+			},
+			wantType:   "teammate_message",
+			wantTeamID: "agent-1",
+			wantFrom:   "parent-agent",
+			wantTo:     "main-agent",
+			wantBody:   "Hello from the agent!",
+		},
+		{
+			name:       "teammate-message with markdown body",
+			content:    "<teammate-message teammate_id=\"reviewer\">\n## Summary\n\n- Item 1\n- Item 2\n</teammate-message>",
+			origin:     parser.Origin{Kind: "teammate-message"},
+			wantType:   "teammate_message",
+			wantTeamID: "reviewer",
+			wantBody:   "## Summary\n\n- Item 1\n- Item 2",
+		},
+		{
+			name:     "malformed XML falls through to SystemXML",
+			content:  "<teammate-message>\n<broken inner<\n</teammate-message>",
+			origin:   parser.Origin{Kind: "teammate-message"},
+			wantType: "system_xml",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			res := parser.Result{
+				Messages: []parser.Message{
+					{
+						Role: "user", Timestamp: &ts, LineNum: 1,
+						Content: []parser.ContentBlock{&parser.TextBlock{Text: "open turn"}},
+					},
+					{
+						Role: "user", Timestamp: &ts, LineNum: 2,
+						Envelope: parser.Envelope{Origin: tt.origin},
+						Content:  []parser.ContentBlock{&parser.TextBlock{Text: tt.content}},
+					},
+				},
+			}
+			s := session.Transform(res)
+
+			require.Len(t, s.Turns, 1, "teammate-message must not create a new turn")
+
+			var found session.Block
+			for _, b := range s.Turns[0].Blocks {
+				if b.BlockType() == tt.wantType {
+					found = b
+				}
+			}
+
+			require.NotNil(t, found, "expected %s block", tt.wantType)
+
+			if tt.wantType == "teammate_message" {
+				tm := found.(*session.TeammateMessage)
+				assert.Equal(t, tt.wantTeamID, tm.TeammateID)
+				assert.Equal(t, tt.wantFrom, tm.From)
+				assert.Equal(t, tt.wantTo, tm.To)
+				assert.Equal(t, tt.wantBody, tm.Content)
+				assert.Equal(t, 2, tm.LineNum)
+			}
+		})
+	}
+}
+
+// TestSystemXML_NoNewTurn: system-classified XML messages do not create
+// new sidebar entries (turns).
+func TestSystemXML_NoNewTurn(t *testing.T) {
+	res := parseFixture(t, "system_xml.jsonl")
+	s := session.Transform(res)
+
+	// The fixture has: user text, assistant text, system-reminder XML,
+	// unknown-tag XML with origin, plain text (new turn), assistant text.
+	// Only user text messages (lines 1 and 5) create turns.
+	require.Len(t, s.Turns, 2, "system XML messages must not create new turns")
+	assert.Equal(t, "Hello, what can you do?", s.Turns[0].Title)
+	assert.Equal(t, "This is plain text, not XML", s.Turns[1].Title)
+}

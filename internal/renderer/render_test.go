@@ -880,6 +880,103 @@ func TestRender_AskUserQuestion_ResultWithFreetext(t *testing.T) {
 	assert.Contains(t, out, "Put it on ~/Desktop/out.html", "freetext content present")
 }
 
+func TestRender_SystemXML_Highlighted(t *testing.T) {
+	s := session.Session{
+		Turns: []session.Turn{{Index: 1, Blocks: []session.Block{
+			&session.SystemXML{
+				TagName: "system-reminder",
+				Label:   "system-reminder",
+				Content: "<system-reminder>\nYou are a helpful assistant.\n</system-reminder>",
+				LineNum: 1,
+			},
+		}}},
+	}
+	out := render(t, s, renderer.Options{Name: "test"})
+
+	assert.Contains(t, out, `class="block meta"`, "rendered as meta block")
+	assert.Contains(t, out, "system-reminder", "label shown")
+	assert.Contains(t, out, `class="chroma"`, "Chroma highlighting applied")
+}
+
+func TestRender_SystemXML_OriginKindLabel(t *testing.T) {
+	s := session.Session{
+		Turns: []session.Turn{{Index: 1, Blocks: []session.Block{
+			&session.SystemXML{
+				TagName: "unknown-tag",
+				Label:   "custom-origin",
+				Content: "<unknown-tag>content</unknown-tag>",
+				LineNum: 1,
+			},
+		}}},
+	}
+	out := render(t, s, renderer.Options{Name: "test"})
+
+	assert.Contains(t, out, "custom-origin", "origin.kind label shown")
+}
+
+func TestRender_FormatXML_Broken(t *testing.T) {
+	s := session.Session{
+		Turns: []session.Turn{{Index: 1, Blocks: []session.Block{
+			&session.SystemXML{
+				TagName: "broken",
+				Label:   "broken",
+				Content: "<broken",
+				LineNum: 1,
+			},
+		}}},
+	}
+	out := render(t, s, renderer.Options{Name: "test"})
+
+	assert.Contains(t, out, "&lt;broken", "broken XML escaped in output")
+}
+
+func TestRender_TaskNotification_LabelValuePairs(t *testing.T) {
+	s := session.Session{
+		Turns: []session.Turn{{Index: 1, Blocks: []session.Block{
+			&session.TaskNotification{
+				TaskID:     "abc123",
+				ToolUseID:  "toolu_01",
+				OutputFile: "/tmp/out.txt",
+				Status:     "completed",
+				Summary:    "Agent finished",
+				Result:     "All done",
+				Usage:      session.TaskNotificationUsage{TotalTokens: 5000, ToolUses: 3, DurationMs: 12000},
+				LineNum:    1,
+			},
+		}}},
+	}
+	out := render(t, s, renderer.Options{Name: "test"})
+
+	assert.Contains(t, out, `class="block meta"`, "rendered as meta block")
+	assert.Contains(t, out, "task_notification", "label shown")
+	assert.Contains(t, out, "abc123", "task-id shown")
+	assert.Contains(t, out, "completed", "status shown")
+	assert.Contains(t, out, "Agent finished", "summary shown")
+	assert.Contains(t, out, "All done", "result shown")
+	assert.Contains(t, out, "5.0k tokens", "usage tokens shown")
+}
+
+func TestRender_TeammateMessage_MarkdownBody(t *testing.T) {
+	s := session.Session{
+		Turns: []session.Turn{{Index: 1, Blocks: []session.Block{
+			&session.TeammateMessage{
+				TeammateID: "agent-1",
+				From:       "parent",
+				To:         "main",
+				Content:    "## Summary\n\n- Item 1\n- Item 2",
+				LineNum:    1,
+			},
+		}}},
+	}
+	out := render(t, s, renderer.Options{Name: "test"})
+
+	assert.Contains(t, out, `class="block meta"`, "rendered as meta block")
+	assert.Contains(t, out, "teammate", "label shown")
+	assert.Contains(t, out, "agent-1", "teammate ID shown")
+	assert.Contains(t, out, "Summary</h2>", "markdown heading rendered to HTML")
+	assert.Contains(t, out, "<li>Item 1", "markdown list rendered")
+}
+
 func TestRender_AskUserQuestion_NilEnrichment_FallsBack(t *testing.T) {
 	s := session.Session{
 		Turns: []session.Turn{{Index: 1, Blocks: []session.Block{

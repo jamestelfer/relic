@@ -188,6 +188,12 @@ templ blockComponent(block session.Block) {
 			@requestInterruptedBlock(b)
 		case *session.SessionResult:
 			@sessionResultBlock(b)
+		case *session.SystemXML:
+			@systemXMLBlock(b)
+		case *session.TaskNotification:
+			@taskNotificationBlock(b)
+		case *session.TeammateMessage:
+			@teammateMessageBlock(b)
 		case *session.Raw:
 			@rawBlock(b)
 	}
@@ -568,6 +574,88 @@ templ hookInjectionBlock(b *session.HookInjection) {
 			<span class="icon">⚙</span>
 			<span>hook_injection</span>
 			<span class="detail">{ truncateHookDetail(b.Content) }</span>
+		</div>
+	</article>
+}
+
+templ systemXMLBlock(b *session.SystemXML) {
+	<article class="block meta">
+		<div class="meta-bar">
+			<span class="icon">⚙</span>
+			<span>{ b.Label }</span>
+		</div>
+		<div class="clamp">
+			<div class="clamp-body">
+				@templ.Raw(string(highlightXML(formatXML(b.Content))))
+			</div>
+			<button class="clamp-toggle" type="button">
+				<span class="label">Show more</span>
+			</button>
+		</div>
+	</article>
+}
+
+templ taskNotificationBlock(b *session.TaskNotification) {
+	<article class="block meta">
+		<div class="meta-bar">
+			<span class="icon">⚙</span>
+			<span>task_notification</span>
+			if b.Status != "" {
+				<span class="detail">{ b.Status }</span>
+			}
+		</div>
+		<div class="clamp">
+			<div class="clamp-body">
+				<dl class="kv-list">
+					if b.TaskID != "" {
+						<dt>task-id</dt><dd>{ b.TaskID }</dd>
+					}
+					if b.ToolUseID != "" {
+						<dt>tool-use-id</dt><dd>{ b.ToolUseID }</dd>
+					}
+					if b.Status != "" {
+						<dt>status</dt><dd>{ b.Status }</dd>
+					}
+					if b.Summary != "" {
+						<dt>summary</dt><dd>{ b.Summary }</dd>
+					}
+					if b.Result != "" {
+						<dt>result</dt><dd>{ b.Result }</dd>
+					}
+					if b.OutputFile != "" {
+						<dt>output-file</dt><dd>{ b.OutputFile }</dd>
+					}
+					if b.Usage.TotalTokens > 0 || b.Usage.ToolUses > 0 || b.Usage.DurationMs > 0 {
+						<dt>usage</dt>
+						<dd>{ fmt.Sprintf("%s tokens · %d tool uses · %s", formatTokens(b.Usage.TotalTokens), b.Usage.ToolUses, formatDurationMS(b.Usage.DurationMs)) }</dd>
+					}
+				</dl>
+			</div>
+			<button class="clamp-toggle" type="button">
+				<span class="label">Show more</span>
+			</button>
+		</div>
+	</article>
+}
+
+templ teammateMessageBlock(b *session.TeammateMessage) {
+	<article class="block meta">
+		<div class="meta-bar">
+			<span class="icon">⚙</span>
+			<span>teammate</span>
+			if b.TeammateID != "" {
+				<span class="detail">{ b.TeammateID }</span>
+			}
+		</div>
+		<div class="clamp">
+			<div class="clamp-body">
+				<div class="body">
+					@templ.Raw(string(renderMarkdown(b.Content)))
+				</div>
+			</div>
+			<button class="clamp-toggle" type="button">
+				<span class="label">Show more</span>
+			</button>
 		</div>
 	</article>
 }
