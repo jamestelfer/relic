@@ -281,3 +281,63 @@ kbd {
     border-bottom: 2px solid var(--ink-500);  /* lighter ledge = catching ambient light */
   }
 }
+
+/* ── Markdown tables ──────────────────────────────────────────────
+   Rendered inside .body (assistant / user) and .plan-body blocks.
+   Open-ended: no outer vertical rails. Column + row dividers only.
+   :first-child / :last-child clear the end borders.
+   Light/dark handled by --border / --border-strong tokens.
+   ─────────────────────────────────────────────────────────────── */
+.body table,
+.plan-body table {
+  border-collapse: collapse;
+  margin: 0.5em 0 1.1em;
+  width: max-content;
+  max-width: 100%;
+  font-size: inherit;
+}
+
+.body table th,
+.body table td,
+.plan-body table th,
+.plan-body table td {
+  padding: 5px 20px;
+  text-align: left;
+  vertical-align: baseline;
+  /* column dividers — both sides so :first/:last can clear cleanly */
+  border-left:   1px solid var(--border);
+  border-right:  1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+}
+
+/* Open left end — clear outer left rail */
+.body table th:first-child,
+.body table td:first-child,
+.plan-body table th:first-child,
+.plan-body table td:first-child {
+  border-left: none;
+  padding-left: 0;
+}
+
+/* Open right end — clear outer right rail */
+.body table th:last-child,
+.body table td:last-child,
+.plan-body table th:last-child,
+.plan-body table td:last-child {
+  border-right: none;
+  padding-right: 0;
+}
+
+/* Open bottom end — no rule after last data row */
+.body table tr:last-child td,
+.plan-body table tr:last-child td {
+  border-bottom: none;
+}
+
+/* th — heavier separator rule + bolder weight */
+.body table tr th,
+.plan-body table tr th {
+  font-weight: 600;
+  padding-bottom: 8px;
+  border-bottom: 1.5px solid var(--border-strong);
+}

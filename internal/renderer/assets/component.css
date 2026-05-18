@@ -815,6 +815,51 @@ details.thinking .clamp.is-open .clamp-body { max-height: none; }
   padding: 1px 5px; background: var(--bg-sunk); border-radius: 3px;
 }
 
+/* Markdown tables ---------------------------------------------------------- */
+.body table,
+.plan-body table {
+  border-collapse: collapse;
+  margin: 0.5em 0 1.1em;
+  width: max-content;
+  max-width: 100%;
+  font-size: inherit;
+}
+.body table th,
+.body table td,
+.plan-body table th,
+.plan-body table td {
+  padding: 5px 20px;
+  text-align: left;
+  vertical-align: baseline;
+  border-left: 1px solid var(--border);
+  border-right: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+}
+.body table th:first-child,
+.body table td:first-child,
+.plan-body table th:first-child,
+.plan-body table td:first-child {
+  border-left: none;
+  padding-left: 0;
+}
+.body table th:last-child,
+.body table td:last-child,
+.plan-body table th:last-child,
+.plan-body table td:last-child {
+  border-right: none;
+  padding-right: 0;
+}
+.body table tr:last-child td,
+.plan-body table tr:last-child td {
+  border-bottom: none;
+}
+.body table tr th,
+.plan-body table tr th {
+  font-weight: 600;
+  padding-bottom: 8px;
+  border-bottom: 1.5px solid var(--border-strong);
+}
+
 /* MCP tool ----------------------------------------------------------------- */
 .tool-card[data-tool^="mcp__"] .mcp-server {
   font-family: var(--font-mono); font-size: 10.5px;
