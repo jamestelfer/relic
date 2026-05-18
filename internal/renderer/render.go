@@ -230,7 +230,7 @@ func highlightJSON(jsonStr string) template.HTML {
 func mcpResultHTML(content string) template.HTML {
 	trimmed := strings.TrimSpace(content)
 	if (strings.HasPrefix(trimmed, "{") || strings.HasPrefix(trimmed, "[")) && json.Valid([]byte(trimmed)) {
-		return highlightJSON(trimmed)
+		return highlightJSON(formatRawJSON([]byte(trimmed)))
 	}
 	h, err := highlight.Highlight(content, "plaintext", "")
 	if err != nil {
