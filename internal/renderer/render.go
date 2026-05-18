@@ -245,6 +245,10 @@ func termLabel(r *session.ToolResult) string {
 		name = r.LinkedCallName
 	}
 
+	if r.IsError {
+		return name + " · error"
+	}
+
 	switch e := r.Enrichment.(type) {
 	case *session.BashEnrichment:
 		if e != nil && e.Interrupted {

@@ -423,6 +423,14 @@ details.thinking .preview code {
 .block.tool { --rule-color: var(--lapis-600); }
 .block.tool .role .tag { background: var(--lapis-600); color: var(--fg-on-lapis); }
 .block.tool-result { --rule-color: var(--border-strong); }
+.block.tool-result.is-error { --rule-color: var(--error-500); }
+.block.tool-result.is-error .term .chrome {
+  background: color-mix(in oklch, var(--error-500) 15%, #050717);
+  border-bottom-color: color-mix(in oklch, var(--error-500) 25%, #1F2740);
+}
+.block.tool-result.is-error .term .chrome .dots span {
+  background: var(--error-500);
+}
 
 /* User Bash (! command) ---------------------------------------- */
 .block.user-bash { --rule-color: var(--teal-500); }
