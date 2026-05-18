@@ -113,6 +113,35 @@ func TestParseToolResultBlock(t *testing.T) {
 	snaps.MatchSnapshot(t, msgs[0].Content)
 }
 
+// TestParseToolResultBlock_IsError verifies that the is_error field is parsed
+// from tool_result content blocks.
+func TestParseToolResultBlock_IsError(t *testing.T) {
+	tests := []struct {
+		name    string
+		fixture string
+		wantErr bool
+		wantID  string
+	}{
+		{name: "is_error true", fixture: "tool_result_error.jsonl", wantErr: true, wantID: "toolu_err"},
+		{name: "is_error absent", fixture: "tool_result.jsonl", wantErr: false, wantID: "toolu_01"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			res, _, err := parser.Parse(openFixture(t, tt.fixture))
+			require.NoError(t, err)
+
+			require.Len(t, res.Messages, 1)
+			require.Len(t, res.Messages[0].Content, 1)
+			require.IsType(t, (*parser.ToolResultBlock)(nil), res.Messages[0].Content[0])
+
+			trb := res.Messages[0].Content[0].(*parser.ToolResultBlock)
+			assert.Equal(t, tt.wantID, trb.ToolUseID)
+			assert.Equal(t, tt.wantErr, trb.IsError)
+		})
+	}
+}
+
 // TestParseToolUseBlock verifies that tool_use content blocks are decoded as ToolUseBlock.
 func TestParseToolUseBlock(t *testing.T) {
 	res, _, err := parser.Parse(openFixture(t, "tool_thinking.jsonl"))

@@ -417,7 +417,7 @@ templ mcpBody(b *session.ToolCall) {
 }
 
 templ toolResultBlock(b *session.ToolResult) {
-	<article class="block tool-result" id={ "result-" + b.ToolUseID }>
+	<article class={ "block", "tool-result", templ.KV("is-error", b.IsError) } id={ "result-" + b.ToolUseID }>
 		<div class="role">
 			<span class="tag">tool_result</span>
 			if b.LinkedCallID != nil {

@@ -109,6 +109,7 @@ func defaultArgFromInput(m map[string]any) string {
 type ToolResult struct {
 	ToolUseID        string         `json:"tool_use_id"`
 	Content          string         `json:"content"`
+	IsError          bool           `json:"is_error,omitempty"`
 	LinkedCallID     *string        `json:"linked_call_id,omitempty"`
 	LinkedCallName   string         `json:"linked_call_name,omitempty"`
 	LineNum          int            `json:"line_num"`
@@ -823,7 +824,7 @@ func messageToBlocks(msg parser.Message) []Block {
 		case *parser.ToolUseBlock:
 			block = &ToolCall{ID: c.ID, Name: c.Name, Input: c.Input, LineNum: ln}
 		case *parser.ToolResultBlock:
-			block = &ToolResult{ToolUseID: c.ToolUseID, Content: c.Content, LineNum: ln, rawToolUseResult: msg.Envelope.ToolUseResult}
+			block = &ToolResult{ToolUseID: c.ToolUseID, Content: c.Content, IsError: c.IsError, LineNum: ln, rawToolUseResult: msg.Envelope.ToolUseResult}
 		case *parser.ThinkingBlock:
 			block = &Thinking{Text: c.Thinking, LineNum: ln}
 		case *parser.RedactedThinkingBlock:

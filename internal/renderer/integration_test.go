@@ -256,4 +256,92 @@ func TestIntegration_AllBlockTypes(t *testing.T) {
 	assert.Contains(t, css, ".slash-card")
 	assert.Contains(t, css, ".cmd-output-body")
 	assert.Contains(t, css, ".redacted-note")
+	assert.Contains(t, css, ".block.tool-result.is-error")
+}
+
+// TestIntegration_ToolResultError verifies that a tool result with IsError=true
+// renders with the error CSS class and error indicator in the terminal label.
+func TestIntegration_ToolResultError(t *testing.T) {
+	start := time.Date(2026, 5, 9, 14, 0, 0, 0, time.UTC)
+	callID := "toolu_ERR01"
+
+	s := session.Session{
+		Model:        "claude-sonnet-4-6",
+		EmbeddedName: "Error test",
+		Start:        &start,
+		Turns: []session.Turn{
+			{
+				Index: 1,
+				Title: "Error result",
+				Start: &start,
+				Blocks: []session.Block{
+					&session.UserText{Text: "run a command"},
+					&session.ToolCall{
+						ID: callID, Name: "Bash",
+						Input:          map[string]any{"command": "exit 1"},
+						LinkedResultID: &callID,
+					},
+					&session.ToolResult{
+						ToolUseID:      callID,
+						Content:        "Error: command failed",
+						IsError:        true,
+						LinkedCallID:   &callID,
+						LinkedCallName: "Bash",
+					},
+				},
+			},
+		},
+	}
+
+	out := render(t, s, renderer.Options{Name: "Error test"})
+
+	// Error tool result should have the is-error class
+	assert.Contains(t, out, `class="block tool-result is-error"`, "error tool result has is-error class")
+
+	// Error indicator in terminal chrome label
+	assert.Contains(t, out, "error", "error indicator in output")
+}
+
+// TestIntegration_ToolResultNoError verifies that a tool result with IsError=false
+// does NOT render with the error CSS class.
+func TestIntegration_ToolResultNoError(t *testing.T) {
+	start := time.Date(2026, 5, 9, 14, 0, 0, 0, time.UTC)
+	callID := "toolu_OK01"
+
+	s := session.Session{
+		Model:        "claude-sonnet-4-6",
+		EmbeddedName: "No error test",
+		Start:        &start,
+		Turns: []session.Turn{
+			{
+				Index: 1,
+				Title: "Normal result",
+				Start: &start,
+				Blocks: []session.Block{
+					&session.UserText{Text: "run a command"},
+					&session.ToolCall{
+						ID: callID, Name: "Bash",
+						Input:          map[string]any{"command": "ls"},
+						LinkedResultID: &callID,
+					},
+					&session.ToolResult{
+						ToolUseID:      callID,
+						Content:        "file.go",
+						IsError:        false,
+						LinkedCallID:   &callID,
+						LinkedCallName: "Bash",
+					},
+				},
+			},
+		},
+	}
+
+	out := render(t, s, renderer.Options{Name: "No error test"})
+
+	// The article element for a non-error result must not have is-error class.
+	// Check only the <main> content (excludes inlined CSS which contains the class name).
+	mainStart := strings.Index(out, "<main>")
+	require.Greater(t, mainStart, 0)
+	body := out[mainStart:]
+	assert.NotContains(t, body, `is-error`, "non-error tool result must not have is-error class")
 }
