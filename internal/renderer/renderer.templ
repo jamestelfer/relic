@@ -596,44 +596,42 @@ templ systemXMLBlock(b *session.SystemXML) {
 }
 
 templ taskNotificationBlock(b *session.TaskNotification) {
-	<article class="block meta">
-		<div class="meta-bar">
-			<span class="icon">⚙</span>
-			<span>task_notification</span>
-			if b.Status != "" {
-				<span class="detail">{ b.Status }</span>
+	<article class="block tool-result">
+		<div class="role"><span class="tag">task_notification</span></div>
+		<div class="task-notif">
+			<div class="tn-chrome">
+				<div class="tn-dots"><span></span><span></span><span></span></div>
+				if b.Status != "" {
+					<span class={ "tn-badge", taskNotifBadgeClass(b.Status) }>{ b.Status }</span>
+				}
+				if b.Summary != "" {
+					<span class="tn-summary">{ b.Summary }</span>
+				}
+			</div>
+			if b.Result != "" {
+				<div class="tn-result">
+					@templ.Raw(string(renderMarkdown(b.Result)))
+				</div>
 			}
-		</div>
-		<div class="clamp">
-			<div class="clamp-body">
-				<dl class="kv-list">
+			if b.TaskID != "" || b.OutputFile != "" || b.Usage.TotalTokens > 0 || b.Usage.ToolUses > 0 || b.Usage.DurationMs > 0 {
+				<div class="tn-footer">
 					if b.TaskID != "" {
-						<dt>task-id</dt><dd>{ b.TaskID }</dd>
-					}
-					if b.ToolUseID != "" {
-						<dt>tool-use-id</dt><dd>{ b.ToolUseID }</dd>
-					}
-					if b.Status != "" {
-						<dt>status</dt><dd>{ b.Status }</dd>
-					}
-					if b.Summary != "" {
-						<dt>summary</dt><dd>{ b.Summary }</dd>
-					}
-					if b.Result != "" {
-						<dt>result</dt><dd>{ b.Result }</dd>
+						<span class="tn-foot-item">{ b.TaskID }</span>
 					}
 					if b.OutputFile != "" {
-						<dt>output-file</dt><dd>{ b.OutputFile }</dd>
+						if b.TaskID != "" {
+							<span class="tn-foot-sep">&middot;</span>
+						}
+						<span class="tn-foot-item path">{ b.OutputFile }</span>
 					}
 					if b.Usage.TotalTokens > 0 || b.Usage.ToolUses > 0 || b.Usage.DurationMs > 0 {
-						<dt>usage</dt>
-						<dd>{ fmt.Sprintf("%s tokens · %d tool uses · %s", formatTokens(b.Usage.TotalTokens), b.Usage.ToolUses, formatDurationMS(b.Usage.DurationMs)) }</dd>
+						if b.TaskID != "" || b.OutputFile != "" {
+							<span class="tn-foot-sep">&middot;</span>
+						}
+						<span class="tn-foot-item">{ taskNotifUsageLabel(b.Usage) }</span>
 					}
-				</dl>
-			</div>
-			<button class="clamp-toggle" type="button">
-				<span class="label">Show more</span>
-			</button>
+				</div>
+			}
 		</div>
 	</article>
 }
