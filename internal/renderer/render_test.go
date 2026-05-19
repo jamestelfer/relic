@@ -930,10 +930,16 @@ func TestRender_FormatXML_Broken(t *testing.T) {
 	assert.Contains(t, out, "&lt;broken", "broken XML escaped in output")
 }
 
-func TestRender_TaskNotification_LabelValuePairs(t *testing.T) {
-	s := session.Session{
-		Turns: []session.Turn{{Index: 1, Blocks: []session.Block{
-			&session.TaskNotification{
+func TestRender_TaskNotification(t *testing.T) {
+	cases := []struct {
+		name        string
+		notif       session.TaskNotification
+		contains    []string
+		notContains []string
+	}{
+		{
+			name: "completed card",
+			notif: session.TaskNotification{
 				TaskID:     "abc123",
 				ToolUseID:  "toolu_01",
 				OutputFile: "/tmp/out.txt",
@@ -943,17 +949,61 @@ func TestRender_TaskNotification_LabelValuePairs(t *testing.T) {
 				Usage:      session.TaskNotificationUsage{TotalTokens: 5000, ToolUses: 3, DurationMs: 12000},
 				LineNum:    1,
 			},
-		}}},
+			contains: []string{
+				`class="block tool-result"`,
+				`class="task-notif"`,
+				`class="tn-badge completed"`,
+				"Agent finished",
+				`class="tn-result"`,
+				"<p>All done</p>",
+				"abc123",
+				"/tmp/out.txt",
+				"5.0k tokens",
+			},
+		},
+		{
+			name: "failed card",
+			notif: session.TaskNotification{
+				TaskID:  "def456",
+				Status:  "failed",
+				Summary: "Task crashed",
+				Result:  "Error: something went wrong",
+				LineNum: 1,
+			},
+			contains: []string{
+				`class="tn-badge failed"`,
+				"Task crashed",
+				"something went wrong",
+			},
+		},
+		{
+			name: "running with no result omits section",
+			notif: session.TaskNotification{
+				TaskID:  "ghi789",
+				Status:  "running",
+				Summary: "Still working",
+				LineNum: 1,
+			},
+			contains:    []string{`class="tn-badge running"`},
+			notContains: []string{`class="tn-result"`},
+		},
 	}
-	out := render(t, s, renderer.Options{Name: "test"})
 
-	assert.Contains(t, out, `class="block meta"`, "rendered as meta block")
-	assert.Contains(t, out, "task_notification", "label shown")
-	assert.Contains(t, out, "abc123", "task-id shown")
-	assert.Contains(t, out, "completed", "status shown")
-	assert.Contains(t, out, "Agent finished", "summary shown")
-	assert.Contains(t, out, "All done", "result shown")
-	assert.Contains(t, out, "5.0k tokens", "usage tokens shown")
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			s := session.Session{
+				Turns: []session.Turn{{Index: 1, Blocks: []session.Block{&c.notif}}},
+			}
+			out := render(t, s, renderer.Options{Name: "test"})
+
+			for _, want := range c.contains {
+				assert.Contains(t, out, want)
+			}
+			for _, unwanted := range c.notContains {
+				assert.NotContains(t, out, unwanted)
+			}
+		})
+	}
 }
 
 func TestRender_TeammateMessage_MarkdownBody(t *testing.T) {

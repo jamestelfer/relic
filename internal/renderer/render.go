@@ -596,6 +596,33 @@ func formatDurationMS(ms int) string {
 	return formatDuration(d)
 }
 
+func taskNotifBadgeClass(status string) string {
+	switch status {
+	case "completed":
+		return "completed"
+	case "running":
+		return "running"
+	case "failed":
+		return "failed"
+	default:
+		return ""
+	}
+}
+
+func taskNotifUsageLabel(u session.TaskNotificationUsage) string {
+	var parts []string
+	if u.TotalTokens > 0 {
+		parts = append(parts, formatTokens(u.TotalTokens)+" tokens")
+	}
+	if u.ToolUses > 0 {
+		parts = append(parts, fmt.Sprintf("%d tool uses", u.ToolUses))
+	}
+	if u.DurationMs > 0 {
+		parts = append(parts, formatDurationMS(u.DurationMs))
+	}
+	return strings.Join(parts, " · ")
+}
+
 func imageMetaLabel(b *session.Image) string {
 	mt := b.MediaType
 	if mt == "" {
