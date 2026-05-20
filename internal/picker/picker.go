@@ -202,6 +202,7 @@ func Pick(homeDir string) (string, error) {
 
 	// Step 1: project selection
 	now := time.Now()
+	theme := pickerTheme()
 	muted := lipgloss.NewStyle().Foreground(lipgloss.AdaptiveColor{Light: "242", Dark: "246"})
 
 	projectOptions := make([]huh.Option[string], len(projects))
@@ -220,7 +221,7 @@ func Pick(homeDir string) (string, error) {
 				Options(projectOptions...).
 				Value(&chosenProject),
 		),
-	).WithTheme(huh.ThemeCharm())
+	).WithTheme(theme)
 
 	if err := projectForm.Run(); err != nil {
 		if errors.Is(err, huh.ErrUserAborted) {
@@ -254,7 +255,7 @@ func Pick(homeDir string) (string, error) {
 				Options(sessionOptions...).
 				Value(&chosenSession),
 		),
-	).WithTheme(huh.ThemeCharm())
+	).WithTheme(theme)
 
 	if err := sessionForm.Run(); err != nil {
 		if errors.Is(err, huh.ErrUserAborted) {
@@ -264,4 +265,19 @@ func Pick(homeDir string) (string, error) {
 	}
 
 	return chosenSession, nil
+}
+
+func pickerTheme() *huh.Theme {
+	t := huh.ThemeCharm()
+
+	chrome := lipgloss.AdaptiveColor{Light: "242", Dark: "246"}
+
+	t.Focused.Base = t.Focused.Base.BorderForeground(chrome)
+	t.Focused.Card = t.Focused.Base
+
+	t.Help.ShortKey = t.Help.ShortKey.Foreground(chrome)
+	t.Help.ShortDesc = t.Help.ShortDesc.Foreground(chrome)
+	t.Help.ShortSeparator = t.Help.ShortSeparator.Foreground(chrome)
+
+	return t
 }
