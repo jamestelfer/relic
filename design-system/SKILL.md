@@ -36,7 +36,7 @@ Always import `colors_and_type.css`. Key tokens:
 - `--lapis-600` (#1B3A8C) brand · `--cobalt-500` (#2E5BFF) highlight
 - `--citron-500` (#D9C44A) the find — sparingly
 - `--ink-50…950` cool bluish-gray neutrals
-- `--role-{user,assistant,tool,thinking}-{fg,bg,rule}` semantic role tints
+- `--role-user-*` (teal) · `--role-tool-*` (lapis) · `--role-assistant-*` (cobalt) · `--role-thinking-*` (violet)
 
 ## Component vocabulary
 
@@ -96,9 +96,15 @@ All components live in `preview/render.html` (full session) and `preview/compone
 Wrap any long `<pre>` or `.preview` in `.clamp > .clamp-body + <button class="clamp-toggle">`.  
 JS toggles `.is-open` on the `.clamp` element; CSS transitions `max-height` and fades the mask.
 
+## Token layering
+
+- **Palette tokens** (`--ink-*`, `--lapis-*`, `--teal-*`, etc.) — raw color values, never change between modes
+- **Semantic tokens** (`--bg`, `--fg`, `--role-*-rule`, etc.) — purpose-driven, use `light-dark()` when mode-dependent
+- **Component-scoped variables** (`--rule-color`) — set on a component root, overridden by modifiers
+- **Direct palette in components** is acceptable for: per-tool icon branding, one-off decorative colors, `color-mix()` expressions
+
 ## Don'ts
 
 - No autumn tones (no orange, brown, amber backgrounds)
 - No emoji as iconography — use single letters or initials in tinted squares
 - Don't use citron as a background or a body color — it is a *find* signal
-- Don't recreate the existing repo styling — that's placeholder, not source of truth

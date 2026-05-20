@@ -37,6 +37,7 @@ The freedom: the existing repo styling is placeholder. The HTML structure and CS
 | Path | What |
 |---|---|
 | `colors_and_type.css` | All tokens — color, type, scale, dark mode |
+| `component.css` | Structural styles — block layout, role coloring, tool cards, rail, clamp |
 | `preview/logo.html` | Stratigraphy mark + serif wordmark |
 | `preview/colors.html` | Lapis / Cobalt / Citron / Ink ramps + role tints |
 | `preview/type-display.html` | Display + UI typography |
@@ -56,11 +57,11 @@ The freedom: the existing repo styling is placeholder. The HTML structure and CS
 
 ## Color
 
-- **Lapis** (`#1B3A8C` anchor) — primary brand. Used for links, user-block rule, the brand mark.
+- **Lapis** (`#1B3A8C` anchor) — primary brand. Used for links, tool-block rule, the brand mark.
 - **Cobalt** (`#2E5BFF` anchor) — bright counterpart for selection/highlight.
 - **Citron** (`#D9C44A` anchor) — *the find*. Reserved for matches, hits, "value uncovered." Never a background.
 - **Ink** — twelve-step cool, bluish-gray neutral ramp. All surfaces and text live here.
-- **Role tints** — teal for tool, violet for thinking, lapis for user, ink for assistant. Stays in the blue family except for `--error-500`.
+- **Role tints** — teal for user, lapis for tool, cobalt for assistant, violet for thinking. Stays in the blue family except for `--error-500`.
 
 ---
 
@@ -85,6 +86,14 @@ The redesign drops the original fixture's plain `<dl>` banner + bullet TOC + nes
 ```
 
 Every block sits on a 2px hairline rule colored by its role, so the eye can track who is speaking down a long scroll.
+
+---
+
+## File split
+
+**`colors_and_type.css`** — All `--*` custom property definitions (palette + semantic), base resets (`html`, `body`, `*`, `a`), `kbd` element, and typographic utility classes (`.display`, `.eyebrow`, `.cataloged`, etc.). Anything a page needs to look correct regardless of component structure.
+
+**`component.css`** — Structural styles that apply tokens to the session render. Block layout, role coloring, tool cards, terminal chrome, clamp/disclosure, the rail, turn markers. References tokens but defines only component-scoped variables like `--rule-color`.
 
 ---
 
