@@ -202,10 +202,13 @@ func Pick(homeDir string) (string, error) {
 
 	// Step 1: project selection
 	now := time.Now()
+	muted := lipgloss.NewStyle().Foreground(lipgloss.AdaptiveColor{Light: "242", Dark: "246"})
+
 	projectOptions := make([]huh.Option[string], len(projects))
 	for i, p := range projects {
 		name := DecodePath(homeDir, filepath.Base(p.Dir))
-		label := fmt.Sprintf("%s  %d sessions  %s", name, p.SessionCount, RelativeTime(now, p.MostRecentModTime))
+		meta := muted.Render(fmt.Sprintf("%d sessions  %s", p.SessionCount, RelativeTime(now, p.MostRecentModTime)))
+		label := name + "  " + meta
 		projectOptions[i] = huh.NewOption(label, p.Dir)
 	}
 
@@ -217,7 +220,7 @@ func Pick(homeDir string) (string, error) {
 				Options(projectOptions...).
 				Value(&chosenProject),
 		),
-	)
+	).WithTheme(huh.ThemeCharm())
 
 	if err := projectForm.Run(); err != nil {
 		if errors.Is(err, huh.ErrUserAborted) {
@@ -235,13 +238,11 @@ func Pick(homeDir string) (string, error) {
 		return "", fmt.Errorf("no sessions found in %s", chosenProject)
 	}
 
-	muted := lipgloss.NewStyle().Foreground(lipgloss.Color("240"))
 	sessionOptions := make([]huh.Option[string], len(sessions))
 	for i, s := range sessions {
 		name := filepath.Base(s.Path)
-		date := muted.Render(RelativeTime(now, s.ModTime))
-		size := muted.Render(FormatSize(s.Size))
-		label := name + "  " + size + "  " + date
+		meta := muted.Render(FormatSize(s.Size) + "  " + RelativeTime(now, s.ModTime))
+		label := name + "  " + meta
 		sessionOptions[i] = huh.NewOption(label, s.Path)
 	}
 
@@ -253,7 +254,7 @@ func Pick(homeDir string) (string, error) {
 				Options(sessionOptions...).
 				Value(&chosenSession),
 		),
-	)
+	).WithTheme(huh.ThemeCharm())
 
 	if err := sessionForm.Run(); err != nil {
 		if errors.Is(err, huh.ErrUserAborted) {
