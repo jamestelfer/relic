@@ -1,0 +1,48 @@
+/* Terminal ANSI colour classes emitted by terminal-to-html.
+   Uses light-dark() for theme switching; .term { color-scheme: dark }
+   (set in highlight.css) forces dark palette in terminal blocks. */
+
+/* Standard foreground colours (30–37) */
+.term-fg30 { color: light-dark(var(--ink-800), var(--ink-400)); }
+.term-fg31 { color: light-dark(var(--error-500), #FF6B6B); }
+.term-fg32 { color: light-dark(var(--teal-500), #6FD9D6); }
+.term-fg33 { color: light-dark(var(--citron-600), var(--citron-300)); }
+.term-fg34 { color: light-dark(var(--lapis-500), var(--cobalt-300)); }
+.term-fg35 { color: light-dark(var(--violet-500), #B7A8F4); }
+.term-fg36 { color: light-dark(var(--teal-600), #6FD9D6); }
+.term-fg37 { color: light-dark(var(--ink-300), #E8ECF6); }
+
+/* Bright foreground colours (90–97) */
+.term-fg90 { color: light-dark(var(--ink-500), var(--ink-400)); }
+.term-fg91 { color: light-dark(var(--error-500), #FF8080); }
+.term-fg92 { color: light-dark(var(--teal-500), #7DE8E5); }
+.term-fg93 { color: light-dark(var(--citron-500), var(--citron-300)); }
+.term-fg94 { color: light-dark(var(--cobalt-400), var(--cobalt-300)); }
+.term-fg95 { color: light-dark(var(--violet-500), #C4B8F8); }
+.term-fg96 { color: light-dark(var(--teal-500), #7DE8E5); }
+.term-fg97 { color: light-dark(var(--ink-0), #FFFFFF); }
+
+/* Standard background colours (40–47) */
+.term-bg40 { background-color: var(--ink-900); }
+.term-bg41 { background-color: var(--error-bg); }
+.term-bg42 { background-color: rgba(31, 163, 160, 0.15); }
+.term-bg43 { background-color: var(--citron-100); }
+.term-bg44 { background-color: var(--lapis-50); }
+.term-bg45 { background-color: rgba(110, 85, 212, 0.12); }
+.term-bg46 { background-color: rgba(31, 163, 160, 0.12); }
+.term-bg47 { background-color: var(--ink-100); }
+
+/* Bright background colours (100–107) */
+.term-bg100 { background-color: var(--ink-700); }
+.term-bg101 { background-color: rgba(217, 56, 56, 0.18); }
+.term-bg102 { background-color: rgba(31, 163, 160, 0.20); }
+.term-bg103 { background-color: rgba(217, 196, 74, 0.20); }
+.term-bg104 { background-color: rgba(44, 80, 194, 0.20); }
+.term-bg105 { background-color: rgba(110, 85, 212, 0.20); }
+.term-bg106 { background-color: rgba(31, 163, 160, 0.20); }
+.term-bg107 { background-color: var(--ink-200); }
+
+/* Style attributes */
+.term-bold      { font-weight: 600; }
+.term-italic    { font-style: italic; }
+.term-underline { text-decoration: underline; }

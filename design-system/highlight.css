@@ -1,0 +1,101 @@
+/* Syntax highlighting tokens — github (light) / github-dark (dark).
+   Uses CSS light-dark() for automatic theme switching.
+   Derived from Chroma's github and github-dark styles. */
+
+/* Theme resolution: OS preference by default; data-theme overrides */
+:root { color-scheme: light dark; }
+html[data-theme="dark"] { color-scheme: dark; }
+html[data-theme="light"] { color-scheme: light; }
+.term { color-scheme: dark; }
+
+/* Token rules — light-dark(github, github-dark) */
+.chroma .bp { color: light-dark(#6a737d, currentColor) }
+.chroma .c { color: light-dark(#57606a, #8b949e); font-style: italic }
+.chroma .c1 { color: light-dark(#57606a, #8b949e); font-style: italic }
+.chroma .ch { color: light-dark(#57606a, #8b949e); font-style: italic }
+.chroma .cm { color: light-dark(#57606a, #8b949e); font-style: italic }
+.chroma .cp { color: light-dark(#57606a, #8b949e); font-weight: bold; font-style: italic }
+.chroma .cpf { color: light-dark(#57606a, #8b949e); font-weight: bold; font-style: italic }
+.chroma .cs { color: light-dark(#57606a, #8b949e); font-weight: bold; font-style: italic }
+.chroma .dl { color: light-dark(#0a3069, #79c0ff) }
+.chroma .err { color: light-dark(#f6f8fa, #f85149); background-color: light-dark(#82071e, transparent) }
+.chroma .fm { color: light-dark(#6639ba, #d2a8ff); font-weight: bold }
+.chroma .gd { color: light-dark(#82071e, #ffa198); background-color: light-dark(#ffebe9, #490202) }
+.chroma .ge { color: light-dark(#1f2328, currentColor); font-style: italic }
+.chroma .gh { color: light-dark(currentColor, #79c0ff); font-weight: bold }
+.chroma .gi { color: light-dark(#116329, #56d364); background-color: light-dark(#dafbe1, #0f5323) }
+.chroma .gl { text-decoration: underline }
+.chroma .go { color: light-dark(#1f2328, #8b949e) }
+.chroma .gp { color: light-dark(currentColor, #8b949e) }
+.chroma .gr { color: light-dark(currentColor, #ffa198) }
+.chroma .gs { font-weight: bold }
+.chroma .gt { color: light-dark(currentColor, #ff7b72) }
+.chroma .gu { color: light-dark(currentColor, #79c0ff) }
+.chroma .hl { background-color: light-dark(#dedede, #6e7681) }
+.chroma .il { color: light-dark(#0550ae, #a5d6ff) }
+.chroma .k { color: light-dark(#cf222e, #ff7b72) }
+.chroma .kc { color: light-dark(#cf222e, #79c0ff) }
+.chroma .kd { color: light-dark(#cf222e, #ff7b72) }
+.chroma .kn { color: light-dark(#cf222e, #ff7b72) }
+.chroma .kp { color: light-dark(#cf222e, #79c0ff) }
+.chroma .kr { color: light-dark(#cf222e, #ff7b72) }
+.chroma .kt { color: light-dark(#cf222e, #ff7b72) }
+.chroma .l { color: light-dark(currentColor, #a5d6ff) }
+.chroma .ld { color: light-dark(currentColor, #79c0ff) }
+.chroma .ln { color: light-dark(#7f7f7f, #6e7681) }
+.chroma .lnt { color: light-dark(#7f7f7f, #737679) }
+.chroma .m { color: light-dark(#0550ae, #a5d6ff) }
+.chroma .mb { color: light-dark(#0550ae, #a5d6ff) }
+.chroma .mf { color: light-dark(#0550ae, #a5d6ff) }
+.chroma .mh { color: light-dark(#0550ae, #a5d6ff) }
+.chroma .mi { color: light-dark(#0550ae, #a5d6ff) }
+.chroma .mo { color: light-dark(#0550ae, #a5d6ff) }
+.chroma .na { color: light-dark(#1f2328, currentColor) }
+.chroma .nb { color: light-dark(#6639ba, currentColor) }
+.chroma .nc { color: light-dark(#1f2328, #f0883e); font-weight: bold }
+.chroma .nd { color: light-dark(#0550ae, #d2a8ff); font-weight: bold }
+.chroma .ne { color: light-dark(currentColor, #f0883e); font-weight: bold }
+.chroma .nf { color: light-dark(#6639ba, #d2a8ff); font-weight: bold }
+.chroma .ni { color: light-dark(#6639ba, #ffa657) }
+.chroma .nl { color: light-dark(#990000, #79c0ff); font-weight: bold }
+.chroma .nn { color: light-dark(#24292e, #ff7b72) }
+.chroma .no { color: light-dark(#0550ae, #79c0ff); font-weight: bold }
+.chroma .nt { color: light-dark(#0550ae, #7ee787) }
+.chroma .nv { color: light-dark(#953800, #79c0ff) }
+.chroma .nx { color: light-dark(#1f2328, currentColor) }
+.chroma .o { color: light-dark(#0550ae, #ff7b72); font-weight: bold }
+.chroma .or { color: light-dark(#0550ae, #ff7b72); font-weight: bold }
+.chroma .ow { color: light-dark(#0550ae, #ff7b72); font-weight: bold }
+.chroma .p { color: light-dark(#1f2328, currentColor) }
+.chroma .py { color: light-dark(currentColor, #79c0ff) }
+.chroma .s { color: light-dark(#0a3069, #a5d6ff) }
+.chroma .s1 { color: light-dark(#0a3069, #a5d6ff) }
+.chroma .s2 { color: light-dark(#0a3069, #a5d6ff) }
+.chroma .sa { color: light-dark(#0a3069, #79c0ff) }
+.chroma .sb { color: light-dark(#0a3069, #a5d6ff) }
+.chroma .sc { color: light-dark(#0a3069, #a5d6ff) }
+.chroma .sd { color: light-dark(#0a3069, #a5d6ff) }
+.chroma .se { color: light-dark(#0a3069, #79c0ff) }
+.chroma .sh { color: light-dark(#0a3069, #79c0ff) }
+.chroma .si { color: light-dark(#0a3069, #a5d6ff) }
+.chroma .sr { color: light-dark(#0a3069, #79c0ff) }
+.chroma .ss { color: light-dark(#032f62, #a5d6ff) }
+.chroma .sx { color: light-dark(#0a3069, #a5d6ff) }
+.chroma .vc { color: light-dark(#953800, #79c0ff) }
+.chroma .vg { color: light-dark(#953800, #79c0ff) }
+.chroma .vi { color: light-dark(#953800, #79c0ff) }
+.chroma .vm { color: light-dark(#953800, #79c0ff) }
+.chroma .w { color: light-dark(#ffffff, #6e7681) }
+
+/* Structural overrides */
+.chroma { background-color: var(--bg-code); }
+.term .chroma { background-color: transparent; }
+pre.chroma {
+  font-family: var(--font-mono);
+  font-size: 0.875rem;
+  line-height: 1.5;
+  margin: 0;
+  padding: 1rem;
+  border-radius: 0;
+  overflow-x: auto;
+}
