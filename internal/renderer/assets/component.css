@@ -432,6 +432,29 @@ details.thinking .preview code {
 .block.tool-result.is-error .term .chrome .dots span {
   background: var(--error-500);
 }
+/* Clamp overrides: toggles blend flush with their parent container. */
+.tool-card .clamp { background: var(--bg-code); }
+.tool-card .clamp-toggle {
+  margin-top: 0;
+  border-radius: 0;
+  background: var(--bg-sunk);
+  border: none;
+  box-shadow: 0 -1px 0 var(--border);
+}
+.block.tool-result .clamp { background: var(--bg-terminal); border-radius: var(--radius-md); overflow: hidden; }
+.block.tool-result .clamp .term { border-radius: 0; border: none; }
+.block.tool-result .clamp-toggle {
+  margin-top: 0;
+  border-radius: 0;
+  background: var(--ink-800);
+  border: none;
+  box-shadow: 0 -1px 0 #1F2740;
+  color: var(--ink-300);
+}
+.block.tool-result .clamp-toggle:hover {
+  color: var(--fg-on-dark);
+}
+.block.tool-result .clamp-toggle .count { color: var(--fg-on-dark); }
 
 /* User Bash (! command) ---------------------------------------- */
 .block.user-bash { --rule-color: var(--teal-500); }
