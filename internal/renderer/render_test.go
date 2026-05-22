@@ -442,12 +442,29 @@ func TestRender_UnknownBlock(t *testing.T) {
 	}
 	out := render(t, s, renderer.Options{Name: "test"})
 
-	// Design system: .block.meta > details.unknown-block > summary(.ub-tag + .ub-type) + chroma JSON
+	// Design system: .block.meta > details.unknown-block > summary(.ub-tag + .ub-type + .ub-chevron) + chroma JSON
 	assert.Contains(t, out, `class="block meta"`)
 	assert.Contains(t, out, `unknown-block`)
 	assert.Contains(t, out, `class="ub-tag"`)
 	assert.Contains(t, out, `class="ub-type"`)
+	assert.Contains(t, out, `class="ub-chevron"`)
 	assert.Contains(t, out, "server_tool_use")
+}
+
+func TestRender_CompactSummaryBlock(t *testing.T) {
+	s := session.Session{
+		Turns: []session.Turn{{Index: 1, Blocks: []session.Block{
+			&session.CompactionSummary{Content: "Context was compacted."},
+		}}},
+	}
+	out := render(t, s, renderer.Options{Name: "test"})
+
+	assert.Contains(t, out, `class="block meta"`)
+	assert.Contains(t, out, `compact-summary`)
+	assert.Contains(t, out, `class="cs-label"`)
+	assert.Contains(t, out, `class="cs-meta"`)
+	assert.Contains(t, out, `class="cs-chevron"`)
+	assert.Contains(t, out, "Context was compacted.")
 }
 
 func TestRender_CSSContainsDesignSystemComponents(t *testing.T) {

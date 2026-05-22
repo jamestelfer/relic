@@ -1016,8 +1016,29 @@ details.unknown-block summary {
   padding: 8px 14px;
   font-family: var(--font-mono); font-size: 11.5px;
   letter-spacing: 0.04em;
+  user-select: none;
+  transition: background 0.12s;
 }
 details.unknown-block summary::-webkit-details-marker { display: none; }
+details.unknown-block:hover summary {
+  background: color-mix(in oklch, var(--fg-subtle) 6%, transparent);
+}
+/* type fills the middle, pushing chevron to the far right */
+details.unknown-block summary .ub-type { flex: 1; min-width: 0; }
+/* Chevron: same border-trick as thinking / slash */
+details.unknown-block summary .ub-chevron {
+  flex-shrink: 0;
+  width: 8px; height: 8px;
+  border-right: 2px solid var(--fg-muted);
+  border-bottom: 2px solid var(--fg-muted);
+  transform: rotate(45deg) translate(-1px, -2px);
+  transition: transform 0.15s, border-color 0.12s;
+  margin-right: 2px;
+}
+details.unknown-block[open] summary .ub-chevron {
+  transform: rotate(-135deg) translate(-1px, 2px);
+}
+details.unknown-block:hover summary .ub-chevron { border-color: var(--fg); }
 .ub-tag {
   font-size: 10.5px; font-weight: 600;
   letter-spacing: 0.06em; text-transform: uppercase;
@@ -1168,7 +1189,6 @@ details.compact-summary {
   background: var(--bg-sunk);
   border: 1px dashed var(--border-strong);
   border-radius: var(--radius-md);
-  padding: 0;
   overflow: hidden;
 }
 details.compact-summary summary {
@@ -1179,12 +1199,28 @@ details.compact-summary summary {
   font-family: var(--font-mono); font-size: 11.5px;
   letter-spacing: 0.04em; text-transform: uppercase;
   color: var(--fg-muted);
+  user-select: none;
+  transition: background 0.12s;
 }
 details.compact-summary summary::-webkit-details-marker { display: none; }
-details.compact-summary summary::before {
-  content: "▸"; font-size: 10px; transition: transform 0.15s; flex-shrink: 0;
+details.compact-summary:hover summary {
+  background: color-mix(in oklch, var(--border-strong) 25%, transparent);
 }
-details.compact-summary[open] summary::before { transform: rotate(90deg); }
+/* meta fills the middle, pushing chevron to the far right */
+details.compact-summary summary .cs-meta { flex: 1; }
+/* Chevron: same border-trick as thinking / slash */
+details.compact-summary summary .cs-chevron {
+  flex-shrink: 0;
+  width: 8px; height: 8px;
+  border-right: 2px solid currentColor;
+  border-bottom: 2px solid currentColor;
+  transform: rotate(45deg) translate(-1px, -2px);
+  transition: transform 0.15s, border-color 0.12s;
+  margin-right: 2px;
+}
+details.compact-summary[open] summary .cs-chevron {
+  transform: rotate(-135deg) translate(-1px, 2px);
+}
 .cs-label { font-weight: 600; color: var(--fg); }
 .cs-meta { color: var(--fg-subtle); }
 .cs-body {

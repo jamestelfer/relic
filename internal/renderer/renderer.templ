@@ -543,6 +543,8 @@ templ compactionSummaryBlock(b *session.CompactionSummary) {
 		<details class="compact-summary">
 			<summary>
 				<span class="cs-label">Context summary</span>
+				<span class="cs-meta"></span>
+				<span class="cs-chevron"></span>
 			</summary>
 			<div class="cs-body">
 				@templ.Raw(string(renderMarkdown(b.Content)))
@@ -756,6 +758,7 @@ templ rawBlock(b *session.Raw) {
 			<summary>
 				<span class="ub-tag">unknown block</span>
 				<span class="ub-type">{ b.RawType }</span>
+				<span class="ub-chevron"></span>
 			</summary>
 			@templ.Raw(string(highlightJSON(formatRawJSON(b.Data))))
 		</details>
