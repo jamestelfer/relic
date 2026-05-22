@@ -6,9 +6,11 @@
 <link rel="stylesheet" href="../colors_and_type.css">
 <link rel="stylesheet" href="../component.css">
 <link rel="stylesheet" href="../terminal_chrome.css">
-<link rel="stylesheet" href="../terminal.css">
 <link rel="stylesheet" href="../highlight.css">
+<link rel="stylesheet" href="../terminal.css">
 <style>
+  /* Theme resolution (normally in highlight.css) */
+  :root { color-scheme: light dark; }
 
   /* Demo terminal ANSI shorthand (production uses .term-fg* classes) */
   .term .ok    { color: #7ee787; }
@@ -147,9 +149,19 @@
       </article>
       <article class="block conversation assistant">
         <div class="role"><span class="tag">assistant</span><time>14:23 · 1m later</time></div>
-        <div class="body">
-          <p>Good cut. I'll define <code>parser.ContentBlock</code> as an interface, then concrete types: <strong>TextBlock</strong>, <strong>ToolUseBlock</strong>, <strong>ToolResultBlock</strong>, <strong>ThinkingBlock</strong>, <strong>RawBlock</strong>. The decoder dispatches on the JSON <code>type</code> tag once, and downstream code uses type switches.</p>
-          <p>Starting with the type definitions in <code>internal/parser/blocks.go</code>.</p>
+        <div class="clamp" style="--clamp-h: 7em;">
+          <div class="clamp-body">
+            <div class="body">
+              <p>Good cut. I'll define <code>parser.ContentBlock</code> as an interface, then concrete types: <strong>TextBlock</strong>, <strong>ToolUseBlock</strong>, <strong>ToolResultBlock</strong>, <strong>ThinkingBlock</strong>, <strong>RawBlock</strong>. The decoder dispatches on the JSON <code>type</code> tag once, and downstream code uses type switches.</p>
+              <p>The interface is minimal — a single marker method <code>blockKind() string</code> — so concrete types don't need to import the interface package. Each struct carries only the fields it needs: <strong>TextBlock</strong> holds <code>Text string</code>; <strong>ToolUseBlock</strong> carries <code>ID</code>, <code>Name</code>, and <code>Input json.RawMessage</code>; <strong>ToolResultBlock</strong> has <code>ToolUseID</code>, <code>Content []ContentBlock</code>, and <code>IsError bool</code>; <strong>ThinkingBlock</strong> wraps <code>Thinking string</code> and <code>Signature string</code>; <strong>RawBlock</strong> preserves the original JSON for forward compatibility.</p>
+              <p>The decoder is a single <code>UnmarshalContentBlock(data []byte) (ContentBlock, error)</code> function that peeks the <code>type</code> field and dispatches to the right concrete unmarshaller. No string constants leak past the parser boundary — downstream code does a type switch on the interface.</p>
+              <p>Starting with the type definitions in <code>internal/parser/blocks.go</code>.</p>
+            </div>
+          </div>
+          <button class="clamp-toggle" type="button">
+            <span class="label">Show more</span>
+            <span class="count">+3 lines</span>
+          </button>
         </div>
       </article>
       <article class="block tool" id="tu_01H7K0">
@@ -184,24 +196,16 @@
       </div>
 
       <!-- SLASH COMMAND -->
-      <article class="block slash-cmd">
-        <div class="role">
-          <span class="tag" style="background:var(--ink-500);color:white;">command</span>
-          <time>14:33</time>
-        </div>
-        <div class="slash-card">
-          <span class="slash">/</span><span class="cmd">compact</span>
-          <span class="args">— free up context before the next change</span>
-        </div>
-      </article>
-
-      <!-- COMMAND OUTPUT -->
-      <article class="block cmd-output">
-        <div class="role">
-          <span class="tag">output</span>
-        </div>
-        <div class="cmd-output-body">Context compacted: 38k → 16k tokens. Conversation summary preserved.</div>
-      </article>
+      <details class="slash-merged">
+        <summary>
+          <span class="sm-mid">
+            <span class="sm-cmd"><span class="slash">/</span><span class="cmd">compact</span><span class="args"> — free up context before the next change</span></span>
+            <span class="sm-out-peek">→ Context compacted: 38k → 16k tokens</span>
+          </span>
+          <span class="sm-chevron"></span>
+        </summary>
+        <div class="sm-out-body">Context compacted: 38k → 16k tokens. Conversation summary preserved.</div>
+      </details>
 
       <article class="block conversation user">
         <div class="role"><span class="tag">user</span><time>14:34</time></div>
@@ -271,8 +275,18 @@
           <span class="tag">user</span>
           <time>14:48</time>
         </div>
-        <div class="body">
-          <p>Now wire the typed blocks through the templ renderer. Each block kind should render to its own component, and the discriminator switch should live in <code>contentBlock</code>. Make sure tool_result still gets ANSI conversion.</p>
+        <div class="clamp" style="--clamp-h: 7em;">
+          <div class="clamp-body">
+            <div class="body">
+              <p>Now wire the typed blocks through the templ renderer. Each block kind should render to its own component, and the discriminator switch should live in <code>contentBlock</code>. Make sure tool_result still gets ANSI conversion.</p>
+              <p>A few constraints: the thinking block should default to collapsed with a summary line showing the line count, and tool_use with a code body should syntax-highlight via Chroma. The session-level theme preference needs to thread through every component that calls Chroma so we don't hardcode a palette.</p>
+              <p>Also — keep the existing <code>renderBlock</code> function signature unchanged for now. There are callers outside the renderer package that pass a <code>Block</code> interface and expect an <code>io.WriterTo</code> back. We can adapt them in a follow-up once the renderer is solid.</p>
+            </div>
+          </div>
+          <button class="clamp-toggle" type="button">
+            <span class="label">Show more</span>
+            <span class="count">+2 lines</span>
+          </button>
         </div>
       </article>
 
@@ -283,15 +297,13 @@
           <time>14:48</time>
         </div>
         <details class="thinking" open>
-          <summary>Internal reasoning · 14 lines</summary>
-          <div class="clamp" style="--clamp-h: 7em;">
-            <div class="clamp-body">
-              <div class="preview">The cleanest cut is a type switch in <code>contentBlock</code> dispatching to one templ component per kind. Tool_result keeps its ANSI pass; tool_use gets Chroma; thinking gets a collapsed details. Raw blocks fall through to a debug pre. <br><br>I should look at how render.go currently handles dispatch — it's probably a chain of if-statements on string discriminators that we can replace wholesale. The fixture in testdata/session-01.jsonl already has examples of every block kind, so the snapshot tests should catch any regression. <br><br>One concern: the existing code path treats text and tool_result as the same shape. Splitting them means tool_result needs its own component that wraps the ANSI converter, and text stays as a plain markdown pass. <br><br>I'll start by reading render.go end-to-end before touching anything.</div>
-            </div>
-            <button class="clamp-toggle" type="button">
-              <span class="label">Show more</span>
-              <span class="count">+9 lines</span>
-            </button>
+          <summary>
+            <span class="thinking-label">Internal reasoning</span>
+            <span class="thinking-peek">The cleanest cut is a type switch in contentBlock dispatching to one templ component per kind…</span>
+            <span class="thinking-chevron"></span>
+          </summary>
+          <div class="thinking-body">
+            <div class="preview">The cleanest cut is a type switch in <code>contentBlock</code> dispatching to one templ component per kind. Tool_result keeps its ANSI pass; tool_use gets Chroma; thinking gets a collapsed details. Raw blocks fall through to a debug pre. <br><br>I should look at how render.go currently handles dispatch — it's probably a chain of if-statements on string discriminators that we can replace wholesale. The fixture in testdata/session-01.jsonl already has examples of every block kind, so the snapshot tests should catch any regression. <br><br>One concern: the existing code path treats text and tool_result as the same shape. Splitting them means tool_result needs its own component that wraps the ANSI converter, and text stays as a plain markdown pass. <br><br>I'll start by reading render.go end-to-end before touching anything.</div>
           </div>
         </details>
       </article>
@@ -325,28 +337,28 @@
         </div>
       </article>
 
-      <!-- TOOL_RESULT: terminal -->
+      <!-- TOOL_RESULT: Read -->
       <article class="block tool-result" id="tr_01H7K2">
         <div class="role">
           <span class="tag">tool_result</span>
           <a class="pair-id" href="#tu_01H7K2" title="Jump to call">↑ tu_01H7K2</a>
         </div>
-        <div class="term">
-          <div class="chrome">
-            <span class="dots"><span></span><span></span><span></span></span>
-            <span class="label">Read · internal/renderer/render.go</span>
+        <div class="result-card">
+          <div class="rc-chrome">
+            <span class="rc-dots"><span></span><span></span><span></span></span>
+            <span class="rc-summary">Read · internal/renderer/render.go · 238 lines</span>
           </div>
-<pre><span class="dim">  1</span> <span class="dim">// Package renderer converts parsed session messages into HTML.</span>
-<span class="dim">  2</span> <span style="color:#ff7b72">package</span> renderer
-<span class="dim">  3</span>
-<span class="dim">  4</span> <span style="color:#ff7b72">import</span> (
-<span class="dim">  5</span>     <span class="path">"context"</span>
-<span class="dim">  6</span>     <span class="path">"github.com/jamestelfer/relic/internal/parser"</span>
-<span class="dim">  7</span> )
-<span class="dim">  8</span>
-<span class="dim"> 42</span> <span class="dim">// contentBlock dispatches to the right component for each block kind.</span>
-<span class="dim"> 43</span> <span style="color:#ff7b72">func</span> <span style="color:#d2a8ff">contentBlock</span>(b parser.ContentBlock, theme <span style="color:#ff7b72">string</span>) templ.Component {
-<span class="dim">      </span> <span class="ok">// 4 matches for "ContentBlock" in this file</span></pre>
+<pre class="code"><span class="k">package</span> renderer
+
+<span class="k">import</span> (
+    <span class="s">"context"</span>
+    <span class="s">"github.com/jamestelfer/relic/internal/parser"</span>
+)
+
+<span class="c">// contentBlock dispatches to the right component for each block kind.</span>
+<span class="k">func</span> <span class="nf">contentBlock</span>(b parser.ContentBlock, theme <span class="kt">string</span>) templ.Component {
+    <span class="c">// 4 matches for "ContentBlock" in this file</span>
+}</pre>
         </div>
       </article>
 
@@ -428,9 +440,19 @@ ok    github.com/jamestelfer/relic/internal/renderer    <span class="dim">0.42s<
           <span class="tag">assistant</span>
           <time>14:52 · 4m later</time>
         </div>
-        <div class="body">
-          <p>All five cases dispatch cleanly and the existing fixture snapshot still matches. The dispatcher is now a single <code>switch</code> on concrete type — no more string discriminator threading through the templ tree.</p>
-          <p>Next: take the same approach for the parser-side decode in turn 4.</p>
+        <div class="clamp" style="--clamp-h: 7em;">
+          <div class="clamp-body">
+            <div class="body">
+              <p>All five cases dispatch cleanly and the existing fixture snapshot still matches. The dispatcher is now a single <code>switch</code> on concrete type — no more string discriminator threading through the templ tree.</p>
+              <p>The theme string threads through every component that calls Chroma: <code>contentBlock</code> receives it and passes it down to <code>toolUseBlock</code> and <code>toolResultBlock</code>. Thinking and text blocks don't need it. The session-level value comes from the query string (<code>?theme=dark</code>) and defaults to <code>light</code> if absent — same as before.</p>
+              <p>I kept <code>renderBlock</code> signature-stable. It now delegates to <code>contentBlock</code> internally but the external contract is unchanged, so existing callers outside the package don't need touching.</p>
+              <p>Next: take the same approach for the parser-side decode in turn 4.</p>
+            </div>
+          </div>
+          <button class="clamp-toggle" type="button">
+            <span class="label">Show more</span>
+            <span class="count">+3 lines</span>
+          </button>
         </div>
       </article>
 
@@ -465,7 +487,7 @@ ok    github.com/jamestelfer/relic/internal/renderer    <span class="dim">0.42s<
           <time>15:08</time>
         </div>
         <div class="redacted-note">
-          <span class="lock">🔒</span>
+          <span>🔒</span>
           <span>Redacted reasoning — content unavailable</span>
         </div>
       </article>
@@ -742,6 +764,7 @@ ok    github.com/jamestelfer/relic/internal/renderer    <span class="dim">0.42s<
           <summary>
             <span class="cs-label">Context summary</span>
             <span class="cs-meta">manual · 84k → 22k tokens</span>
+            <span class="cs-chevron"></span>
           </summary>
           <div class="cs-body">
             <p>The session covers a full refactor of the Relic parser from a stringly-typed <code>Block{Type string}</code> to a typed interface hierarchy. Key decisions: discriminated union via Go type switch; ANSI-to-HTML conversion pipeline for tool results; Chroma for syntax highlighting; single-file HTML output maintained throughout. Files touched: <code>internal/parser/blocks.go</code>, <code>internal/renderer/renderer.templ</code>, <code>internal/ansihtml/convert.go</code>, plus test fixtures and snapshots.</p>
@@ -767,14 +790,7 @@ ok    github.com/jamestelfer/relic/internal/renderer    <span class="dim">0.42s<
               <span class="task-badge">sub-agent</span>
               <span class="task-type">claude-sonnet-4-6</span>
             </div>
-            <div class="clamp">
-              <div class="clamp-body">
-                <div class="task-prompt">Find every block type defined in <code>uploads/relic-renderable-items.md</code> that is not yet represented in the render fixture. For each: note the type name, which tier it belongs to, and the minimum HTML structure needed. Return a ranked list, highest-relevance first.</div>
-              </div>
-              <button class="clamp-toggle" type="button">
-                <span class="label">Show prompt</span>
-              </button>
-            </div>
+            <div class="task-prompt">Find every block type defined in <code>uploads/relic-renderable-items.md</code> that is not yet represented in the render fixture. For each: note the type name, which tier it belongs to, and the minimum HTML structure needed. Return a ranked list, highest-relevance first.</div>
           </div>
         </div>
       </article>
@@ -956,14 +972,16 @@ ok    github.com/jamestelfer/relic/internal/renderer    <span class="dim">0.42s<
       <article class="block tool-result">
         <div class="role">
           <span class="tag">tool_result</span>
-          <span class="pair-id">tu_01H7KE</span>
+          <span class="pair-id">↑ tu_01H7KE</span>
         </div>
-        <div class="term">
-          <div class="chrome">
-            <span class="dots"><span></span><span></span><span></span></span>
-            <span class="label">Read · multimodal · text + image</span>
+        <div class="result-card">
+          <div class="rc-chrome">
+            <span class="rc-dots"><span></span><span></span><span></span></span>
+            <span class="rc-summary">Read · multimodal · text + image</span>
           </div>
-          <pre><span class="dim">File read. Content follows as image block.</span></pre>
+          <div class="rc-body">
+            <p>File read. Content follows as image block.</p>
+          </div>
         </div>
         <div class="multimodal-images">
           <div class="mm-image-wrap">
@@ -1009,12 +1027,12 @@ ok    github.com/jamestelfer/relic/internal/renderer    <span class="dim">0.42s<
       </article>
 
       <!-- TOOL_RESULT: is_error -->
-      <article class="block tool-result error-result" id="tr_01H7KF">
+      <article class="block tool-result" id="tr_01H7KF">
         <div class="role">
           <span class="tag" style="background:var(--error-500);color:white;">tool_result</span>
           <a class="pair-id" href="#tu_01H7KF" title="Jump to call">↑ tu_01H7KF</a>
         </div>
-        <div class="term term-error">
+        <div class="term">
           <div class="chrome" style="background:#1A0000; border-color:#3A1010;">
             <span class="dots">
               <span style="background:#FF5F57;"></span>
@@ -1045,6 +1063,7 @@ ok    github.com/jamestelfer/relic/internal/renderer    <span class="dim">0.42s<
           <summary>
             <span class="ub-tag">unknown block</span>
             <span class="ub-type">server_tool_use</span>
+            <span class="ub-chevron"></span>
           </summary>
           <pre class="mcp-json" style="margin:0; border-top:1px solid var(--border); border-radius:0 0 var(--radius-md) var(--radius-md);">{
   <span class="jk">"type"</span>: <span class="js">"server_tool_use"</span>,
@@ -1162,8 +1181,6 @@ ok    github.com/jamestelfer/relic/internal/renderer    <span class="dim">0.42s<
     const selectors = [
       '.block.tool .tool-card pre',
       '.block.tool-result .term pre',
-      '.block.cmd-output .cmd-output-body',
-      'details.thinking .preview',
       '.block.error .err-callout',
     ];
     for (const sel of selectors) {

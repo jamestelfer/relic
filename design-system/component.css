@@ -308,6 +308,28 @@ section.turn .turn-marker {
 .clamp.is-fit .clamp-body { max-height: none; -webkit-mask-image: none; mask-image: none; }
 .clamp.is-fit .clamp-toggle { display: none; }
 
+/* Conversation clamp — flush-bottom, edge-to-edge toggle ----------- */
+.block.conversation:has(.clamp) {
+  overflow: hidden;
+  padding-bottom: 0;
+}
+.block.conversation .clamp .clamp-toggle {
+  margin: 4px -24px 0;
+  width: calc(100% + 48px);
+  padding: 10px 24px;
+  border-radius: 0;
+  border: none;
+  background: var(--bg-paper);
+  color: var(--fg-muted);
+}
+.block.conversation .clamp .clamp-toggle:hover {
+  background: var(--bg-sunk);
+  color: var(--fg);
+}
+.block.conversation .clamp .clamp-toggle .count {
+  color: var(--fg);
+}
+
 /* Blocks — hairline-ruled articles on the page background ------------------ */
 .block {
   --rule-color: var(--border-strong);
@@ -432,29 +454,6 @@ details.thinking .preview code {
 .block.tool-result.is-error .term .chrome .dots span {
   background: var(--error-500);
 }
-/* Clamp overrides: toggles blend flush with their parent container. */
-.tool-card .clamp { background: var(--bg-code); }
-.tool-card .clamp-toggle {
-  margin-top: 0;
-  border-radius: 0;
-  background: var(--bg-sunk);
-  border: none;
-  box-shadow: 0 -1px 0 var(--border);
-}
-.block.tool-result .clamp { background: var(--bg-terminal); border-radius: var(--radius-md); overflow: hidden; }
-.block.tool-result .clamp .term { border-radius: 0; border: none; }
-.block.tool-result .clamp-toggle {
-  margin-top: 0;
-  border-radius: 0;
-  background: var(--ink-800);
-  border: none;
-  box-shadow: 0 -1px 0 #1F2740;
-  color: var(--ink-300);
-}
-.block.tool-result .clamp-toggle:hover {
-  color: var(--fg-on-dark);
-}
-.block.tool-result .clamp-toggle .count { color: var(--fg-on-dark); }
 
 /* User Bash (! command) ---------------------------------------- */
 .block.user-bash { --rule-color: var(--role-user-rule); }
@@ -468,9 +467,9 @@ details.thinking .preview code {
 details.thinking {
   background: var(--role-thinking-bg);
   border-radius: var(--radius-md);
-  padding: 14px 18px;
+  overflow: hidden;
 }
-details.thinking[open] { padding-bottom: 18px; }
+/* Summary row: label left, inline text preview (truncated), chevron right */
 details.thinking summary {
   list-style: none;
   cursor: pointer;
@@ -482,14 +481,47 @@ details.thinking summary {
   display: flex;
   align-items: center;
   gap: 10px;
+  padding: 11px 16px;
+  user-select: none;
+  transition: background 0.12s;
 }
 details.thinking summary::-webkit-details-marker { display: none; }
-details.thinking summary::before {
-  content: "▸";
-  font-size: 10px;
-  transition: transform 0.15s;
+details.thinking:hover summary {
+  background: color-mix(in oklch, var(--violet-500) 10%, transparent);
 }
-details.thinking[open] summary::before { transform: rotate(90deg); }
+/* Label: shrinks; grows to fill when preview is hidden (open state) */
+details.thinking summary .thinking-label { flex-shrink: 0; }
+details.thinking[open] summary .thinking-label { flex: 1; }
+/* Inline preview: first words of thinking text, truncated with ellipsis */
+details.thinking summary .thinking-peek {
+  flex: 1; min-width: 0;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  font-family: var(--font-ui); font-style: italic;
+  font-size: 12px; letter-spacing: 0; text-transform: none;
+  color: var(--role-thinking-text); opacity: 0.65; font-weight: 400;
+}
+details.thinking[open] summary .thinking-peek { display: none; }
+/* Chevron: CSS-drawn, flips on open — same shape as slash command */
+details.thinking summary .thinking-chevron {
+  flex-shrink: 0;
+  width: 8px; height: 8px;
+  border-right: 2px solid var(--role-thinking-fg);
+  border-bottom: 2px solid var(--role-thinking-fg);
+  transform: rotate(45deg) translate(-1px, -2px);
+  transition: transform 0.15s, border-color 0.12s;
+  margin-right: 2px;
+}
+details.thinking[open] summary .thinking-chevron {
+  transform: rotate(-135deg) translate(-1px, 2px);
+}
+details.thinking:hover summary .thinking-chevron {
+  border-color: var(--role-thinking-text);
+}
+/* Body: rendered markdown content, separated by a thin rule */
+details.thinking .thinking-body {
+  padding: 0 16px 14px;
+  border-top: 1px solid color-mix(in oklch, var(--violet-500) 15%, transparent);
+}
 details.thinking .preview {
   font-family: var(--font-ui);
   font-style: italic;
@@ -500,13 +532,24 @@ details.thinking .preview {
   max-width: 64ch;
   font-weight: 400;
 }
-/* Thinking blocks always wrap in .clamp; the visible preview is ~2 rendered
-   lines because the rendered height of markdown can't be computed at
-   generation time. Layout-time detection via `.is-fit` removes the clamp
-   when content actually fits. is-open needs a higher-specificity override
-   here so the expanded body beats the 3.3em cap set for thinking. */
-details.thinking .clamp .clamp-body { max-height: 3.3em; }
+/* Clamp support: thinking body wraps in .clamp for long blocks */
+details.thinking .thinking-body:has(.clamp) { padding-bottom: 0; }
+details.thinking .clamp .clamp-body { max-height: 8em; }
 details.thinking .clamp.is-open .clamp-body { max-height: none; }
+details.thinking .clamp .clamp-toggle {
+  margin: 4px -16px 0;
+  width: calc(100% + 32px);
+  padding: 9px 16px;
+  border-radius: 0;
+  border: none;
+  background: var(--role-thinking-bg);
+  color: var(--role-thinking-fg);
+}
+details.thinking .clamp .clamp-toggle:hover {
+  background: color-mix(in oklch, var(--role-thinking-bg) 80%, var(--violet-500) 20%);
+  color: var(--role-thinking-text);
+}
+details.thinking .clamp .clamp-toggle .count { color: var(--role-thinking-text); }
 /* Error -------------------------------------------------------- */
 .block.error { --rule-color: var(--error-rule); }
 .err-callout {
@@ -680,31 +723,74 @@ details.thinking .clamp.is-open .clamp-body { max-height: none; }
 }
 
 /* Slash command ------------------------------------------------------------- */
-.block.slash-cmd { --rule-color: var(--border-strong); }
-.block.slash-cmd .role .tag { background: var(--ink-500); color: var(--fg-on-dark); }
-.slash-card {
-  display: flex; align-items: center; gap: 10px;
-  padding: 10px 16px;
-  background: var(--bg-sunk);
-  border: 1px solid var(--border);
+/* Ghost card: transparent by default, border + sunk bg on hover,
+   page-bg + border when open. No white backgrounds. Collapses to a
+   single row showing /cmd args → output-peek + chevron. */
+details.slash-merged {
+  border: 1px solid transparent;
+  border-left: 3px solid transparent; /* 3px matches user/assistant LH border */
+  padding: 2px 0;
   border-radius: var(--radius-md);
-  font-family: var(--font-mono); font-size: 13px;
-  color: var(--fg);
+  transition: background 0.12s, border-color 0.12s;
 }
-.slash-card .slash { color: var(--fg-subtle); font-weight: 400; }
-.slash-card .cmd { font-weight: 600; color: var(--lapis-600); }
-.slash-card .args { color: var(--fg-muted); }
-
-/* Command output ----------------------------------------------------------- */
-.block.cmd-output { --rule-color: var(--border-strong); }
-.cmd-output-body {
-  padding: 12px 16px;
+details.slash-merged:not([open]):hover {
   background: var(--bg-sunk);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-md);
-  font-family: var(--font-mono); font-size: 13px; line-height: 1.6;
-  color: var(--fg-muted);
-  white-space: pre-wrap;
+  border-color: var(--border-strong);
+}
+details.slash-merged[open] {
+  background: var(--bg);
+  border-color: var(--border);
+  border-left-color: var(--border-strong);
+}
+details.slash-merged summary {
+  list-style: none; cursor: pointer;
+  display: flex; align-items: center; gap: 10px;
+  font-family: var(--font-mono); font-size: 12px;
+  letter-spacing: 0.03em; color: var(--fg-muted);
+  padding: 10px 14px 10px 24px;
+  user-select: none;
+}
+details.slash-merged summary::-webkit-details-marker { display: none; }
+/* Middle band: cmd + output-peek share space, both truncate */
+details.slash-merged summary .sm-mid {
+  flex: 1; min-width: 0;
+  display: flex; align-items: center; gap: 8px;
+  overflow: hidden;
+}
+details.slash-merged summary .sm-cmd {
+  flex: 1; min-width: 80px;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+details.slash-merged summary .sm-cmd .slash { color: var(--fg-subtle); }
+details.slash-merged summary .sm-cmd .cmd   { font-weight: 600; color: var(--fg); }
+details.slash-merged summary .sm-cmd .args  { color: var(--fg-muted); }
+details.slash-merged summary .sm-out-peek {
+  flex: 0 1 32ch; min-width: 0;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  color: var(--fg-subtle); font-size: 11.5px;
+}
+details.slash-merged[open] summary .sm-out-peek { display: none; }
+/* Chevron: CSS-drawn, flips on open */
+details.slash-merged summary .sm-chevron {
+  flex-shrink: 0;
+  width: 8px; height: 8px;
+  border-right: 2px solid var(--fg-muted);
+  border-bottom: 2px solid var(--fg-muted);
+  transform: rotate(45deg) translate(-1px, -2px);
+  transition: transform 0.15s, border-color 0.12s;
+  margin-right: 2px;
+}
+details.slash-merged[open] summary .sm-chevron {
+  transform: rotate(-135deg) translate(-1px, 2px);
+}
+details.slash-merged:not([open]):hover .sm-chevron { border-color: var(--fg); }
+details.slash-merged[open] summary:hover { background: var(--bg-sunk); }
+details.slash-merged[open] summary:hover .sm-chevron { border-color: var(--fg); }
+/* Output body: flush under a thin rule, no inner box */
+details.slash-merged .sm-out-body {
+  padding: 8px 14px 12px 24px;
+  font-family: var(--font-mono); font-size: 12.5px; line-height: 1.6;
+  color: var(--fg-muted); white-space: pre-wrap;
 }
 
 /* Meta blocks (hook_injection, system, unknown) ----------------------------- */
@@ -972,8 +1058,29 @@ details.unknown-block summary {
   padding: 8px 14px;
   font-family: var(--font-mono); font-size: 11.5px;
   letter-spacing: 0.04em;
+  user-select: none;
+  transition: background 0.12s;
 }
 details.unknown-block summary::-webkit-details-marker { display: none; }
+details.unknown-block:hover summary {
+  background: color-mix(in oklch, var(--fg-subtle) 6%, transparent);
+}
+/* type fills the middle, pushing chevron to the far right */
+details.unknown-block summary .ub-type { flex: 1; min-width: 0; }
+/* Chevron: same border-trick as thinking / slash */
+details.unknown-block summary .ub-chevron {
+  flex-shrink: 0;
+  width: 8px; height: 8px;
+  border-right: 2px solid var(--fg-muted);
+  border-bottom: 2px solid var(--fg-muted);
+  transform: rotate(45deg) translate(-1px, -2px);
+  transition: transform 0.15s, border-color 0.12s;
+  margin-right: 2px;
+}
+details.unknown-block[open] summary .ub-chevron {
+  transform: rotate(-135deg) translate(-1px, 2px);
+}
+details.unknown-block:hover summary .ub-chevron { border-color: var(--fg); }
 .ub-tag {
   font-size: 10.5px; font-weight: 600;
   letter-spacing: 0.06em; text-transform: uppercase;
@@ -1124,7 +1231,6 @@ details.compact-summary {
   background: var(--bg-sunk);
   border: 1px dashed var(--border-strong);
   border-radius: var(--radius-md);
-  padding: 0;
   overflow: hidden;
 }
 details.compact-summary summary {
@@ -1135,12 +1241,28 @@ details.compact-summary summary {
   font-family: var(--font-mono); font-size: 11.5px;
   letter-spacing: 0.04em; text-transform: uppercase;
   color: var(--fg-muted);
+  user-select: none;
+  transition: background 0.12s;
 }
 details.compact-summary summary::-webkit-details-marker { display: none; }
-details.compact-summary summary::before {
-  content: "▸"; font-size: 10px; transition: transform 0.15s; flex-shrink: 0;
+details.compact-summary:hover summary {
+  background: color-mix(in oklch, var(--border-strong) 25%, transparent);
 }
-details.compact-summary[open] summary::before { transform: rotate(90deg); }
+/* meta fills the middle, pushing chevron to the far right */
+details.compact-summary summary .cs-meta { flex: 1; }
+/* Chevron: same border-trick as thinking / slash */
+details.compact-summary summary .cs-chevron {
+  flex-shrink: 0;
+  width: 8px; height: 8px;
+  border-right: 2px solid currentColor;
+  border-bottom: 2px solid currentColor;
+  transform: rotate(45deg) translate(-1px, -2px);
+  transition: transform 0.15s, border-color 0.12s;
+  margin-right: 2px;
+}
+details.compact-summary[open] summary .cs-chevron {
+  transform: rotate(-135deg) translate(-1px, 2px);
+}
 .cs-label { font-weight: 600; color: var(--fg); }
 .cs-meta { color: var(--fg-subtle); }
 .cs-body {
@@ -1157,14 +1279,14 @@ details.compact-summary[open] summary::before { transform: rotate(90deg); }
 }
 
 /* ── Task Notification ──────────────────────────────────────── */
-.task-notif {
+.result-card {
   background: var(--bg-paper);
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
   overflow: hidden;
   box-shadow: var(--shadow-1);
 }
-.tn-chrome {
+.rc-chrome {
   display: flex;
   align-items: center;
   gap: 10px;
@@ -1175,18 +1297,18 @@ details.compact-summary[open] summary::before { transform: rotate(90deg); }
   font-size: 11.5px;
   letter-spacing: 0.04em;
 }
-.tn-dots {
+.rc-dots {
   display: flex;
   gap: 5px;
   flex-shrink: 0;
 }
-.tn-dots span {
+.rc-dots span {
   width: 9px;
   height: 9px;
   border-radius: 50%;
   background: var(--border-strong);
 }
-.tn-badge {
+.rc-badge {
   display: inline-flex;
   align-items: center;
   gap: 5px;
@@ -1198,20 +1320,20 @@ details.compact-summary[open] summary::before { transform: rotate(90deg); }
   text-transform: uppercase;
   flex-shrink: 0;
 }
-.tn-badge::before {
+.rc-badge::before {
   content: "";
   width: 6px;
   height: 6px;
   border-radius: 50%;
   flex-shrink: 0;
 }
-.tn-badge.completed { background: var(--success-bg); color: var(--success-fg); }
-.tn-badge.completed::before { background: var(--success-solid); }
-.tn-badge.running { background: var(--warning-bg); color: var(--warning-fg); }
-.tn-badge.running::before { background: var(--warning-solid); }
-.tn-badge.failed { background: var(--error-bg); color: light-dark(var(--error-600), var(--danger-fg)); }
-.tn-badge.failed::before { background: var(--error-500); }
-.tn-summary {
+.rc-badge.completed { background: var(--success-bg); color: var(--success-fg); }
+.rc-badge.completed::before { background: var(--success-solid); }
+.rc-badge.running { background: var(--warning-bg); color: var(--warning-fg); }
+.rc-badge.running::before { background: var(--warning-solid); }
+.rc-badge.failed { background: var(--error-bg); color: light-dark(var(--error-600), var(--danger-fg)); }
+.rc-badge.failed::before { background: var(--error-500); }
+.rc-summary {
   flex: 1;
   color: var(--fg);
   font-size: 12px;
@@ -1220,19 +1342,19 @@ details.compact-summary[open] summary::before { transform: rotate(90deg); }
   text-overflow: ellipsis;
   letter-spacing: 0;
 }
-.tn-result {
+.rc-body {
   padding: 14px 18px 16px;
   font-family: var(--font-ui);
   font-size: 14px;
   line-height: 1.65;
   color: var(--fg);
 }
-.tn-result p { margin: 0 0 0.5em; }
-.tn-result p:last-child { margin-bottom: 0; }
-.tn-result strong { font-weight: 600; }
-.tn-result ul, .tn-result ol { margin: 0.4em 0 0.6em; padding-left: 20px; }
-.tn-result li { margin: 2px 0; }
-.tn-footer {
+.rc-body p { margin: 0 0 0.5em; }
+.rc-body p:last-child { margin-bottom: 0; }
+.rc-body strong { font-weight: 600; }
+.rc-body ul, .rc-body ol { margin: 0.4em 0 0.6em; padding-left: 20px; }
+.rc-body li { margin: 2px 0; }
+.rc-footer {
   display: flex;
   align-items: center;
   gap: 0;
@@ -1244,12 +1366,21 @@ details.compact-summary[open] summary::before { transform: rotate(90deg); }
   flex-wrap: wrap;
   row-gap: 2px;
 }
-.tn-foot-item { white-space: nowrap; }
-.tn-foot-item.path { color: var(--link); }
-.tn-foot-sep {
+.rc-foot-item { white-space: nowrap; }
+.rc-foot-item.path { color: var(--link); }
+.rc-foot-sep {
   margin: 0 8px;
   color: var(--border-strong);
   user-select: none;
+}
+
+/* Non-terminal tool-result text content: pre.code inside result-card flows
+   flush with the card — no standalone border-radius or outer border. */
+.result-card pre.code {
+  margin: 0;
+  border-radius: 0;
+  border: none;
+  border-top: 1px solid var(--border);
 }
 
 @media print {

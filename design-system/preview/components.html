@@ -6,8 +6,8 @@
 <link rel="stylesheet" href="../colors_and_type.css">
 <link rel="stylesheet" href="../component.css">
 <link rel="stylesheet" href="../terminal_chrome.css">
-<link rel="stylesheet" href="../terminal.css">
 <link rel="stylesheet" href="../highlight.css">
+<link rel="stylesheet" href="../terminal.css">
 <style>
   /* Page-specific layout (not in component.css) */
   body { padding: 56px 64px 120px; max-width: 1100px; margin: 0 auto; }
@@ -126,10 +126,10 @@
   <a class="toc-item" href="#c-mcp">          <span class="toc-dot" style="background:var(--lapis-700)"></span>  <span class="toc-label">MCP tool</span> </a>
   <a class="toc-item" href="#c-tool-result">  <span class="toc-dot" style="background:var(--ink-400)"></span>   <span class="toc-label">tool_result</span> terminal </a>
   <a class="toc-item" href="#c-tool-error">   <span class="toc-dot" style="background:var(--error-500)"></span>  <span class="toc-label">tool_result</span> is_error </a>
+  <a class="toc-item" href="#c-text-result">  <span class="toc-dot" style="background:var(--lapis-600)"></span>  <span class="toc-label">tool_result</span> text </a>
   <a class="toc-item" href="#c-multimodal">   <span class="toc-dot" style="background:var(--ink-400)"></span>   <span class="toc-label">multimodal</span> result </a>
   <a class="toc-item" href="#c-image">        <span class="toc-dot" style="background:var(--ink-400)"></span>   <span class="toc-label">image</span> block </a>
-  <a class="toc-item" href="#c-slash">        <span class="toc-dot" style="background:var(--ink-400)"></span>   <span class="toc-label">slash_command</span> </a>
-  <a class="toc-item" href="#c-cmd-out">      <span class="toc-dot" style="background:var(--ink-300)"></span>   <span class="toc-label">command_output</span> </a>
+  <a class="toc-item" href="#c-slash">        <span class="toc-dot" style="background:var(--ink-400)"></span>   <span class="toc-label">slash_command</span> + output </a>
   <a class="toc-item" href="#c-compact-sep">  <span class="toc-dot" style="background:var(--ink-200)"></span>   <span class="toc-label">compaction boundary</span> </a>
   <a class="toc-item" href="#c-compact-sum">  <span class="toc-dot" style="background:var(--ink-300)"></span>   <span class="toc-label">compaction summary</span> </a>
   <a class="toc-item" href="#c-hook">         <span class="toc-dot" style="background:var(--ink-200)"></span>   <span class="toc-label">hook_injection</span> </a>
@@ -140,7 +140,7 @@
   <a class="toc-item" href="#c-attach">       <span class="toc-dot" style="background:var(--ink-200)"></span>   <span class="toc-label">attachment</span> placeholder </a>
   <a class="toc-item" href="#c-unknown">      <span class="toc-dot" style="background:var(--ink-300)"></span>   <span class="toc-label">unknown block</span> </a>
   <a class="toc-item" href="#c-session-result"><span class="toc-dot" style="background:oklch(0.52 0.14 145)"></span> <span class="toc-label">session_result</span> banner </a>
-  <a class="toc-item" href="#c-task-notif">    <span class="toc-dot" style="background:var(--lapis-400)"></span>            <span class="toc-label">task_notification</span> response </a>
+  <a class="toc-item" href="#c-result-card">    <span class="toc-dot" style="background:var(--lapis-400)"></span>            <span class="toc-label">task_notification</span> response </a>
 </div>
 
 <!-- ============================================================
@@ -188,8 +188,14 @@
           <time>14:48</time>
         </div>
         <details class="thinking" open>
-          <summary>Internal reasoning · 8 lines</summary>
-          <div class="preview">The cleanest cut is a type switch in <code>contentBlock</code> dispatching to one templ component per kind. Tool_result keeps its ANSI pass; tool_use gets Chroma; thinking gets a collapsed details. Raw blocks fall through to a debug pre.</div>
+          <summary>
+            <span class="thinking-label">Internal reasoning</span>
+            <span class="thinking-peek">The cleanest cut is a type switch in contentBlock dispatching to one templ component per kind…</span>
+            <span class="thinking-chevron"></span>
+          </summary>
+          <div class="thinking-body">
+            <div class="preview">The cleanest cut is a type switch in <code>contentBlock</code> dispatching to one templ component per kind. Tool_result keeps its ANSI pass; tool_use gets Chroma; thinking gets a collapsed details. Raw blocks fall through to a debug pre.</div>
+          </div>
         </details>
       </article>
     </div>
@@ -593,6 +599,32 @@ ok  <span class="path">github.com/jamestelfer/relic/internal/renderer</span>  <s
       </article>
     </div>
 
+    <div class="comp-item" id="c-text-result">
+      <div class="comp-name">tool_result — text content (Read / LS / Grep) <span class="relevance">relevance 9</span></div>
+      <article class="block tool-result">
+        <div class="role">
+          <span class="tag">tool_result</span>
+          <a class="pair-id" href="#c-read">↑ tu_read</a>
+        </div>
+        <div class="result-card">
+          <div class="rc-chrome">
+            <span class="rc-dots"><span></span><span></span><span></span></span>
+            <span class="rc-summary">Read · internal/renderer/render.go · 238 lines</span>
+          </div>
+          <pre class="code"><span class="k">package</span> renderer
+
+<span class="k">import</span> (
+    <span class="s">"github.com/jamestelfer/relic/internal/parser"</span>
+)
+
+<span class="c">// Render converts a parsed session into HTML.</span>
+<span class="k">func</span> <span class="nf">Render</span>(s *parser.Session, opts Options) ([]<span class="kt">byte</span>, error) {
+    <span class="c">// …</span>
+}</pre>
+        </div>
+      </article>
+    </div>
+
     <div class="comp-item" id="c-multimodal">
       <div class="comp-name">tool_result — multimodal (text + image) <span class="relevance">relevance 5</span></div>
       <article class="block tool-result">
@@ -600,12 +632,14 @@ ok  <span class="path">github.com/jamestelfer/relic/internal/renderer</span>  <s
           <span class="tag">tool_result</span>
           <span class="pair-id">↑ tu_mm</span>
         </div>
-        <div class="term">
-          <div class="chrome">
-            <span class="dots"><span></span><span></span><span></span></span>
-            <span class="label">Read · multimodal · text + image</span>
+        <div class="result-card">
+          <div class="rc-chrome">
+            <span class="rc-dots"><span></span><span></span><span></span></span>
+            <span class="rc-summary">Read · multimodal · text + image</span>
           </div>
-          <pre><span class="dim">File read. Content follows as image block.</span></pre>
+          <div class="rc-body">
+            <p>File read. Content follows as image block.</p>
+          </div>
         </div>
         <div class="multimodal-images">
           <div class="mm-image-wrap">
@@ -626,25 +660,30 @@ ok  <span class="path">github.com/jamestelfer/relic/internal/renderer</span>  <s
   <div class="comp-grid">
 
     <div class="comp-item" id="c-slash">
-      <div class="comp-name">slash_command — call half <span class="relevance">relevance 5</span></div>
-      <article class="block slash-cmd">
-        <div class="role">
-          <span class="tag" style="background:var(--ink-500);color:white;">command</span>
-          <time>14:33</time>
-        </div>
-        <div class="slash-card">
-          <span class="slash">/</span><span class="cmd">compact</span>
-          <span class="args">— free up context before the next change</span>
-        </div>
-      </article>
-    </div>
-
-    <div class="comp-item" id="c-cmd-out">
-      <div class="comp-name">command_output — response half <span class="relevance">relevance 5</span></div>
-      <article class="block cmd-output">
-        <div class="role"><span class="tag">output</span></div>
-        <div class="cmd-output-body">Context compacted: 38k → 16k tokens. Conversation summary preserved.</div>
-      </article>
+      <div class="comp-name">slash_command + output <span class="relevance">relevance 5</span></div>
+      <details class="slash-merged">
+        <summary>
+          <span class="sm-mid">
+            <span class="sm-cmd"><span class="slash">/</span><span class="cmd">compact</span><span class="args"> — free up context before the next change</span></span>
+            <span class="sm-out-peek">→ Context compacted: 38k → 16k tokens</span>
+          </span>
+          <span class="sm-chevron"></span>
+        </summary>
+        <div class="sm-out-body">Context compacted: 38k → 16k tokens. Conversation summary preserved.</div>
+      </details>
+      <details class="slash-merged" open style="margin-top:12px;">
+        <summary>
+          <span class="sm-mid">
+            <span class="sm-cmd"><span class="slash">/</span><span class="cmd">model</span><span class="args"> claude-opus-4-5</span></span>
+            <span class="sm-out-peek">→ Model updated.</span>
+          </span>
+          <span class="sm-chevron"></span>
+        </summary>
+        <div class="sm-out-body">Model updated.
+Previous: claude-sonnet-4-6
+Current:  claude-opus-4-5
+Note: cost per token increases ~5×.</div>
+      </details>
     </div>
 
     <div class="comp-item" id="c-image">
@@ -686,6 +725,7 @@ ok  <span class="path">github.com/jamestelfer/relic/internal/renderer</span>  <s
           <summary>
             <span class="cs-label">Context summary</span>
             <span class="cs-meta">manual · 84k → 22k tokens</span>
+            <span class="cs-chevron"></span>
           </summary>
           <div class="cs-body">
             <p>The session covers a full refactor of the Relic parser from a stringly-typed <code>Block{Type string}</code> to a typed interface hierarchy. Key decisions: discriminated union via Go type switch; ANSI-to-HTML conversion pipeline for tool results; Chroma for syntax highlighting.</p>
@@ -766,6 +806,7 @@ ok  <span class="path">github.com/jamestelfer/relic/internal/renderer</span>  <s
           <summary>
             <span class="ub-tag">unknown block</span>
             <span class="ub-type">server_tool_use</span>
+            <span class="ub-chevron"></span>
           </summary>
           <pre class="mcp-json" style="margin:0; border-top:1px solid var(--border); border-radius:0 0 var(--radius-md) var(--radius-md);">{
   <span class="jk">"type"</span>: <span class="js">"server_tool_use"</span>,
@@ -833,21 +874,21 @@ ok  <span class="path">github.com/jamestelfer/relic/internal/renderer</span>  <s
   <div class="section-label">Task notification <span class="tier-badge tier-action">system event</span></div>
   <div class="comp-grid">
 
-    <div class="comp-item" id="c-task-notif">
+    <div class="comp-item" id="c-result-card">
       <div class="comp-name">task_notification — completed <span class="relevance">relevance 7</span></div>
       <article class="block tool-result">
         <div class="role">
           <span class="tag">task_notification</span>
           <a class="pair-id" href="#c-task">↑ tr_task</a>
         </div>
-        <div class="task-notif">
-          <div class="tn-chrome">
-            <span class="tn-dots"><span></span><span></span><span></span></span>
-            <span class="tn-badge completed">completed</span>
-            <span class="tn-summary">Agent "Relabel CSRE-7871,7870,7869" completed</span>
+        <div class="result-card">
+          <div class="rc-chrome">
+            <span class="rc-dots"><span></span><span></span><span></span></span>
+            <span class="rc-badge completed">completed</span>
+            <span class="rc-summary">Agent "Relabel CSRE-7871,7870,7869" completed</span>
             <a class="pair-id" href="#c-task" style="margin-left:auto; flex-shrink:0;">↑ tr_task</a>
           </div>
-          <div class="tn-result">
+          <div class="rc-body">
             <p>All three issues have been successfully updated with their new labels.</p>
             <p><strong>Summary:</strong></p>
             <ul>
@@ -857,12 +898,12 @@ ok  <span class="path">github.com/jamestelfer/relic/internal/renderer</span>  <s
             </ul>
             <p>All label updates completed successfully.</p>
           </div>
-          <div class="tn-footer">
-            <span class="tn-foot-item">a757d54584f854c09</span>
-            <span class="tn-foot-sep">·</span>
-            <span class="tn-foot-item path">/private/tmp/claude-502/…/a757d54584f854c09.output</span>
-            <span class="tn-foot-sep">·</span>
-            <span class="tn-foot-item">36.7k tokens · 3 tool uses · 18s</span>
+          <div class="rc-footer">
+            <span class="rc-foot-item">a757d54584f854c09</span>
+            <span class="rc-foot-sep">·</span>
+            <span class="rc-foot-item path">/private/tmp/claude-502/…/a757d54584f854c09.output</span>
+            <span class="rc-foot-sep">·</span>
+            <span class="rc-foot-item">36.7k tokens · 3 tool uses · 18s</span>
           </div>
         </div>
       </article>
@@ -874,16 +915,16 @@ ok  <span class="path">github.com/jamestelfer/relic/internal/renderer</span>  <s
         <div class="role">
           <span class="tag">task_notification</span>
         </div>
-        <div class="task-notif">
-          <div class="tn-chrome">
-            <span class="tn-dots"><span></span><span></span><span></span></span>
-            <span class="tn-badge running">running</span>
-            <span class="tn-summary">Agent "Label CSRE-7865,7864,7863" dispatched</span>
+        <div class="result-card">
+          <div class="rc-chrome">
+            <span class="rc-dots"><span></span><span></span><span></span></span>
+            <span class="rc-badge running">running</span>
+            <span class="rc-summary">Agent "Label CSRE-7865,7864,7863" dispatched</span>
           </div>
-          <div class="tn-footer">
-            <span class="tn-foot-item">b391cd5f82a14e7d</span>
-            <span class="tn-foot-sep">·</span>
-            <span class="tn-foot-item">~8s elapsed</span>
+          <div class="rc-footer">
+            <span class="rc-foot-item">b391cd5f82a14e7d</span>
+            <span class="rc-foot-sep">·</span>
+            <span class="rc-foot-item">~8s elapsed</span>
           </div>
         </div>
       </article>
@@ -896,22 +937,22 @@ ok  <span class="path">github.com/jamestelfer/relic/internal/renderer</span>  <s
           <span class="tag" style="background:var(--error-500);color:white;">task_notification</span>
           <a class="pair-id" href="#c-task">↑ tr_task</a>
         </div>
-        <div class="task-notif">
-          <div class="tn-chrome">
-            <span class="tn-dots"><span></span><span></span><span></span></span>
-            <span class="tn-badge failed">failed</span>
-            <span class="tn-summary">Agent "Label CSRE-7862,7861,7860" failed</span>
+        <div class="result-card">
+          <div class="rc-chrome">
+            <span class="rc-dots"><span></span><span></span><span></span></span>
+            <span class="rc-badge failed">failed</span>
+            <span class="rc-summary">Agent "Label CSRE-7862,7861,7860" failed</span>
             <a class="pair-id" href="#c-task" style="margin-left:auto; flex-shrink:0;">↑ tr_task</a>
           </div>
-          <div class="tn-result" style="color:var(--error-600);">
+          <div class="rc-body" style="color:var(--error-600);">
             <p>Rate limit exceeded while updating CSRE-7861. 2 of 3 labels applied.</p>
           </div>
-          <div class="tn-footer">
-            <span class="tn-foot-item">c029fa3b11d85c40</span>
-            <span class="tn-foot-sep">·</span>
-            <span class="tn-foot-item path">/private/tmp/claude-502/…/c029fa3b11d85c40.output</span>
-            <span class="tn-foot-sep">·</span>
-            <span class="tn-foot-item">12.1k tokens · 2 tool uses · 9s</span>
+          <div class="rc-footer">
+            <span class="rc-foot-item">c029fa3b11d85c40</span>
+            <span class="rc-foot-sep">·</span>
+            <span class="rc-foot-item path">/private/tmp/claude-502/…/c029fa3b11d85c40.output</span>
+            <span class="rc-foot-sep">·</span>
+            <span class="rc-foot-item">12.1k tokens · 2 tool uses · 9s</span>
           </div>
         </div>
       </article>
