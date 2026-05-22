@@ -623,6 +623,16 @@ func taskNotifUsageLabel(u session.TaskNotificationUsage) string {
 	return strings.Join(parts, " · ")
 }
 
+func thinkingPeek(text string) string {
+	const limit = 80
+	text = strings.ReplaceAll(text, "\n", " ")
+	text = strings.TrimSpace(text)
+	if len(text) <= limit {
+		return text
+	}
+	return text[:limit] + "…"
+}
+
 func imageMetaLabel(b *session.Image) string {
 	mt := b.MediaType
 	if mt == "" {

@@ -468,9 +468,9 @@ details.thinking .preview code {
 details.thinking {
   background: var(--role-thinking-bg);
   border-radius: var(--radius-md);
-  padding: 14px 18px;
+  overflow: hidden;
 }
-details.thinking[open] { padding-bottom: 18px; }
+/* Summary row: label left, inline text preview (truncated), chevron right */
 details.thinking summary {
   list-style: none;
   cursor: pointer;
@@ -482,14 +482,47 @@ details.thinking summary {
   display: flex;
   align-items: center;
   gap: 10px;
+  padding: 11px 16px;
+  user-select: none;
+  transition: background 0.12s;
 }
 details.thinking summary::-webkit-details-marker { display: none; }
-details.thinking summary::before {
-  content: "▸";
-  font-size: 10px;
-  transition: transform 0.15s;
+details.thinking:hover summary {
+  background: color-mix(in oklch, var(--violet-500) 10%, transparent);
 }
-details.thinking[open] summary::before { transform: rotate(90deg); }
+/* Label: shrinks; grows to fill when preview is hidden (open state) */
+details.thinking summary .thinking-label { flex-shrink: 0; }
+details.thinking[open] summary .thinking-label { flex: 1; }
+/* Inline preview: first words of thinking text, truncated with ellipsis */
+details.thinking summary .thinking-peek {
+  flex: 1; min-width: 0;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  font-family: var(--font-ui); font-style: italic;
+  font-size: 12px; letter-spacing: 0; text-transform: none;
+  color: var(--role-thinking-text); opacity: 0.65; font-weight: 400;
+}
+details.thinking[open] summary .thinking-peek { display: none; }
+/* Chevron: CSS-drawn, flips on open — same shape as slash command */
+details.thinking summary .thinking-chevron {
+  flex-shrink: 0;
+  width: 8px; height: 8px;
+  border-right: 2px solid var(--role-thinking-fg);
+  border-bottom: 2px solid var(--role-thinking-fg);
+  transform: rotate(45deg) translate(-1px, -2px);
+  transition: transform 0.15s, border-color 0.12s;
+  margin-right: 2px;
+}
+details.thinking[open] summary .thinking-chevron {
+  transform: rotate(-135deg) translate(-1px, 2px);
+}
+details.thinking:hover summary .thinking-chevron {
+  border-color: var(--role-thinking-text);
+}
+/* Body: rendered markdown content, separated by a thin rule */
+details.thinking .thinking-body {
+  padding: 0 16px 14px;
+  border-top: 1px solid color-mix(in oklch, var(--violet-500) 15%, transparent);
+}
 details.thinking .preview {
   font-family: var(--font-ui);
   font-style: italic;
@@ -500,13 +533,24 @@ details.thinking .preview {
   max-width: 64ch;
   font-weight: 400;
 }
-/* Thinking blocks always wrap in .clamp; the visible preview is ~2 rendered
-   lines because the rendered height of markdown can't be computed at
-   generation time. Layout-time detection via `.is-fit` removes the clamp
-   when content actually fits. is-open needs a higher-specificity override
-   here so the expanded body beats the 3.3em cap set for thinking. */
-details.thinking .clamp .clamp-body { max-height: 3.3em; }
+/* Clamp support: thinking body wraps in .clamp for long blocks */
+details.thinking .thinking-body:has(.clamp) { padding-bottom: 0; }
+details.thinking .clamp .clamp-body { max-height: 8em; }
 details.thinking .clamp.is-open .clamp-body { max-height: none; }
+details.thinking .clamp .clamp-toggle {
+  margin: 4px -16px 0;
+  width: calc(100% + 32px);
+  padding: 9px 16px;
+  border-radius: 0;
+  border: none;
+  background: var(--role-thinking-bg);
+  color: var(--role-thinking-fg);
+}
+details.thinking .clamp .clamp-toggle:hover {
+  background: color-mix(in oklch, var(--role-thinking-bg) 80%, var(--violet-500) 20%);
+  color: var(--role-thinking-text);
+}
+details.thinking .clamp .clamp-toggle .count { color: var(--role-thinking-text); }
 /* Error -------------------------------------------------------- */
 .block.error { --rule-color: var(--error-rule); }
 .err-callout {

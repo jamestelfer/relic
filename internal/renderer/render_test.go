@@ -100,13 +100,30 @@ func TestRender_AssistantTextBlockStructure(t *testing.T) {
 func TestRender_ThinkingBlockCollapsible(t *testing.T) {
 	s := session.Session{
 		Turns: []session.Turn{{Index: 1, Blocks: []session.Block{
-			&session.Thinking{Text: "Let me reason about this"},
+			&session.Thinking{Text: "Let me reason about this problem carefully"},
 		}}},
 	}
 	out := render(t, s, renderer.Options{Name: "test"})
 	assert.Contains(t, out, `class="block thinking"`)
 	assert.Contains(t, out, "<details")
-	assert.Contains(t, out, "Let me reason about this")
+	assert.Contains(t, out, `class="thinking-label"`)
+	assert.Contains(t, out, `class="thinking-peek"`)
+	assert.Contains(t, out, `class="thinking-chevron"`)
+	assert.Contains(t, out, `class="thinking-body"`)
+	assert.Contains(t, out, "Let me reason about this problem carefully")
+}
+
+func TestRender_ThinkingPeekTruncation(t *testing.T) {
+	longText := "This is a very long thinking text that should be truncated when displayed as a peek preview in the collapsed thinking block summary row"
+	s := session.Session{
+		Turns: []session.Turn{{Index: 1, Blocks: []session.Block{
+			&session.Thinking{Text: longText},
+		}}},
+	}
+	out := render(t, s, renderer.Options{Name: "test"})
+	// Peek should contain truncated text with ellipsis
+	assert.Contains(t, out, `class="thinking-peek"`)
+	assert.Contains(t, out, "…")
 }
 
 func TestRender_ToolCallHasIDAttribute(t *testing.T) {

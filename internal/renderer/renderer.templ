@@ -234,16 +234,22 @@ templ assistantTextBlock(b *session.AssistantText) {
 templ thinkingBlock(b *session.Thinking) {
 	<article class="block thinking">
 		<details class="thinking">
-			<summary>Internal reasoning</summary>
-			<div class="clamp">
-				<div class="clamp-body">
-					<div class="preview">
-						@templ.Raw(string(renderMarkdown(b.Text)))
+			<summary>
+				<span class="thinking-label">Internal reasoning</span>
+				<span class="thinking-peek">{ thinkingPeek(b.Text) }</span>
+				<span class="thinking-chevron"></span>
+			</summary>
+			<div class="thinking-body">
+				<div class="clamp">
+					<div class="clamp-body">
+						<div class="preview">
+							@templ.Raw(string(renderMarkdown(b.Text)))
+						</div>
 					</div>
+					<button class="clamp-toggle" type="button">
+						<span class="label">Show more</span>
+					</button>
 				</div>
-				<button class="clamp-toggle" type="button">
-					<span class="label">Show more</span>
-				</button>
 			</div>
 		</details>
 	</article>
