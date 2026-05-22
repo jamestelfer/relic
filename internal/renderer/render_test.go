@@ -177,7 +177,7 @@ func TestRender_ToolResultChrome_NonBashUsesResultCard(t *testing.T) {
 	assert.Contains(t, out, `class="result-card"`, "non-Bash results use result-card")
 	assert.Contains(t, out, `class="rc-chrome"`)
 	assert.Contains(t, out, `class="rc-summary"`)
-	assert.Contains(t, out, `class="code"`, "non-Bash content in pre.code")
+	assert.Contains(t, out, `class="chroma"`, "non-Bash content in pre.chroma")
 	assert.NotContains(t, out, `class="term"`, "non-Bash results must not use terminal chrome")
 }
 

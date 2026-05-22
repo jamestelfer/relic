@@ -204,15 +204,8 @@ templ blockComponent(block session.Block) {
 templ userTextBlock(b *session.UserText) {
 	<article class="block conversation user">
 		<div class="role"><span class="tag">user</span></div>
-		<div class="clamp">
-			<div class="clamp-body">
-				<div class="body">
-					@templ.Raw(string(renderMarkdown(b.Text)))
-				</div>
-			</div>
-			<button class="clamp-toggle" type="button">
-				<span class="label">Show more</span>
-			</button>
+		<div class="body">
+			@templ.Raw(string(renderMarkdown(b.Text)))
 		</div>
 	</article>
 }
@@ -220,15 +213,8 @@ templ userTextBlock(b *session.UserText) {
 templ assistantTextBlock(b *session.AssistantText) {
 	<article class="block conversation assistant">
 		<div class="role"><span class="tag">assistant</span></div>
-		<div class="clamp">
-			<div class="clamp-body">
-				<div class="body">
-					@templ.Raw(string(renderMarkdown(b.Text)))
-				</div>
-			</div>
-			<button class="clamp-toggle" type="button">
-				<span class="label">Show more</span>
-			</button>
+		<div class="body">
+			@templ.Raw(string(renderMarkdown(b.Text)))
 		</div>
 	</article>
 }
@@ -242,15 +228,8 @@ templ thinkingBlock(b *session.Thinking) {
 				<span class="thinking-chevron"></span>
 			</summary>
 			<div class="thinking-body">
-				<div class="clamp">
-					<div class="clamp-body">
-						<div class="preview">
-							@templ.Raw(string(renderMarkdown(b.Text)))
-						</div>
-					</div>
-					<button class="clamp-toggle" type="button">
-						<span class="label">Show more</span>
-					</button>
+				<div class="preview">
+					@templ.Raw(string(renderMarkdown(b.Text)))
 				</div>
 			</div>
 		</details>
@@ -441,7 +420,7 @@ templ toolResultBlock(b *session.ToolResult) {
 					<span class="label">Show more</span>
 				</button>
 			</div>
-		} else if bash, ok := b.Enrichment.(*session.BashEnrichment); ok && bash != nil {
+		} else if isTerminalResult(b) {
 			<div class="clamp">
 				<div class="clamp-body">
 					<div class="term">
@@ -449,7 +428,7 @@ templ toolResultBlock(b *session.ToolResult) {
 							<span class="dots"><span></span><span></span><span></span></span>
 							<span class="label">{ termLabel(b) }</span>
 						</div>
-						<pre>@templ.Raw(string(bashEnrichmentHTML(bash)))</pre>
+						<pre>@templ.Raw(string(termResultHTML(b)))</pre>
 					</div>
 				</div>
 				<button class="clamp-toggle" type="button">
@@ -461,14 +440,10 @@ templ toolResultBlock(b *session.ToolResult) {
 				<div class="clamp-body">
 					<div class="result-card">
 						<div class="rc-chrome">
-							<div class="rc-dots"><span></span><span></span><span></span></div>
+							<span class="rc-dots"><span></span><span></span><span></span></span>
 							<span class="rc-summary">{ termLabel(b) }</span>
 						</div>
-						if isMCPTool(b.LinkedCallName) {
-							@templ.Raw(string(mcpResultHTML(b.Content)))
-						} else {
-							<pre class="code">@templ.Raw(string(safeANSI(b.Content)))</pre>
-						}
+						@templ.Raw(string(toolResultContentHTML(b)))
 					</div>
 				</div>
 				<button class="clamp-toggle" type="button">
@@ -646,7 +621,7 @@ templ taskNotificationBlock(b *session.TaskNotification) {
 		<div class="role"><span class="tag">task_notification</span></div>
 		<div class="result-card">
 			<div class="rc-chrome">
-				<div class="rc-dots"><span></span><span></span><span></span></div>
+				<span class="rc-dots"><span></span><span></span><span></span></span>
 				if b.Status != "" {
 					<span class={ "rc-badge", taskNotifBadgeClass(b.Status) }>{ b.Status }</span>
 				}

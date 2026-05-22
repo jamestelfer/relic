@@ -7,5 +7,5 @@ class="body"><p>Inline: press <kbd>Ctrl+C</kbd> to cancel.</p>
 <p>Link: <a href="http://example.com" rel="nofollow">safe link</a> here.</p>
 <details><summary>Expand</summary>Detail content</details>
 <p>Safe markdown: <strong>bold</strong> and <code>code</code>.</p>
-</div></div><button class="clamp-toggle" type="button"><span class="label">Show more</span></button></div></article><div class="turn-foot"><span class="spacer"></span> <span class="end">end of session</span></div></section><footer class="session-foot"><span>END OF SESSION · 1 turn</span> <span><a href="https://github.com/jamestelfer/relic">relic vdev</a></span></footer>
+</div></article><div class="turn-foot"><span class="spacer"></span> <span class="end">end of session</span></div></section><footer class="session-foot"><span>END OF SESSION · 1 turn</span> <span><a href="https://github.com/jamestelfer/relic">relic vdev</a></span></footer>
 ---

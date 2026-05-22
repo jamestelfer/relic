@@ -8,48 +8,48 @@
 
 ---
 
-## Phase 1: Rename task-notification to result-card
+## Phase 1: Rename task-notification to result-card ✅ COMPLETE
 
-- [ ] Tests pass
-- [ ] Review passed
-- [ ] All acceptance criteria met
-
----
-
-## Phase 2: Rework thinking block structure
-
-- [ ] Tests pass
-- [ ] Review passed
-- [ ] All acceptance criteria met
+- [x] Tests pass
+- [x] Review passed
+- [x] All acceptance criteria met
 
 ---
 
-## Phase 3: Rework compact-summary and unknown-block chevrons
+## Phase 2: Rework thinking block structure ✅ COMPLETE
 
-- [ ] Tests pass
-- [ ] Review passed
-- [ ] All acceptance criteria met
-
----
-
-## Phase 4: Merge slash-command + command-output into slash-merged
-
-- [ ] Tests pass
-- [ ] Review passed
-- [ ] All acceptance criteria met
+- [x] Tests pass
+- [x] Review passed
+- [x] All acceptance criteria met
 
 ---
 
-## Phase 5: Rework non-terminal tool-result to result-card
+## Phase 3: Rework compact-summary and unknown-block chevrons ✅ COMPLETE
 
-- [ ] Tests pass
-- [ ] Review passed
-- [ ] All acceptance criteria met
+- [x] Tests pass
+- [x] Review passed
+- [x] All acceptance criteria met
 
 ---
 
-## Phase 6: Conversation clamp flush style + CSS sync
+## Phase 4: Merge slash-command + command-output into slash-merged ✅ COMPLETE
 
-- [ ] Tests pass
-- [ ] Review passed
-- [ ] All acceptance criteria met
+- [x] Tests pass
+- [x] Review passed
+- [x] All acceptance criteria met
+
+---
+
+## Phase 5: Rework non-terminal tool-result to result-card ✅ COMPLETE
+
+- [x] Tests pass
+- [x] Review passed
+- [x] All acceptance criteria met
+
+---
+
+## Phase 6: Conversation clamp flush style + CSS sync ✅ COMPLETE
+
+- [x] Tests pass
+- [x] Review passed
+- [x] All acceptance criteria met

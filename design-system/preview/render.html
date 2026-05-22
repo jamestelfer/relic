@@ -12,30 +12,6 @@
   /* Theme resolution (normally in highlight.css) */
   :root { color-scheme: light dark; }
 
-  /* Demo terminal ANSI shorthand (production uses .term-fg* classes) */
-  .term .ok    { color: #7ee787; }
-  .term .warn  { color: #f0e07a; }
-  .term .err   { color: #ff7b72; }
-  .term .dim   { color: #6E7891; }
-  .term .path  { color: #79c0ff; }
-  .term .prompt { color: var(--citron-300); }
-
-  /* Demo syntax highlighting (production uses .chroma classes) */
-  pre.code { margin: 0; padding: 16px 18px; background: var(--bg-code); border-radius: var(--radius-md); font-family: var(--font-mono); font-size: 13px; line-height: 1.65; overflow: auto; border: 1px solid var(--border); }
-  pre.code .k, pre.code .kt { color: light-dark(#cf222e, #ff7b72); }
-  pre.code .nf { color: light-dark(#6639ba, #d2a8ff); }
-  pre.code .nx { color: light-dark(#1f2328, #E8ECF6); }
-  pre.code .s  { color: light-dark(#0a3069, #a5d6ff); }
-  pre.code .c  { color: light-dark(#57606a, #8b949e); font-style: italic; }
-  pre.code .o  { color: light-dark(#0550ae, #ff7b72); }
-  pre.code .nb { color: light-dark(#6639ba, #d2a8ff); }
-
-  /* Demo JSON highlighting (production uses highlightJSON) */
-  .mcp-json { margin: 0; padding: 14px 16px; font-family: var(--font-mono); font-size: 12.5px; line-height: 1.65; background: var(--bg-code); color: var(--fg); overflow: auto; border-top: 1px solid var(--border); }
-  .mcp-json .jk { color: light-dark(var(--lapis-600), #79c0ff); }
-  .mcp-json .js { color: light-dark(oklch(0.42 0.1 145), #7ee787); }
-  .mcp-json .jn { color: light-dark(var(--cobalt-500), #d2a8ff); }
-  .mcp-json .jb { color: light-dark(var(--violet-500), #ff9a6c); }
 
   /* .find pill (not in component.css) */
   .find { display: inline-flex; align-items: center; gap: 6px; padding: 1px 8px; background: var(--accent-soft); color: var(--accent-ink); border: 1px solid var(--citron-300); border-radius: 999px; font-family: var(--font-mono); font-size: 11px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; }
@@ -348,17 +324,18 @@
             <span class="rc-dots"><span></span><span></span><span></span></span>
             <span class="rc-summary">Read · internal/renderer/render.go · 238 lines</span>
           </div>
-<pre class="code"><span class="k">package</span> renderer
-
-<span class="k">import</span> (
-    <span class="s">"context"</span>
-    <span class="s">"github.com/jamestelfer/relic/internal/parser"</span>
-)
-
-<span class="c">// contentBlock dispatches to the right component for each block kind.</span>
-<span class="k">func</span> <span class="nf">contentBlock</span>(b parser.ContentBlock, theme <span class="kt">string</span>) templ.Component {
-    <span class="c">// 4 matches for "ContentBlock" in this file</span>
-}</pre>
+<pre class="chroma"><code><span class="line"><span class="cl"><span class="kn">package</span><span class="w"> </span><span class="nx">renderer</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kn">import</span><span class="w"> </span><span class="p">(</span>
+</span></span><span class="line"><span class="cl"><span class="w">    </span><span class="s">&#34;context&#34;</span>
+</span></span><span class="line"><span class="cl"><span class="w">    </span><span class="s">&#34;github.com/jamestelfer/relic/internal/parser&#34;</span>
+</span></span><span class="line"><span class="cl"><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1">// contentBlock dispatches to the right component for each block kind.</span>
+</span></span><span class="line"><span class="cl"><span class="kd">func</span><span class="w"> </span><span class="nf">contentBlock</span><span class="p">(</span><span class="nx">b</span><span class="w"> </span><span class="nx">parser</span><span class="p">.</span><span class="nx">ContentBlock</span><span class="p">,</span><span class="w"> </span><span class="nx">theme</span><span class="w"> </span><span class="kt">string</span><span class="p">)</span><span class="w"> </span><span class="nx">templ</span><span class="p">.</span><span class="nx">Component</span><span class="w"> </span><span class="p">{</span>
+</span></span><span class="line"><span class="cl"><span class="w">    </span><span class="c1">// 4 matches for &#34;ContentBlock&#34; in this file</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre>
         </div>
       </article>
 
@@ -376,21 +353,22 @@
             <span class="arg">internal/renderer/renderer.templ</span>
             <span class="toggle">+38  −12</span>
           </div>
-<pre class="code"><span class="c">// contentBlock renders a single content block.</span>
-templ <span class="nf">contentBlock</span>(block parser.ContentBlock, theme <span class="kt">string</span>) {
-  <span class="k">switch</span> b := block.(<span class="k">type</span>) {
-  <span class="k">case</span> *parser.<span class="nx">TextBlock</span>:
-    @<span class="nf">textBlock</span>(b, theme)
-  <span class="k">case</span> *parser.<span class="nx">ToolUseBlock</span>:
-    @<span class="nf">toolUseBlock</span>(b, theme)
-  <span class="k">case</span> *parser.<span class="nx">ToolResultBlock</span>:
-    @<span class="nf">toolResultBlock</span>(b)
-  <span class="k">case</span> *parser.<span class="nx">ThinkingBlock</span>:
-    @<span class="nf">thinkingBlock</span>(b)
-  <span class="k">case</span> *parser.<span class="nx">RawBlock</span>:
-    @<span class="nf">rawBlock</span>(b)
-  }
-}</pre>
+<pre class="chroma"><code><span class="line"><span class="cl"><span class="c1">// contentBlock renders a single content block.</span>
+</span></span><span class="line"><span class="cl"><span class="nx">templ</span> <span class="nf">contentBlock</span><span class="p">(</span><span class="nx">block</span> <span class="nx">parser</span><span class="p">.</span><span class="nx">ContentBlock</span><span class="p">,</span> <span class="nx">theme</span> <span class="kt">string</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">  <span class="k">switch</span> <span class="nx">b</span> <span class="o">:=</span> <span class="nx">block</span><span class="p">.(</span><span class="kd">type</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">  <span class="k">case</span> <span class="o">*</span><span class="nx">parser</span><span class="p">.</span><span class="nx">TextBlock</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">    <span class="p">@</span><span class="nf">textBlock</span><span class="p">(</span><span class="nx">b</span><span class="p">,</span> <span class="nx">theme</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">  <span class="k">case</span> <span class="o">*</span><span class="nx">parser</span><span class="p">.</span><span class="nx">ToolUseBlock</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">    <span class="p">@</span><span class="nf">toolUseBlock</span><span class="p">(</span><span class="nx">b</span><span class="p">,</span> <span class="nx">theme</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">  <span class="k">case</span> <span class="o">*</span><span class="nx">parser</span><span class="p">.</span><span class="nx">ToolResultBlock</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">    <span class="p">@</span><span class="nf">toolResultBlock</span><span class="p">(</span><span class="nx">b</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">  <span class="k">case</span> <span class="o">*</span><span class="nx">parser</span><span class="p">.</span><span class="nx">ThinkingBlock</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">    <span class="p">@</span><span class="nf">thinkingBlock</span><span class="p">(</span><span class="nx">b</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">  <span class="k">case</span> <span class="o">*</span><span class="nx">parser</span><span class="p">.</span><span class="nx">RawBlock</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">    <span class="p">@</span><span class="nf">rawBlock</span><span class="p">(</span><span class="nx">b</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">  <span class="p">}</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre>
         </div>
       </article>
 
@@ -421,16 +399,16 @@ templ <span class="nf">contentBlock</span>(block parser.ContentBlock, theme <spa
             <span class="dots"><span></span><span></span><span></span></span>
             <span class="label">Bash · exit 0 · 0.42s</span>
           </div>
-<pre><span class="prompt">$</span> just generate &amp;&amp; just test ./internal/renderer/...
-<span class="ok">✓</span> templ generate     <span class="dim">renderer_templ.go regenerated</span>
-<span class="ok">✓</span> go test            <span class="path">./internal/renderer</span>
-  <span class="dim">--- PASS:</span> TestRender_Fixture                <span class="dim">(0.04s)</span>
-  <span class="dim">--- PASS:</span> TestContentBlock_Text             <span class="dim">(0.00s)</span>
-  <span class="dim">--- PASS:</span> TestContentBlock_ToolUse          <span class="dim">(0.01s)</span>
-  <span class="dim">--- PASS:</span> TestContentBlock_ToolResult_ANSI  <span class="dim">(0.02s)</span>
-  <span class="dim">--- PASS:</span> TestContentBlock_Thinking         <span class="dim">(0.00s)</span>
-<span class="ok">PASS</span>
-ok    github.com/jamestelfer/relic/internal/renderer    <span class="dim">0.42s</span></pre>
+<pre><span class="term-fg33">$</span> just generate &amp;&amp; just test ./internal/renderer/...
+<span class="term-fg32">✓</span> templ generate     <span class="term-fg90">renderer_templ.go regenerated</span>
+<span class="term-fg32">✓</span> go test            <span class="term-fg34">./internal/renderer</span>
+  <span class="term-fg90">--- PASS:</span> TestRender_Fixture                <span class="term-fg90">(0.04s)</span>
+  <span class="term-fg90">--- PASS:</span> TestContentBlock_Text             <span class="term-fg90">(0.00s)</span>
+  <span class="term-fg90">--- PASS:</span> TestContentBlock_ToolUse          <span class="term-fg90">(0.01s)</span>
+  <span class="term-fg90">--- PASS:</span> TestContentBlock_ToolResult_ANSI  <span class="term-fg90">(0.02s)</span>
+  <span class="term-fg90">--- PASS:</span> TestContentBlock_Thinking         <span class="term-fg90">(0.00s)</span>
+<span class="term-fg32">PASS</span>
+ok    github.com/jamestelfer/relic/internal/renderer    <span class="term-fg90">0.42s</span></pre>
         </div>
       </article>
 
@@ -654,12 +632,12 @@ ok    github.com/jamestelfer/relic/internal/renderer    <span class="dim">0.42s<
           <span class="tag">tool_result</span>
           <a class="pair-id" href="#tu_01H7K8" title="Jump to call">↑ tu_01H7K8</a>
         </div>
-        <div class="term">
-          <div class="chrome">
-            <span class="dots"><span></span><span></span><span></span></span>
-            <span class="label">TodoWrite · 5 items written</span>
+        <div class="result-card">
+          <div class="rc-chrome">
+            <span class="rc-dots"><span></span><span></span><span></span></span>
+            <span class="rc-summary">TodoWrite · 5 items written</span>
           </div>
-          <pre><span class="ok">✓</span> Todos updated successfully.</pre>
+          <pre class="chroma"><code><span class="line"><span class="cl">✓ Todos updated successfully.</span></span></code></pre>
         </div>
       </article>
 
@@ -677,11 +655,12 @@ ok    github.com/jamestelfer/relic/internal/renderer    <span class="dim">0.42s<
             <span class="arg">relic: session result banner</span>
           </div>
           <div class="mcp-server">MCP server: <strong>github</strong> · tool: <strong>create_issue</strong></div>
-          <pre class="mcp-json"><span class="jk">"owner"</span>: <span class="js">"jamestelfer"</span>,
-<span class="jk">"repo"</span>:  <span class="js">"relic"</span>,
-<span class="jk">"title"</span>: <span class="js">"feat: session result banner for headless mode"</span>,
-<span class="jk">"body"</span>:  <span class="js">"Render the result record as an outcome banner at the end of the document..."</span>,
-<span class="jk">"labels"</span>: [<span class="js">"enhancement"</span>, <span class="js">"renderer"</span>]</pre>
+          <pre class="chroma"><code><span class="line"><span class="cl"><span class="nt">&#34;owner&#34;</span><span class="p">:</span> <span class="s2">&#34;jamestelfer&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl"><span class="nt">&#34;repo&#34;</span><span class="p">:</span>  <span class="s2">&#34;relic&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl"><span class="nt">&#34;title&#34;</span><span class="p">:</span> <span class="s2">&#34;feat: session result banner for headless mode&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl"><span class="nt">&#34;body&#34;</span><span class="p">:</span>  <span class="s2">&#34;Render the result record as an outcome banner at the end...&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl"><span class="nt">&#34;labels&#34;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&#34;enhancement&#34;</span><span class="p">,</span> <span class="s2">&#34;renderer&#34;</span><span class="p">]</span>
+</span></span></code></pre>
         </div>
       </article>
 
@@ -691,12 +670,12 @@ ok    github.com/jamestelfer/relic/internal/renderer    <span class="dim">0.42s<
           <span class="tag">tool_result</span>
           <a class="pair-id" href="#tu_01H7K9" title="Jump to call">↑ tu_01H7K9</a>
         </div>
-        <div class="term">
-          <div class="chrome">
-            <span class="dots"><span></span><span></span><span></span></span>
-            <span class="label">mcp__github__create_issue · exit 0</span>
+        <div class="result-card">
+          <div class="rc-chrome">
+            <span class="rc-dots"><span></span><span></span><span></span></span>
+            <span class="rc-summary">mcp__github__create_issue · exit 0</span>
           </div>
-          <pre><span class="ok">✓</span> Issue <span class="path">#47</span> created: <span class="path">https://github.com/jamestelfer/relic/issues/47</span></pre>
+          <pre class="chroma"><code><span class="line"><span class="cl">✓ Issue #47 created: https://github.com/jamestelfer/relic/issues/47</span></span></code></pre>
         </div>
       </article>
 
@@ -801,14 +780,15 @@ ok    github.com/jamestelfer/relic/internal/renderer    <span class="dim">0.42s<
           <span class="tag">tool_result</span>
           <a class="pair-id" href="#tu_01H7KA" title="Jump to call">↑ tu_01H7KA</a>
         </div>
-        <div class="term">
-          <div class="chrome">
-            <span class="dots"><span></span><span></span><span></span></span>
-            <span class="label">Task · 8 tool calls · 42s · $0.06</span>
+        <div class="result-card">
+          <div class="rc-chrome">
+            <span class="rc-dots"><span></span><span></span><span></span></span>
+            <span class="rc-summary">Task · 8 tool calls · 42s · $0.06</span>
           </div>
-          <pre><span class="ok">✓</span> Sub-agent completed. Found <span class="path">9</span> block types not yet in fixture.
-  <span class="dim">Highest relevance: Edit diff, Task, Image, WebSearch, WebFetch</span>
-  <span class="dim">Lower relevance: Document, Compaction summary, Attachment, Multimodal result</span></pre>
+          <pre class="chroma"><code><span class="line"><span class="cl">✓ Sub-agent completed. Found 9 block types not yet in fixture.
+</span></span><span class="line"><span class="cl">  Highest relevance: Edit diff, Task, Image, WebSearch, WebFetch
+</span></span><span class="line"><span class="cl">  Lower relevance: Document, Compaction summary, Attachment, Multimodal result
+</span></span></code></pre>
         </div>
       </article>
 
@@ -826,25 +806,21 @@ ok    github.com/jamestelfer/relic/internal/renderer    <span class="dim">0.42s<
             <span class="arg">internal/renderer/renderer.templ</span>
             <span class="toggle">+5  −3</span>
           </div>
-          <div class="diff-body">
-            <div class="diff-hunk">
-              <div class="diff-meta">@@ -88,7 +88,9 @@ templ toolUseBlock(b *parser.ToolUseBlock, theme string) {</div>
-              <div class="diff-line ctx">  switch b.Name {</div>
-              <div class="diff-line ctx">  case "Bash":</div>
-              <div class="diff-line ctx">    @bashBlock(b, theme)</div>
-              <div class="diff-line del">  case "Read", "Write":</div>
-              <div class="diff-line del">    @fileBlock(b, theme)</div>
-              <div class="diff-line del">  case "Edit":</div>
-              <div class="diff-line add">  case "Read":</div>
-              <div class="diff-line add">    @readBlock(b, theme)</div>
-              <div class="diff-line add">  case "Write":</div>
-              <div class="diff-line add">    @writeBlock(b, theme)</div>
-              <div class="diff-line add">  case "Edit", "MultiEdit":</div>
-              <div class="diff-line ctx">    @editBlock(b, theme)</div>
-              <div class="diff-line ctx">  default:</div>
-              <div class="diff-line ctx">    @genericToolBlock(b)</div>
-            </div>
-          </div>
+          <pre class="chroma"><code><span class="line"><span class="cl"> switch b.Name {
+</span></span><span class="line"><span class="cl"> case &#34;Bash&#34;:
+</span></span><span class="line"><span class="cl">    @bashBlock(b, theme)
+</span></span><span class="line"><span class="cl"><span class="gd">-  case &#34;Read&#34;, &#34;Write&#34;:
+</span></span></span><span class="line"><span class="cl"><span class="gd">-    @fileBlock(b, theme)
+</span></span></span><span class="line"><span class="cl"><span class="gd">-  case &#34;Edit&#34;:
+</span></span></span><span class="line"><span class="cl"><span class="gi">+  case &#34;Read&#34;:
+</span></span></span><span class="line"><span class="cl"><span class="gi">+    @readBlock(b, theme)
+</span></span></span><span class="line"><span class="cl"><span class="gi">+  case &#34;Write&#34;:
+</span></span></span><span class="line"><span class="cl"><span class="gi">+    @writeBlock(b, theme)
+</span></span></span><span class="line"><span class="cl"><span class="gi">+  case &#34;Edit&#34;, &#34;MultiEdit&#34;:
+</span></span></span><span class="line"><span class="cl">    @editBlock(b, theme)
+</span></span><span class="line"><span class="cl"> default:
+</span></span><span class="line"><span class="cl">    @genericToolBlock(b)
+</span></span></code></pre>
         </div>
       </article>
 
@@ -854,12 +830,12 @@ ok    github.com/jamestelfer/relic/internal/renderer    <span class="dim">0.42s<
           <span class="tag">tool_result</span>
           <a class="pair-id" href="#tu_01H7KB" title="Jump to call">↑ tu_01H7KB</a>
         </div>
-        <div class="term">
-          <div class="chrome">
-            <span class="dots"><span></span><span></span><span></span></span>
-            <span class="label">Edit · Updated internal/renderer/renderer.templ</span>
+        <div class="result-card">
+          <div class="rc-chrome">
+            <span class="rc-dots"><span></span><span></span><span></span></span>
+            <span class="rc-summary">Edit · Updated internal/renderer/renderer.templ</span>
           </div>
-          <pre><span class="ok">✓</span> Edit applied successfully.</pre>
+          <pre class="chroma"><code><span class="line"><span class="cl">✓ Edit applied successfully.</span></span></code></pre>
         </div>
       </article>
 
@@ -888,15 +864,16 @@ ok    github.com/jamestelfer/relic/internal/renderer    <span class="dim">0.42s<
           <span class="tag">tool_result</span>
           <a class="pair-id" href="#tu_01H7KC" title="Jump to call">↑ tu_01H7KC</a>
         </div>
-        <div class="term">
-          <div class="chrome">
-            <span class="dots"><span></span><span></span><span></span></span>
-            <span class="label">WebSearch · 4 results</span>
+        <div class="result-card">
+          <div class="rc-chrome">
+            <span class="rc-dots"><span></span><span></span><span></span></span>
+            <span class="rc-summary">WebSearch · 4 results</span>
           </div>
-          <pre><span class="path">github.com/gkampitakis/go-snaps</span>  <span class="dim">— snapshot testing for Go</span>
-<span class="dim">  UPDATE_SNAPS=true go test ./... to accept changes</span>
-<span class="path">pkg.go.dev/github.com/gkampitakis/go-snaps</span>  <span class="dim">— godoc</span>
-<span class="path">medium.com/@gkampitakis/snapshot-testing-in-go</span>  <span class="dim">— usage guide</span></pre>
+          <pre class="chroma"><code><span class="line"><span class="cl">github.com/gkampitakis/go-snaps  — snapshot testing for Go
+</span></span><span class="line"><span class="cl">  UPDATE_SNAPS=true go test ./... to accept changes
+</span></span><span class="line"><span class="cl">pkg.go.dev/github.com/gkampitakis/go-snaps  — godoc
+</span></span><span class="line"><span class="cl">medium.com/@gkampitakis/snapshot-testing-in-go  — usage guide
+</span></span></code></pre>
         </div>
       </article>
 
@@ -926,14 +903,15 @@ ok    github.com/jamestelfer/relic/internal/renderer    <span class="dim">0.42s<
           <span class="tag">tool_result</span>
           <a class="pair-id" href="#tu_01H7KD" title="Jump to call">↑ tu_01H7KD</a>
         </div>
-        <div class="term">
-          <div class="chrome">
-            <span class="dots"><span></span><span></span><span></span></span>
-            <span class="label">WebFetch · github.com/gkampitakis/go-snaps</span>
+        <div class="result-card">
+          <div class="rc-chrome">
+            <span class="rc-dots"><span></span><span></span><span></span></span>
+            <span class="rc-summary">WebFetch · github.com/gkampitakis/go-snaps</span>
           </div>
-          <pre><span class="dim">Set UPDATE_SNAPS=true before running tests to update all snapshots.</span>
-<span class="dim">Alternatively pass -update flag via TestMain.</span>
-<span class="ok">UPDATE_SNAPS=true go test ./...</span></pre>
+          <pre class="chroma"><code><span class="line"><span class="cl">Set UPDATE_SNAPS=true before running tests to update all snapshots.
+</span></span><span class="line"><span class="cl">Alternatively pass -update flag via TestMain.
+</span></span><span class="line"><span class="cl">UPDATE_SNAPS=true go test ./...
+</span></span></code></pre>
         </div>
       </article>
 
@@ -1041,8 +1019,8 @@ ok    github.com/jamestelfer/relic/internal/renderer    <span class="dim">0.42s<
             </span>
             <span class="label" style="color:#FF8080;">Bash · exit 1 · is_error</span>
           </div>
-          <pre><span class="err">./internal/renderer/renderer.templ:92:5: undefined: editBlock</span>
-<span class="err">./internal/renderer/renderer.templ:92:5: too many arguments in call to editBlock</span></pre>
+          <pre><span class="term-fg31">./internal/renderer/renderer.templ:92:5: undefined: editBlock</span>
+<span class="term-fg31">./internal/renderer/renderer.templ:92:5: too many arguments in call to editBlock</span></pre>
         </div>
       </article>
 
@@ -1065,11 +1043,12 @@ ok    github.com/jamestelfer/relic/internal/renderer    <span class="dim">0.42s<
             <span class="ub-type">server_tool_use</span>
             <span class="ub-chevron"></span>
           </summary>
-          <pre class="mcp-json" style="margin:0; border-top:1px solid var(--border); border-radius:0 0 var(--radius-md) var(--radius-md);">{
-  <span class="jk">"type"</span>: <span class="js">"server_tool_use"</span>,
-  <span class="jk">"id"</span>: <span class="js">"srvtool_01ABC"</span>,
-  <span class="jk">"name"</span>: <span class="js">"web_search"</span>
-}</pre>
+          <pre class="chroma"><code><span class="line"><span class="cl"><span class="p">{</span>
+</span></span><span class="line"><span class="cl">  <span class="nt">&#34;type&#34;</span><span class="p">:</span> <span class="s2">&#34;server_tool_use&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">  <span class="nt">&#34;id&#34;</span><span class="p">:</span> <span class="s2">&#34;srvtool_01ABC&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">  <span class="nt">&#34;name&#34;</span><span class="p">:</span> <span class="s2">&#34;web_search&#34;</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre>
         </details>
       </article>
 

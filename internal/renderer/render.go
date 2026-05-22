@@ -227,14 +227,16 @@ func highlightJSON(jsonStr string) template.HTML {
 	return h
 }
 
-func mcpResultHTML(content string) template.HTML {
-	trimmed := strings.TrimSpace(content)
-	if (strings.HasPrefix(trimmed, "{") || strings.HasPrefix(trimmed, "[")) && json.Valid([]byte(trimmed)) {
-		return highlightJSON(formatRawJSON([]byte(trimmed)))
+func toolResultContentHTML(b *session.ToolResult) template.HTML {
+	if isMCPTool(b.LinkedCallName) {
+		trimmed := strings.TrimSpace(b.Content)
+		if (strings.HasPrefix(trimmed, "{") || strings.HasPrefix(trimmed, "[")) && json.Valid([]byte(trimmed)) {
+			return highlightJSON(formatRawJSON([]byte(trimmed)))
+		}
 	}
-	h, err := highlight.Highlight(content, "plaintext", "")
+	h, err := highlight.Highlight(b.Content, "plaintext", "")
 	if err != nil {
-		return template.HTML(fmt.Sprintf("<pre><code>%s</code></pre>", template.HTMLEscapeString(content))) //nolint:gosec
+		return template.HTML(fmt.Sprintf("<pre><code>%s</code></pre>", template.HTMLEscapeString(b.Content))) //nolint:gosec
 	}
 	return h
 }
@@ -445,8 +447,18 @@ func userBashOutputHTML(stdout, stderr string) template.HTML {
 	return safeANSI(combined)
 }
 
-func bashEnrichmentHTML(e *session.BashEnrichment) template.HTML {
-	return userBashOutputHTML(e.Stdout, e.Stderr)
+func isTerminalResult(b *session.ToolResult) bool {
+	if _, ok := b.Enrichment.(*session.BashEnrichment); ok {
+		return true
+	}
+	return b.IsError || b.LinkedCallName == "Bash"
+}
+
+func termResultHTML(b *session.ToolResult) template.HTML {
+	if bash, ok := b.Enrichment.(*session.BashEnrichment); ok && bash != nil {
+		return userBashOutputHTML(bash.Stdout, bash.Stderr)
+	}
+	return safeANSI(b.Content)
 }
 
 func safeANSI(s string) (result template.HTML) {

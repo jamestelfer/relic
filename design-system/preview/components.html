@@ -59,28 +59,7 @@
     padding: 2px 8px; border: 1px solid var(--border); border-radius: 4px; background: var(--bg-paper);
   }
 
-  /* Demo terminal ANSI shorthand (production uses .term-fg* classes) */
-  .term .ok    { color: #7ee787; }
-  .term .warn  { color: #f0e07a; }
-  .term .err   { color: #ff7b72; }
-  .term .dim   { color: #6E7891; }
-  .term .path  { color: #79c0ff; }
-  .term .prompt { color: var(--citron-300); }
 
-  /* Demo syntax highlighting (production uses .chroma classes) */
-  pre.code { margin: 0; padding: 16px 18px; background: var(--bg-code); border-radius: var(--radius-md); font-family: var(--font-mono); font-size: 13px; line-height: 1.65; overflow: auto; border: 1px solid var(--border); }
-  pre.code .k, pre.code .kt { color: light-dark(#cf222e, #ff7b72); }
-  pre.code .nf { color: light-dark(#6639ba, #d2a8ff); }
-  pre.code .nx { color: light-dark(#1f2328, #E8ECF6); }
-  pre.code .s  { color: light-dark(#0a3069, #a5d6ff); }
-  pre.code .c  { color: light-dark(#57606a, #8b949e); font-style: italic; }
-
-  /* Demo JSON highlighting (production uses highlightJSON) */
-  .mcp-json { margin: 0; padding: 14px 16px; font-family: var(--font-mono); font-size: 12.5px; line-height: 1.65; background: var(--bg-code); color: var(--fg); overflow: auto; border-top: 1px solid var(--border); }
-  .mcp-json .jk { color: light-dark(var(--lapis-600), #79c0ff); }
-  .mcp-json .js { color: light-dark(oklch(0.42 0.1 145), #7ee787); }
-  .mcp-json .jn { color: light-dark(var(--cobalt-500), #d2a8ff); }
-  .mcp-json .jb { color: light-dark(var(--violet-500), #ff9a6c); }
 
   /* .find pill (not in component.css) */
   .find { display: inline-flex; align-items: center; gap: 6px; padding: 1px 8px; background: var(--accent-soft); color: var(--accent-ink); border: 1px solid var(--citron-300); border-radius: 999px; font-family: var(--font-mono); font-size: 11px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; }
@@ -264,16 +243,17 @@
             <span class="arg">internal/renderer/blocks.go</span>
             <span class="toggle">+84  −0</span>
           </div>
-          <pre class="code"><span class="k">package</span> renderer
-
-<span class="k">import</span> <span class="s">"github.com/jamestelfer/relic/internal/parser"</span>
-
-<span class="c">// toolIcon returns the single-letter icon for a tool card.</span>
-<span class="k">func</span> <span class="nf">toolIcon</span>(name <span class="k">string</span>) <span class="k">string</span> {
-  icons := map[<span class="k">string</span>]<span class="k">string</span>{<span class="s">"Bash"</span>: <span class="s">"$"</span>, <span class="s">"Read"</span>: <span class="s">"R"</span>, <span class="s">"Write"</span>: <span class="s">"W"</span>}
-  <span class="k">if</span> v, ok := icons[name]; ok { <span class="k">return</span> v }
-  <span class="k">return</span> <span class="s">"⚙"</span>
-}</pre>
+          <pre class="chroma"><code><span class="line"><span class="cl"><span class="kn">package</span><span class="w"> </span><span class="nx">renderer</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kn">import</span><span class="w"> </span><span class="s">&#34;github.com/jamestelfer/relic/internal/parser&#34;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1">// toolIcon returns the single-letter icon for a tool card.</span>
+</span></span><span class="line"><span class="cl"><span class="kd">func</span><span class="w"> </span><span class="nf">toolIcon</span><span class="p">(</span><span class="nx">name</span><span class="w"> </span><span class="kt">string</span><span class="p">)</span><span class="w"> </span><span class="kt">string</span><span class="w"> </span><span class="p">{</span>
+</span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nx">icons</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="kd">map</span><span class="p">[</span><span class="kt">string</span><span class="p">]</span><span class="kt">string</span><span class="p">{</span><span class="s">&#34;Bash&#34;</span><span class="p">:</span><span class="w"> </span><span class="s">&#34;$&#34;</span><span class="p">,</span><span class="w"> </span><span class="s">&#34;Read&#34;</span><span class="p">:</span><span class="w"> </span><span class="s">&#34;R&#34;</span><span class="p">,</span><span class="w"> </span><span class="s">&#34;Write&#34;</span><span class="p">:</span><span class="w"> </span><span class="s">&#34;W&#34;</span><span class="p">}</span>
+</span></span><span class="line"><span class="cl"><span class="w">  </span><span class="k">if</span><span class="w"> </span><span class="nx">v</span><span class="p">,</span><span class="w"> </span><span class="nx">ok</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nx">icons</span><span class="p">[</span><span class="nx">name</span><span class="p">];</span><span class="w"> </span><span class="nx">ok</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="k">return</span><span class="w"> </span><span class="nx">v</span><span class="w"> </span><span class="p">}</span>
+</span></span><span class="line"><span class="cl"><span class="w">  </span><span class="k">return</span><span class="w"> </span><span class="s">&#34;⚙&#34;</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre>
         </div>
       </article>
     </div>
@@ -289,22 +269,18 @@
             <span class="arg">internal/renderer/renderer.templ</span>
             <span class="toggle">+5  −3</span>
           </div>
-          <div class="diff-body">
-            <div class="diff-hunk">
-              <div class="diff-meta">@@ -88,7 +88,9 @@ templ toolUseBlock(b *parser.ToolUseBlock, theme string) {</div>
-              <div class="diff-line ctx">  case "Bash":</div>
-              <div class="diff-line ctx">    @bashBlock(b, theme)</div>
-              <div class="diff-line del">  case "Read", "Write":</div>
-              <div class="diff-line del">    @fileBlock(b, theme)</div>
-              <div class="diff-line del">  case "Edit":</div>
-              <div class="diff-line add">  case "Read":</div>
-              <div class="diff-line add">    @readBlock(b, theme)</div>
-              <div class="diff-line add">  case "Write":</div>
-              <div class="diff-line add">    @writeBlock(b, theme)</div>
-              <div class="diff-line add">  case "Edit", "MultiEdit":</div>
-              <div class="diff-line ctx">    @editBlock(b, theme)</div>
-            </div>
-          </div>
+          <pre class="chroma"><code><span class="line"><span class="cl"> case &#34;Bash&#34;:
+</span></span><span class="line"><span class="cl">    @bashBlock(b, theme)
+</span></span><span class="line"><span class="cl"><span class="gd">-  case &#34;Read&#34;, &#34;Write&#34;:
+</span></span></span><span class="line"><span class="cl"><span class="gd">-    @fileBlock(b, theme)
+</span></span></span><span class="line"><span class="cl"><span class="gd">-  case &#34;Edit&#34;:
+</span></span></span><span class="line"><span class="cl"><span class="gi">+  case &#34;Read&#34;:
+</span></span></span><span class="line"><span class="cl"><span class="gi">+    @readBlock(b, theme)
+</span></span></span><span class="line"><span class="cl"><span class="gi">+  case &#34;Write&#34;:
+</span></span></span><span class="line"><span class="cl"><span class="gi">+    @writeBlock(b, theme)
+</span></span></span><span class="line"><span class="cl"><span class="gi">+  case &#34;Edit&#34;, &#34;MultiEdit&#34;:
+</span></span></span><span class="line"><span class="cl">    @editBlock(b, theme)
+</span></span></code></pre>
         </div>
       </article>
     </div>
@@ -500,9 +476,10 @@
             <span class="arg">relic: session result banner</span>
           </div>
           <div class="mcp-server">MCP server: <strong>github</strong> · tool: <strong>create_issue</strong></div>
-          <pre class="mcp-json"><span class="jk">"owner"</span>: <span class="js">"jamestelfer"</span>,
-<span class="jk">"repo"</span>:  <span class="js">"relic"</span>,
-<span class="jk">"title"</span>: <span class="js">"feat: session result banner"</span></pre>
+          <pre class="chroma"><code><span class="line"><span class="cl"><span class="nt">&#34;owner&#34;</span><span class="p">:</span> <span class="s2">&#34;jamestelfer&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl"><span class="nt">&#34;repo&#34;</span><span class="p">:</span>  <span class="s2">&#34;relic&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl"><span class="nt">&#34;title&#34;</span><span class="p">:</span> <span class="s2">&#34;feat: session result banner&#34;</span>
+</span></span></code></pre>
         </div>
       </article>
     </div>
@@ -529,11 +506,11 @@
             <span class="dots"><span></span><span></span><span></span></span>
             <span class="label">Bash · exit 0 · 0.42s</span>
           </div>
-<pre><span class="prompt">$</span> just test ./internal/renderer/...
-<span class="ok">✓</span> go test  <span class="path">./internal/renderer</span>
-  <span class="dim">--- PASS: TestRender_Fixture (0.04s)</span>
-<span class="ok">PASS</span>
-ok  <span class="path">github.com/jamestelfer/relic/internal/renderer</span>  <span class="dim">0.42s</span></pre>
+<pre><span class="term-fg33">$</span> just test ./internal/renderer/...
+<span class="term-fg32">✓</span> go test  <span class="term-fg34">./internal/renderer</span>
+  <span class="term-fg90">--- PASS: TestRender_Fixture (0.04s)</span>
+<span class="term-fg32">PASS</span>
+ok  <span class="term-fg34">github.com/jamestelfer/relic/internal/renderer</span>  <span class="term-fg90">0.42s</span></pre>
         </div>
       </article>
     </div>
@@ -594,7 +571,7 @@ ok  <span class="path">github.com/jamestelfer/relic/internal/renderer</span>  <s
             </span>
             <span class="label" style="color:#FF8080;">Bash · exit 1 · is_error</span>
           </div>
-          <pre><span class="err">./internal/renderer/renderer.templ:92:5: undefined: editBlock</span></pre>
+          <pre><span class="term-fg31">./internal/renderer/renderer.templ:92:5: undefined: editBlock</span></pre>
         </div>
       </article>
     </div>
@@ -611,16 +588,17 @@ ok  <span class="path">github.com/jamestelfer/relic/internal/renderer</span>  <s
             <span class="rc-dots"><span></span><span></span><span></span></span>
             <span class="rc-summary">Read · internal/renderer/render.go · 238 lines</span>
           </div>
-          <pre class="code"><span class="k">package</span> renderer
-
-<span class="k">import</span> (
-    <span class="s">"github.com/jamestelfer/relic/internal/parser"</span>
-)
-
-<span class="c">// Render converts a parsed session into HTML.</span>
-<span class="k">func</span> <span class="nf">Render</span>(s *parser.Session, opts Options) ([]<span class="kt">byte</span>, error) {
-    <span class="c">// …</span>
-}</pre>
+          <pre class="chroma"><code><span class="line"><span class="cl"><span class="kn">package</span><span class="w"> </span><span class="nx">renderer</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kn">import</span><span class="w"> </span><span class="p">(</span>
+</span></span><span class="line"><span class="cl"><span class="w">    </span><span class="s">&#34;github.com/jamestelfer/relic/internal/parser&#34;</span>
+</span></span><span class="line"><span class="cl"><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1">// Render converts a parsed session into HTML.</span>
+</span></span><span class="line"><span class="cl"><span class="kd">func</span><span class="w"> </span><span class="nf">Render</span><span class="p">(</span><span class="nx">s</span><span class="w"> </span><span class="o">*</span><span class="nx">parser</span><span class="p">.</span><span class="nx">Session</span><span class="p">,</span><span class="w"> </span><span class="nx">opts</span><span class="w"> </span><span class="nx">Options</span><span class="p">)</span><span class="w"> </span><span class="p">([]</span><span class="kt">byte</span><span class="p">,</span><span class="w"> </span><span class="kt">error</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+</span></span><span class="line"><span class="cl"><span class="w">    </span><span class="c1">// …</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre>
         </div>
       </article>
     </div>
@@ -808,11 +786,12 @@ Note: cost per token increases ~5×.</div>
             <span class="ub-type">server_tool_use</span>
             <span class="ub-chevron"></span>
           </summary>
-          <pre class="mcp-json" style="margin:0; border-top:1px solid var(--border); border-radius:0 0 var(--radius-md) var(--radius-md);">{
-  <span class="jk">"type"</span>: <span class="js">"server_tool_use"</span>,
-  <span class="jk">"id"</span>: <span class="js">"srvtool_01ABC"</span>,
-  <span class="jk">"name"</span>: <span class="js">"web_search"</span>
-}</pre>
+          <pre class="chroma"><code><span class="line"><span class="cl"><span class="p">{</span>
+</span></span><span class="line"><span class="cl">  <span class="nt">&#34;type&#34;</span><span class="p">:</span> <span class="s2">&#34;server_tool_use&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">  <span class="nt">&#34;id&#34;</span><span class="p">:</span> <span class="s2">&#34;srvtool_01ABC&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">  <span class="nt">&#34;name&#34;</span><span class="p">:</span> <span class="s2">&#34;web_search&#34;</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre>
         </details>
       </article>
     </div>

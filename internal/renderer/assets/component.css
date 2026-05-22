@@ -281,7 +281,7 @@ section.turn .turn-marker {
   padding: 8px 12px;
   background: var(--bg-sunk);
   border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
+  border-radius: 0 0 var(--radius-sm) var(--radius-sm);
   font-family: var(--font-mono);
   font-size: 11.5px;
   letter-spacing: 0.04em;
@@ -453,6 +453,39 @@ details.thinking .preview code {
 }
 .block.tool-result.is-error .term .chrome .dots span {
   background: var(--error-500);
+}
+
+/* Clamp overrides: toggles blend flush with their parent container. */
+.tool-card .clamp-toggle {
+  margin-top: 0;
+  background: var(--bg-sunk);
+  border: none;
+  border-top: 1px solid var(--border);
+}
+.block.tool-result .clamp .term {
+  border-radius: var(--radius-md) var(--radius-md) 0 0;
+  border: none;
+}
+.block.tool-result .clamp:has(.term) .clamp-toggle {
+  margin-top: 0;
+  background: var(--ink-800);
+  border: none;
+  border-top: 1px solid #1F2740;
+  color: var(--ink-300);
+}
+.block.tool-result .clamp:has(.term) .clamp-toggle:hover {
+  color: var(--fg-on-dark);
+}
+.block.tool-result .clamp:has(.term) .clamp-toggle .count { color: var(--fg-on-dark); }
+.block.tool-result .clamp:has(.result-card) .clamp-toggle {
+  margin-top: 0;
+  background: var(--bg-paper);
+  border: none;
+  border-top: 1px solid var(--border);
+  color: var(--fg-muted);
+}
+.block.tool-result .clamp:has(.result-card) .clamp-toggle:hover {
+  color: var(--fg);
 }
 
 /* User Bash (! command) ---------------------------------------- */
@@ -1402,9 +1435,9 @@ details.compact-summary[open] summary .cs-chevron {
   user-select: none;
 }
 
-/* Non-terminal tool-result text content: pre.code inside result-card flows
+/* Non-terminal tool-result text content: pre inside result-card flows
    flush with the card — no standalone border-radius or outer border. */
-.result-card pre.code {
+.result-card pre.chroma {
   margin: 0;
   border-radius: 0;
   border: none;
