@@ -308,6 +308,28 @@ section.turn .turn-marker {
 .clamp.is-fit .clamp-body { max-height: none; -webkit-mask-image: none; mask-image: none; }
 .clamp.is-fit .clamp-toggle { display: none; }
 
+/* Conversation clamp — flush-bottom, edge-to-edge toggle ----------- */
+.block.conversation:has(.clamp) {
+  overflow: hidden;
+  padding-bottom: 0;
+}
+.block.conversation .clamp .clamp-toggle {
+  margin: 4px -24px 0;
+  width: calc(100% + 48px);
+  padding: 10px 24px;
+  border-radius: 0;
+  border: none;
+  background: var(--bg-paper);
+  color: var(--fg-muted);
+}
+.block.conversation .clamp .clamp-toggle:hover {
+  background: var(--bg-sunk);
+  color: var(--fg);
+}
+.block.conversation .clamp .clamp-toggle .count {
+  color: var(--fg);
+}
+
 /* Blocks — hairline-ruled articles on the page background ------------------ */
 .block {
   --rule-color: var(--border-strong);
@@ -432,29 +454,6 @@ details.thinking .preview code {
 .block.tool-result.is-error .term .chrome .dots span {
   background: var(--error-500);
 }
-/* Clamp overrides: toggles blend flush with their parent container. */
-.tool-card .clamp { background: var(--bg-code); }
-.tool-card .clamp-toggle {
-  margin-top: 0;
-  border-radius: 0;
-  background: var(--bg-sunk);
-  border: none;
-  box-shadow: 0 -1px 0 var(--border);
-}
-.block.tool-result .clamp { background: var(--bg-terminal); border-radius: var(--radius-md); overflow: hidden; }
-.block.tool-result .clamp .term { border-radius: 0; border: none; }
-.block.tool-result .clamp-toggle {
-  margin-top: 0;
-  border-radius: 0;
-  background: var(--ink-800);
-  border: none;
-  box-shadow: 0 -1px 0 #1F2740;
-  color: var(--ink-300);
-}
-.block.tool-result .clamp-toggle:hover {
-  color: var(--fg-on-dark);
-}
-.block.tool-result .clamp-toggle .count { color: var(--fg-on-dark); }
 
 /* User Bash (! command) ---------------------------------------- */
 .block.user-bash { --rule-color: var(--role-user-rule); }
@@ -740,6 +739,9 @@ details.thinking .clamp .clamp-toggle .count { color: var(--role-thinking-text);
 .slash-card .args { color: var(--fg-muted); }
 
 /* Slash merged (command + output) ------------------------------------------ */
+/* Ghost card: transparent by default, border + sunk bg on hover,
+   page-bg + border when open. No white backgrounds. Collapses to a
+   single row showing /cmd args → output-peek + chevron. */
 details.slash-merged {
   border: 1px solid transparent;
   border-left: 3px solid transparent; /* 3px matches user/assistant LH border */
@@ -807,7 +809,7 @@ details.slash-merged .sm-out-body {
   color: var(--fg-muted); white-space: pre-wrap;
 }
 
-/* Command output ----------------------------------------------------------- */
+/* Command output (standalone, unpaired) ------------------------------------ */
 .block.cmd-output { --rule-color: var(--border-strong); }
 .cmd-output-body {
   padding: 12px 16px;

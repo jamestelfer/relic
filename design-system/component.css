@@ -723,6 +723,22 @@ details.thinking .clamp .clamp-toggle .count { color: var(--role-thinking-text);
 }
 
 /* Slash command ------------------------------------------------------------- */
+.block.slash-cmd { --rule-color: var(--border-strong); }
+.block.slash-cmd .role .tag { background: var(--ink-500); color: var(--fg-on-dark); }
+.slash-card {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 16px;
+  background: var(--bg-sunk);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  font-family: var(--font-mono); font-size: 13px;
+  color: var(--fg);
+}
+.slash-card .slash { color: var(--fg-subtle); font-weight: 400; }
+.slash-card .cmd { font-weight: 600; color: var(--lapis-600); }
+.slash-card .args { color: var(--fg-muted); }
+
+/* Slash merged (command + output) ------------------------------------------ */
 /* Ghost card: transparent by default, border + sunk bg on hover,
    page-bg + border when open. No white backgrounds. Collapses to a
    single row showing /cmd args → output-peek + chevron. */
@@ -791,6 +807,18 @@ details.slash-merged .sm-out-body {
   padding: 8px 14px 12px 24px;
   font-family: var(--font-mono); font-size: 12.5px; line-height: 1.6;
   color: var(--fg-muted); white-space: pre-wrap;
+}
+
+/* Command output (standalone, unpaired) ------------------------------------ */
+.block.cmd-output { --rule-color: var(--border-strong); }
+.cmd-output-body {
+  padding: 12px 16px;
+  background: var(--bg-sunk);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  font-family: var(--font-mono); font-size: 13px; line-height: 1.6;
+  color: var(--fg-muted);
+  white-space: pre-wrap;
 }
 
 /* Meta blocks (hook_injection, system, unknown) ----------------------------- */
