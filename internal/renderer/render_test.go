@@ -951,10 +951,10 @@ func TestRender_TaskNotification(t *testing.T) {
 			},
 			contains: []string{
 				`class="block tool-result"`,
-				`class="task-notif"`,
-				`class="tn-badge completed"`,
+				`class="result-card"`,
+				`class="rc-badge completed"`,
 				"Agent finished",
-				`class="tn-result"`,
+				`class="rc-body"`,
 				"<p>All done</p>",
 				"abc123",
 				"/tmp/out.txt",
@@ -971,7 +971,7 @@ func TestRender_TaskNotification(t *testing.T) {
 				LineNum: 1,
 			},
 			contains: []string{
-				`class="tn-badge failed"`,
+				`class="rc-badge failed"`,
 				"Task crashed",
 				"something went wrong",
 			},
@@ -984,8 +984,8 @@ func TestRender_TaskNotification(t *testing.T) {
 				Summary: "Still working",
 				LineNum: 1,
 			},
-			contains:    []string{`class="tn-badge running"`},
-			notContains: []string{`class="tn-result"`},
+			contains:    []string{`class="rc-badge running"`},
+			notContains: []string{`class="rc-body"`},
 		},
 	}
 

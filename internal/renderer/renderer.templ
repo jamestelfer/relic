@@ -598,37 +598,37 @@ templ systemXMLBlock(b *session.SystemXML) {
 templ taskNotificationBlock(b *session.TaskNotification) {
 	<article class="block tool-result">
 		<div class="role"><span class="tag">task_notification</span></div>
-		<div class="task-notif">
-			<div class="tn-chrome">
-				<div class="tn-dots"><span></span><span></span><span></span></div>
+		<div class="result-card">
+			<div class="rc-chrome">
+				<div class="rc-dots"><span></span><span></span><span></span></div>
 				if b.Status != "" {
-					<span class={ "tn-badge", taskNotifBadgeClass(b.Status) }>{ b.Status }</span>
+					<span class={ "rc-badge", taskNotifBadgeClass(b.Status) }>{ b.Status }</span>
 				}
 				if b.Summary != "" {
-					<span class="tn-summary">{ b.Summary }</span>
+					<span class="rc-summary">{ b.Summary }</span>
 				}
 			</div>
 			if b.Result != "" {
-				<div class="tn-result">
+				<div class="rc-body">
 					@templ.Raw(string(renderMarkdown(b.Result)))
 				</div>
 			}
 			if b.TaskID != "" || b.OutputFile != "" || b.Usage.TotalTokens > 0 || b.Usage.ToolUses > 0 || b.Usage.DurationMs > 0 {
-				<div class="tn-footer">
+				<div class="rc-footer">
 					if b.TaskID != "" {
-						<span class="tn-foot-item">{ b.TaskID }</span>
+						<span class="rc-foot-item">{ b.TaskID }</span>
 					}
 					if b.OutputFile != "" {
 						if b.TaskID != "" {
-							<span class="tn-foot-sep">&middot;</span>
+							<span class="rc-foot-sep">&middot;</span>
 						}
-						<span class="tn-foot-item path">{ b.OutputFile }</span>
+						<span class="rc-foot-item path">{ b.OutputFile }</span>
 					}
 					if b.Usage.TotalTokens > 0 || b.Usage.ToolUses > 0 || b.Usage.DurationMs > 0 {
 						if b.TaskID != "" || b.OutputFile != "" {
-							<span class="tn-foot-sep">&middot;</span>
+							<span class="rc-foot-sep">&middot;</span>
 						}
-						<span class="tn-foot-item">{ taskNotifUsageLabel(b.Usage) }</span>
+						<span class="rc-foot-item">{ taskNotifUsageLabel(b.Usage) }</span>
 					}
 				</div>
 			}
