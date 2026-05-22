@@ -147,6 +147,40 @@ func TestRender_ToolResultHasIDAttribute(t *testing.T) {
 	assert.Contains(t, out, `id="result-toolu_01ABC"`)
 }
 
+func TestRender_ToolResultChrome_BashUsesTerminal(t *testing.T) {
+	linkedID := "toolu_bash_term"
+	s := session.Session{
+		Turns: []session.Turn{{Index: 1, Blocks: []session.Block{
+			&session.ToolResult{
+				ToolUseID: linkedID, Content: "ok", LinkedCallID: &linkedID, LinkedCallName: "Bash",
+				Enrichment: &session.BashEnrichment{Stdout: "ok"},
+			},
+		}}},
+	}
+	out := render(t, s, renderer.Options{Name: "test"})
+	assert.Contains(t, out, `class="term"`, "Bash results use terminal chrome")
+	assert.Contains(t, out, `class="chrome"`)
+	assert.NotContains(t, out, `class="result-card"`, "Bash results must not use result-card")
+}
+
+func TestRender_ToolResultChrome_NonBashUsesResultCard(t *testing.T) {
+	linkedID := "toolu_read_rc"
+	s := session.Session{
+		Turns: []session.Turn{{Index: 1, Blocks: []session.Block{
+			&session.ToolResult{
+				ToolUseID: linkedID, Content: "file content here", LinkedCallID: &linkedID, LinkedCallName: "Read",
+				Enrichment: &session.ReadEnrichment{FilePath: "/src/main.go"},
+			},
+		}}},
+	}
+	out := render(t, s, renderer.Options{Name: "test"})
+	assert.Contains(t, out, `class="result-card"`, "non-Bash results use result-card")
+	assert.Contains(t, out, `class="rc-chrome"`)
+	assert.Contains(t, out, `class="rc-summary"`)
+	assert.Contains(t, out, `class="code"`, "non-Bash content in pre.code")
+	assert.NotContains(t, out, `class="term"`, "non-Bash results must not use terminal chrome")
+}
+
 func TestRender_PairIDBadgeLinks(t *testing.T) {
 	callID := "toolu_01ABCDEF"
 	linkedID := callID
@@ -813,7 +847,7 @@ func TestRender_GrepEnrichment_CountMode_NoData(t *testing.T) {
 		}}},
 	}
 	out := render(t, s, renderer.Options{Name: "test"})
-	assert.Contains(t, out, `<span class="label">Grep</span>`, "chrome label: falls back to tool name when no match count")
+	assert.Contains(t, out, `<span class="rc-summary">Grep</span>`, "chrome label: falls back to tool name when no match count")
 }
 
 func TestRender_GlobEnrichment(t *testing.T) {
@@ -903,7 +937,7 @@ func TestRender_ToolResult_NoEnrichment_Unchanged(t *testing.T) {
 	}
 	out := render(t, s, renderer.Options{Name: "test"})
 	assert.Contains(t, out, "normal output")
-	assert.Contains(t, out, `<span class="label">Read</span>`)
+	assert.Contains(t, out, `<span class="rc-summary">Read</span>`)
 }
 
 func TestRender_ToolResult_NilTypedEnrichment_NoPanic(t *testing.T) {
@@ -920,7 +954,8 @@ func TestRender_ToolResult_NilTypedEnrichment_NoPanic(t *testing.T) {
 		}}},
 	}
 	out := render(t, s, renderer.Options{Name: "test"})
-	assert.Contains(t, out, `<span class="label">Read</span>`, "should fall back to tool name when enrichment is typed nil")
+	assert.Contains(t, out, `class="rc-summary"`, "should use result-card for non-Bash tool")
+	assert.Contains(t, out, "Read", "should fall back to tool name when enrichment is typed nil")
 }
 
 func TestRender_AskUserQuestion_ResultWithEnrichment(t *testing.T) {
@@ -1127,6 +1162,6 @@ func TestRender_AskUserQuestion_NilEnrichment_FallsBack(t *testing.T) {
 	out := render(t, s, renderer.Options{Name: "test"})
 
 	assert.NotContains(t, out, `class="ask-result"`, "no ask-result when enrichment is nil")
-	assert.Contains(t, out, `class="term"`, "falls back to terminal chrome")
+	assert.Contains(t, out, `class="result-card"`, "falls back to result-card chrome")
 	assert.Contains(t, out, "User has answered your questions.", "raw content shown in fallback")
 }

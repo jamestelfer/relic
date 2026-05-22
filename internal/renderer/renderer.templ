@@ -441,7 +441,7 @@ templ toolResultBlock(b *session.ToolResult) {
 					<span class="label">Show more</span>
 				</button>
 			</div>
-		} else {
+		} else if bash, ok := b.Enrichment.(*session.BashEnrichment); ok && bash != nil {
 			<div class="clamp">
 				<div class="clamp-body">
 					<div class="term">
@@ -449,12 +449,25 @@ templ toolResultBlock(b *session.ToolResult) {
 							<span class="dots"><span></span><span></span><span></span></span>
 							<span class="label">{ termLabel(b) }</span>
 						</div>
-						if bash, ok := b.Enrichment.(*session.BashEnrichment); ok && bash != nil {
-							<pre>@templ.Raw(string(bashEnrichmentHTML(bash)))</pre>
-						} else if isMCPTool(b.LinkedCallName) {
+						<pre>@templ.Raw(string(bashEnrichmentHTML(bash)))</pre>
+					</div>
+				</div>
+				<button class="clamp-toggle" type="button">
+					<span class="label">Show more</span>
+				</button>
+			</div>
+		} else {
+			<div class="clamp">
+				<div class="clamp-body">
+					<div class="result-card">
+						<div class="rc-chrome">
+							<div class="rc-dots"><span></span><span></span><span></span></div>
+							<span class="rc-summary">{ termLabel(b) }</span>
+						</div>
+						if isMCPTool(b.LinkedCallName) {
 							@templ.Raw(string(mcpResultHTML(b.Content)))
 						} else {
-							<pre>@templ.Raw(string(safeANSI(b.Content)))</pre>
+							<pre class="code">@templ.Raw(string(safeANSI(b.Content)))</pre>
 						}
 					</div>
 				</div>
