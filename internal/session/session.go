@@ -132,6 +132,17 @@ type LocalCommand struct {
 func (b *LocalCommand) BlockType() string { return "local_command" }
 func (b *LocalCommand) sealedBlock()      {}
 
+// SlashMerged pairs a LocalCommand with its immediately following command_output
+// System block into a single renderable unit.
+type SlashMerged struct {
+	Command *LocalCommand
+	Output  string
+	LineNum int `json:"line_num"`
+}
+
+func (b *SlashMerged) BlockType() string { return "slash_merged" }
+func (b *SlashMerged) sealedBlock()      {}
+
 // System is a generic system-origin block (away summary, system reminder, etc).
 // Source identifies the origin: "system_record" for top-level system records,
 // "meta_user" for isMeta:true user messages (Phase 6b).
@@ -534,6 +545,11 @@ func Transform(res parser.Result) Session {
 		embeddedName = res.AITitles[n-1].Text
 	}
 
+	for i := range turns {
+		turns[i].Blocks = mergeSlashCommands(turns[i].Blocks)
+	}
+	preamble = mergeSlashCommands(preamble)
+
 	return Session{
 		Start:         start,
 		Turns:         turns,
@@ -542,6 +558,34 @@ func Transform(res parser.Result) Session {
 		FilesTouched:  filesOrder,
 		EmbeddedName:  embeddedName,
 	}
+}
+
+// mergeSlashCommands collapses adjacent LocalCommand + System{command_output}
+// pairs into a single SlashMerged block.
+func mergeSlashCommands(blocks []Block) []Block {
+	if len(blocks) < 2 {
+		return blocks
+	}
+	out := make([]Block, 0, len(blocks))
+	for i := 0; i < len(blocks); i++ {
+		lc, ok := blocks[i].(*LocalCommand)
+		if !ok || i+1 >= len(blocks) {
+			out = append(out, blocks[i])
+			continue
+		}
+		sys, ok := blocks[i+1].(*System)
+		if !ok || sys.Subtype != "command_output" {
+			out = append(out, blocks[i])
+			continue
+		}
+		out = append(out, &SlashMerged{
+			Command: lc,
+			Output:  sys.Content,
+			LineNum: lc.LineNum,
+		})
+		i++ // skip the command_output block
+	}
+	return out
 }
 
 // hasTextBlock reports whether a message contains at least one TextBlock.

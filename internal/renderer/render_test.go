@@ -451,6 +451,60 @@ func TestRender_UnknownBlock(t *testing.T) {
 	assert.Contains(t, out, "server_tool_use")
 }
 
+func TestRender_SlashMergedBlock(t *testing.T) {
+	cases := []struct {
+		name        string
+		block       *session.SlashMerged
+		contains    []string
+		notContains []string
+	}{
+		{
+			name: "merged command with output",
+			block: &session.SlashMerged{
+				Command: &session.LocalCommand{Name: "focus", Args: "src/"},
+				Output:  "Focused on src/ directory",
+				LineNum: 1,
+			},
+			contains: []string{
+				`class="slash-merged"`,
+				`class="sm-mid"`,
+				`class="sm-cmd"`,
+				`class="sm-out-peek"`,
+				`class="sm-chevron"`,
+				`class="sm-out-body"`,
+				"focus",
+				"src/",
+				"Focused on src/ directory",
+			},
+		},
+		{
+			name: "merged command without output",
+			block: &session.SlashMerged{
+				Command: &session.LocalCommand{Name: "clear"},
+				Output:  "",
+				LineNum: 1,
+			},
+			contains:    []string{`class="slash-merged"`, "clear"},
+			notContains: []string{`class="sm-out-peek"`},
+		},
+	}
+
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			s := session.Session{
+				Turns: []session.Turn{{Index: 1, Blocks: []session.Block{c.block}}},
+			}
+			out := render(t, s, renderer.Options{Name: "test"})
+			for _, want := range c.contains {
+				assert.Contains(t, out, want)
+			}
+			for _, notWant := range c.notContains {
+				assert.NotContains(t, out, notWant)
+			}
+		})
+	}
+}
+
 func TestRender_CompactSummaryBlock(t *testing.T) {
 	s := session.Session{
 		Turns: []session.Turn{{Index: 1, Blocks: []session.Block{

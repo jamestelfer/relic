@@ -739,6 +739,74 @@ details.thinking .clamp .clamp-toggle .count { color: var(--role-thinking-text);
 .slash-card .cmd { font-weight: 600; color: var(--lapis-600); }
 .slash-card .args { color: var(--fg-muted); }
 
+/* Slash merged (command + output) ------------------------------------------ */
+details.slash-merged {
+  border: 1px solid transparent;
+  border-left: 3px solid transparent; /* 3px matches user/assistant LH border */
+  padding: 2px 0;
+  border-radius: var(--radius-md);
+  transition: background 0.12s, border-color 0.12s;
+}
+details.slash-merged:not([open]):hover {
+  background: var(--bg-sunk);
+  border-color: var(--border-strong);
+}
+details.slash-merged[open] {
+  background: var(--bg);
+  border-color: var(--border);
+  border-left-color: var(--border-strong);
+}
+details.slash-merged summary {
+  list-style: none; cursor: pointer;
+  display: flex; align-items: center; gap: 10px;
+  font-family: var(--font-mono); font-size: 12px;
+  letter-spacing: 0.03em; color: var(--fg-muted);
+  padding: 10px 14px 10px 24px;
+  user-select: none;
+}
+details.slash-merged summary::-webkit-details-marker { display: none; }
+/* Middle band: cmd + output-peek share space, both truncate */
+details.slash-merged summary .sm-mid {
+  flex: 1; min-width: 0;
+  display: flex; align-items: center; gap: 8px;
+  overflow: hidden;
+}
+details.slash-merged summary .sm-cmd {
+  flex: 1; min-width: 80px;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+details.slash-merged summary .sm-cmd .slash { color: var(--fg-subtle); }
+details.slash-merged summary .sm-cmd .cmd   { font-weight: 600; color: var(--fg); }
+details.slash-merged summary .sm-cmd .args  { color: var(--fg-muted); }
+details.slash-merged summary .sm-out-peek {
+  flex: 0 1 32ch; min-width: 0;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  color: var(--fg-subtle); font-size: 11.5px;
+}
+details.slash-merged[open] summary .sm-out-peek { display: none; }
+/* Chevron: CSS-drawn, flips on open */
+details.slash-merged summary .sm-chevron {
+  flex-shrink: 0;
+  width: 8px; height: 8px;
+  border-right: 2px solid var(--fg-muted);
+  border-bottom: 2px solid var(--fg-muted);
+  transform: rotate(45deg) translate(-1px, -2px);
+  transition: transform 0.15s, border-color 0.12s;
+  margin-right: 2px;
+}
+details.slash-merged[open] summary .sm-chevron {
+  transform: rotate(-135deg) translate(-1px, 2px);
+}
+details.slash-merged:not([open]):hover .sm-chevron { border-color: var(--fg); }
+details.slash-merged[open] summary:hover { background: var(--bg-sunk); }
+details.slash-merged[open] summary:hover .sm-chevron { border-color: var(--fg); }
+/* Output body: flush under a thin rule, no inner box */
+details.slash-merged .sm-out-body {
+  padding: 8px 14px 12px 24px;
+  font-family: var(--font-mono); font-size: 12.5px; line-height: 1.6;
+  color: var(--fg-muted); white-space: pre-wrap;
+}
+
 /* Command output ----------------------------------------------------------- */
 .block.cmd-output { --rule-color: var(--border-strong); }
 .cmd-output-body {

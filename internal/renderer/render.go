@@ -623,6 +623,16 @@ func taskNotifUsageLabel(u session.TaskNotificationUsage) string {
 	return strings.Join(parts, " · ")
 }
 
+func slashOutputPeek(text string) string {
+	line, _, _ := strings.Cut(text, "\n")
+	line = strings.TrimSpace(line)
+	const limit = 60
+	if len(line) <= limit {
+		return line
+	}
+	return line[:limit] + "…"
+}
+
 func thinkingPeek(text string) string {
 	const limit = 80
 	text = strings.ReplaceAll(text, "\n", " ")

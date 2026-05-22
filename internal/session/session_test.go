@@ -495,43 +495,38 @@ func TestTransformTitleAbsentErrorPreamble(t *testing.T) {
 	assert.True(t, hasError, "error block should be present in turn")
 }
 
-// TestTransformUserCommand: user isMeta message with <command-name> → LocalCommand block.
+// TestTransformUserCommand: user isMeta message with <command-name> + stdout merges into SlashMerged.
 func TestTransformUserCommand(t *testing.T) {
 	res := parseFixture(t, "user_command.jsonl")
 	s := session.Transform(res)
 
 	require.Len(t, s.Turns, 1)
 	blocks := s.Turns[0].Blocks
-	// user text + local command + command output
-	require.GreaterOrEqual(t, len(blocks), 3)
+	require.GreaterOrEqual(t, len(blocks), 2)
 	require.IsType(t, (*session.UserText)(nil), blocks[0])
-	require.IsType(t, (*session.LocalCommand)(nil), blocks[1])
-	lc := blocks[1].(*session.LocalCommand)
-	assert.Equal(t, "compact", lc.Name)
-	assert.Equal(t, "compacted", lc.Message)
+	require.IsType(t, (*session.SlashMerged)(nil), blocks[1])
+	sm := blocks[1].(*session.SlashMerged)
+	assert.Equal(t, "compact", sm.Command.Name)
+	assert.Equal(t, "compacted", sm.Command.Message)
 }
 
-// TestTransformUserCommandOutput: user isMeta message with <local-command-stdout> → System with stdout.
+// TestTransformUserCommandOutput: merged SlashMerged block preserves stdout content.
 func TestTransformUserCommandOutput(t *testing.T) {
 	res := parseFixture(t, "user_command.jsonl")
 	s := session.Transform(res)
 
 	require.Len(t, s.Turns, 1)
 	blocks := s.Turns[0].Blocks
-	require.GreaterOrEqual(t, len(blocks), 3)
-	// The stdout block should be a System or LocalCommand with content
+	require.GreaterOrEqual(t, len(blocks), 2)
+	// The stdout should be in the merged block's Output field
 	found := false
 	for _, b := range blocks {
-		if sys, ok := b.(*session.System); ok && strings.Contains(sys.Content, "Authentication successful") {
-			found = true
-			break
-		}
-		if lc, ok := b.(*session.LocalCommand); ok && strings.Contains(lc.Message, "Authentication successful") {
+		if sm, ok := b.(*session.SlashMerged); ok && strings.Contains(sm.Output, "Authentication successful") {
 			found = true
 			break
 		}
 	}
-	assert.True(t, found, "command stdout should be present in some block")
+	assert.True(t, found, "command stdout should be present in SlashMerged.Output")
 }
 
 // TestTransformApiError: user with isApiErrorMessage:true → ApiError block (not UserText).
