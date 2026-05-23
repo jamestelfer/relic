@@ -259,7 +259,7 @@ section.turn .turn-marker {
 .turn-foot .end { color: var(--fg-muted); }
 
 /* Clamp -------------------------------------------------------------------- */
-.clamp { position: relative; }
+.clamp { position: relative; background: var(--bg-sunk); border-radius: 0 0 var(--radius-sm) var(--radius-sm); }
 .clamp .clamp-body {
   max-height: var(--clamp-h, 12em);
   overflow: hidden;
@@ -277,10 +277,10 @@ section.turn .turn-marker {
   align-items: center;
   gap: 8px;
   width: 100%;
-  margin-top: 4px;
+  margin-top: 0;
   padding: 8px 12px;
   background: var(--bg-sunk);
-  border: 1px solid var(--border);
+  border: none;
   border-radius: 0 0 var(--radius-sm) var(--radius-sm);
   font-family: var(--font-mono);
   font-size: 11.5px;
@@ -289,7 +289,7 @@ section.turn .turn-marker {
   color: var(--fg-muted);
   cursor: pointer;
 }
-.clamp .clamp-toggle:hover { color: var(--fg); border-color: var(--fg-muted); }
+.clamp .clamp-toggle:hover { color: var(--fg); }
 .clamp .clamp-toggle::before {
   content: "";
   width: 8px; height: 8px;
@@ -305,6 +305,7 @@ section.turn .turn-marker {
 .clamp .clamp-toggle .label { flex: 1; text-align: left; }
 /* Layout-time fit: clamps whose body is not actually overflowing drop the
    toggle and render at natural height (see clampScript in renderer.templ). */
+.clamp.is-fit { background: transparent; border-radius: 0; }
 .clamp.is-fit .clamp-body { max-height: none; -webkit-mask-image: none; mask-image: none; }
 .clamp.is-fit .clamp-toggle { display: none; }
 
@@ -313,8 +314,11 @@ section.turn .turn-marker {
   overflow: hidden;
   padding-bottom: 0;
 }
+.block.conversation .clamp {
+  background: var(--bg-paper);
+}
 .block.conversation .clamp .clamp-toggle {
-  margin: 4px -24px 0;
+  margin: 0 -24px 0;
   width: calc(100% + 48px);
   padding: 10px 24px;
   border-radius: 0;
@@ -455,36 +459,54 @@ details.thinking .preview code {
   background: var(--error-500);
 }
 
-/* Clamp overrides: toggles blend flush with their parent container. */
+/* Clamp overrides: toggles blend flush with their parent container.
+   Each context sets a background on .clamp so the mask-image fade reveals a
+   matching color, and the toggle sits flush with no visible border. */
+.tool-card .clamp:not(.is-fit) {
+  background: var(--bg-code);
+}
 .tool-card .clamp-toggle {
   margin-top: 0;
-  background: var(--bg-sunk);
-  border: none;
-  border-top: 1px solid var(--border);
-}
-.block.tool-result .clamp .term {
-  border-radius: var(--radius-md) var(--radius-md) 0 0;
+  background: var(--bg-code);
   border: none;
 }
-.block.tool-result .clamp:has(.term) .clamp-toggle {
+.clamp:not(.is-fit):has(.term) {
+  background: var(--bg-terminal);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+.clamp:not(.is-fit) .term {
+  border-radius: 0;
+  border: none;
+}
+.clamp:has(.term) .clamp-toggle {
   margin-top: 0;
-  background: var(--ink-800);
+  background: var(--bg-terminal);
   border: none;
-  border-top: 1px solid #1F2740;
+  border-radius: 0;
   color: var(--ink-300);
 }
-.block.tool-result .clamp:has(.term) .clamp-toggle:hover {
+.clamp:has(.term) .clamp-toggle:hover {
   color: var(--fg-on-dark);
 }
-.block.tool-result .clamp:has(.term) .clamp-toggle .count { color: var(--fg-on-dark); }
-.block.tool-result .clamp:has(.result-card) .clamp-toggle {
+.clamp:has(.term) .clamp-toggle .count { color: var(--fg-on-dark); }
+.clamp:not(.is-fit):has(.result-card) {
+  background: var(--bg-paper);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+.clamp:not(.is-fit) .result-card {
+  border-radius: 0;
+  border-bottom: none;
+}
+.clamp:has(.result-card) .clamp-toggle {
   margin-top: 0;
   background: var(--bg-paper);
   border: none;
-  border-top: 1px solid var(--border);
+  border-radius: 0;
   color: var(--fg-muted);
 }
-.block.tool-result .clamp:has(.result-card) .clamp-toggle:hover {
+.clamp:has(.result-card) .clamp-toggle:hover {
   color: var(--fg);
 }
 
@@ -567,10 +589,11 @@ details.thinking .preview {
 }
 /* Clamp support: thinking body wraps in .clamp for long blocks */
 details.thinking .thinking-body:has(.clamp) { padding-bottom: 0; }
+details.thinking .clamp { background: var(--role-thinking-bg); }
 details.thinking .clamp .clamp-body { max-height: 8em; }
 details.thinking .clamp.is-open .clamp-body { max-height: none; }
 details.thinking .clamp .clamp-toggle {
-  margin: 4px -16px 0;
+  margin: 0 -16px 0;
   width: calc(100% + 32px);
   padding: 9px 16px;
   border-radius: 0;
