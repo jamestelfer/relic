@@ -964,7 +964,8 @@ internal/session/classify_test.go:17:func TestClassifyUserMessage(t *testing.T) 
       <div class="role"><span class="tag">thinking</span></div>
       <details class="card disclosure">
         <summary class="card-chrome">
-          <span class="label">Internal reasoning</span>
+          <span class="label">reasoning</span>
+          <span class="thinking-peek">Choosing between absorbing the dark surface into .card via a modifier, or keeping the legacy terminal surface as a separate primitive…</span>
         </summary>
         <div class="card-body ct-prose">
           <p>Need to choose between absorbing the dark surface into <code>.card</code> via a colour-scheme modifier, or keeping the legacy terminal surface as a separate primitive.</p>
@@ -981,9 +982,114 @@ internal/session/classify_test.go:17:func TestClassifyUserMessage(t *testing.T) 
   &lt;div class=&quot;role&quot;&gt;&lt;span class=&quot;tag&quot;&gt;thinking&lt;/span&gt;&lt;/div&gt;
   &lt;details class=&quot;card disclosure&quot;&gt;
     &lt;summary class=&quot;card-chrome&quot;&gt;
-      &lt;span class=&quot;label&quot;&gt;Internal reasoning&lt;/span&gt;
+      &lt;span class=&quot;label&quot;&gt;reasoning&lt;/span&gt;
+      &lt;span class=&quot;thinking-peek&quot;&gt;…first-line snippet, hidden when [open]…&lt;/span&gt;
     &lt;/summary&gt;
     &lt;div class=&quot;card-body ct-prose&quot;&gt;…rendered markdown…&lt;/div&gt;
+  &lt;/details&gt;
+&lt;/article&gt;</pre>
+  </details>
+</section>
+
+<!-- ── compactionSummary ───────────────────────────────── -->
+<section class="entry">
+  <h2>compactionSummary</h2>
+  <p class="lede">Dashed, sunk disclosure that records a conversation compaction event. Summary carries a label and a one-line meta peek; the body is the rendered compaction prose.</p>
+  <div class="rendered">
+    <article class="block compaction">
+      <details class="card disclosure">
+        <summary class="card-chrome">
+          <span class="cs-label">compacted</span>
+          <span class="cs-meta">8 turns · 4,210 tokens → 612 tokens · 2026-05-24 13:48</span>
+        </summary>
+        <div class="card-body ct-prose">
+          <p>The conversation explored the renderer pipeline, the parser fallback path, and the design-system v2 layer model. Key decisions: <code>terminal_chrome.css</code> is absorbed into <code>.card.card--dark</code>; the clamp moves onto <code>.card-body</code>; the legacy flat slash-command block is retired in favour of <code>slashMerged</code>.</p>
+          <p>Open items: regenerate <code>render.html</code> and diff against baseline; verify dark-mode ANSI palette resolves correctly inside <code>.card--dark</code> in both page themes.</p>
+        </div>
+      </details>
+    </article>
+  </div>
+  <details class="source"><summary>HTML source</summary>
+    <pre>&lt;article class=&quot;block compaction&quot;&gt;
+  &lt;details class=&quot;card disclosure&quot;&gt;
+    &lt;summary class=&quot;card-chrome&quot;&gt;
+      &lt;span class=&quot;cs-label&quot;&gt;compacted&lt;/span&gt;
+      &lt;span class=&quot;cs-meta&quot;&gt;…turn/token counts · timestamp…&lt;/span&gt;
+    &lt;/summary&gt;
+    &lt;div class=&quot;card-body ct-prose&quot;&gt;…compaction prose…&lt;/div&gt;
+  &lt;/details&gt;
+&lt;/article&gt;</pre>
+  </details>
+</section>
+
+<!-- ── rawBlock ───────────────────────────────────────── -->
+<section class="entry">
+  <h2>rawBlock</h2>
+  <p class="lede">Fallback disclosure for unknown / unclassified JSONL envelopes. Summary names the block type; body is the raw JSON shown via chroma.</p>
+  <div class="rendered">
+    <article class="block raw">
+      <details class="card disclosure">
+        <summary class="card-chrome">
+          <span class="label">raw block</span>
+          <span class="cs-meta">type: <code>tool_use_partial</code> · 1 entry</span>
+        </summary>
+        <div class="card-body ct-code">
+          <pre class="chroma">{
+  <span class="nt">"type"</span>: <span class="s2">"tool_use_partial"</span>,
+  <span class="nt">"id"</span>: <span class="s2">"toolu_01ABCD"</span>,
+  <span class="nt">"name"</span>: <span class="s2">"Bash"</span>,
+  <span class="nt">"input_delta"</span>: <span class="s2">"just ve"</span>
+}</pre>
+        </div>
+      </details>
+    </article>
+  </div>
+  <details class="source"><summary>HTML source</summary>
+    <pre>&lt;article class=&quot;block raw&quot;&gt;
+  &lt;details class=&quot;card disclosure&quot;&gt;
+    &lt;summary class=&quot;card-chrome&quot;&gt;
+      &lt;span class=&quot;label&quot;&gt;raw block&lt;/span&gt;
+      &lt;span class=&quot;cs-meta&quot;&gt;…envelope type · size…&lt;/span&gt;
+    &lt;/summary&gt;
+    &lt;div class=&quot;card-body ct-code&quot;&gt;&lt;pre class=&quot;chroma&quot;&gt;…raw JSON…&lt;/pre&gt;&lt;/div&gt;
+  &lt;/details&gt;
+&lt;/article&gt;</pre>
+  </details>
+</section>
+
+<!-- ── slashMerged ────────────────────────────────────── -->
+<section class="entry">
+  <h2>slashMerged</h2>
+  <p class="lede">The sole representative of slash commands in v2. A disclosure card whose summary carries the slash/cmd/args triplet plus a peek of the command's output; the body shows the full output. No separate flat slash block exists.</p>
+  <div class="rendered">
+    <article class="block slash">
+      <details class="card disclosure">
+        <summary class="card-chrome">
+          <span class="sm-cmd">
+            <span class="slash">/</span><span class="cmd">wiki-sync</span><span class="args">design-system-v2</span>
+          </span>
+          <span class="sm-out-peek">syncing 3 changed files → wiki/design-system-v2.…</span>
+        </summary>
+        <div class="sm-out-body">syncing 3 changed files → wiki/design-system-v2.progress-1.md
+syncing wiki/design-system-v2.plan-1.md
+syncing wiki/design-system-v2.rnd.md
+committed: design-system-v2 — phase progress update
+pushed to origin/wiki</div>
+      </details>
+    </article>
+  </div>
+  <details class="source"><summary>HTML source</summary>
+    <pre>&lt;article class=&quot;block slash&quot;&gt;
+  &lt;details class=&quot;card disclosure&quot;&gt;
+    &lt;summary class=&quot;card-chrome&quot;&gt;
+      &lt;span class=&quot;sm-cmd&quot;&gt;
+        &lt;span class=&quot;slash&quot;&gt;/&lt;/span&gt;
+        &lt;span class=&quot;cmd&quot;&gt;wiki-sync&lt;/span&gt;
+        &lt;span class=&quot;args&quot;&gt;…&lt;/span&gt;
+      &lt;/span&gt;
+      &lt;span class=&quot;sm-out-peek&quot;&gt;…first-line output peek…&lt;/span&gt;
+    &lt;/summary&gt;
+    &lt;div class=&quot;sm-out-body&quot;&gt;…full command output…&lt;/div&gt;
   &lt;/details&gt;
 &lt;/article&gt;</pre>
   </details>

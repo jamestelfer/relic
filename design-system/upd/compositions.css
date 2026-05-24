@@ -219,3 +219,87 @@
   color: var(--fg-muted);
 }
 .mcp-server strong { color: var(--fg); font-weight: 600; }
+
+/* =============================================================
+   Disclosure-family compositions (Phase 6)
+   ============================================================= */
+
+/* thinking ---------------------------------------------------- */
+.block.thinking .card {
+  background: var(--role-thinking-bg);
+  border-color: color-mix(in oklch, var(--role-thinking-rule) 30%, var(--border));
+}
+.block.thinking .card-chrome {
+  background: color-mix(in oklch, var(--role-thinking-rule) 12%, transparent);
+  border-bottom-color: color-mix(in oklch, var(--role-thinking-rule) 25%, var(--border));
+  color: var(--role-thinking-fg);
+}
+.block.thinking .card-chrome .label { color: var(--role-thinking-fg); font-weight: 600; }
+.block.thinking .ct-prose { color: var(--role-thinking-text); }
+.block.thinking .ct-prose code {
+  background: color-mix(in oklch, var(--role-thinking-rule) 15%, transparent);
+  color: var(--role-thinking-fg);
+}
+.thinking-peek {
+  flex: 1;
+  min-width: 0;
+  font-weight: 400;
+  text-transform: none;
+  letter-spacing: normal;
+  color: var(--role-thinking-fg);
+  font-style: italic;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  opacity: 0.85;
+}
+.disclosure[open] > summary .thinking-peek { display: none; }
+
+/* compactionSummary ------------------------------------------ */
+.block.compaction .card {
+  background: var(--bg-sunk);
+  border-style: dashed;
+  border-color: var(--border-strong);
+}
+.cs-label { color: var(--fg); font-weight: 600; }
+.cs-meta {
+  flex: 1;
+  min-width: 0;
+  text-transform: none;
+  letter-spacing: normal;
+  color: var(--fg-subtle);
+  font-weight: 400;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* slashMerged ------------------------------------------------- */
+.sm-cmd {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 4px;
+  text-transform: none;
+  letter-spacing: normal;
+}
+.sm-cmd .slash { color: var(--fg-subtle); }
+.sm-cmd .cmd   { color: var(--fg); font-weight: 600; }
+.sm-cmd .args  { color: var(--fg-muted); }
+.sm-out-peek {
+  flex: 1;
+  min-width: 0;
+  text-transform: none;
+  letter-spacing: normal;
+  color: var(--fg-muted);
+  font-weight: 400;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.disclosure[open] > summary .sm-out-peek { display: none; }
+.sm-out-body {
+  padding: 12px 16px;
+  font-size: 13px;
+  color: var(--fg);
+  white-space: pre-wrap;
+}
