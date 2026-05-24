@@ -925,6 +925,29 @@ internal/session/classify_test.go:17:func TestClassifyUserMessage(t *testing.T) 
   </details>
 </section>
 
+<!-- ── Conversation — user (specialisation) ────────────────── -->
+<section class="entry">
+  <h2>conversation (user)</h2>
+  <p class="lede">Same block-as-card structure as the assistant exemplar; only the role colour differs. The teal left-edge rule and the role tag tint are supplied by the <code>.block.user</code> composition.</p>
+  <div class="rendered">
+
+    <article class="block conversation user">
+      <div class="role"><span class="tag">user</span><time>2026-05-24 14:07</time></div>
+      <div class="card-body ct-prose">
+        <p>Walk me through the renderer pipeline. I want to know how a JSONL session file becomes the final self-contained HTML.</p>
+        <p>Specifically: where does the syntax highlighting happen, and how do the ANSI escape sequences in bash output get translated?</p>
+      </div>
+    </article>
+
+  </div>
+  <details class="source"><summary>HTML source</summary>
+    <pre>&lt;article class=&quot;block conversation user&quot;&gt;
+  &lt;div class=&quot;role&quot;&gt;&lt;span class=&quot;tag&quot;&gt;user&lt;/span&gt;&lt;time&gt;…&lt;/time&gt;&lt;/div&gt;
+  &lt;div class=&quot;card-body ct-prose&quot;&gt;…markdown prose…&lt;/div&gt;
+&lt;/article&gt;</pre>
+  </details>
+</section>
+
 <!-- ============================================================
      FAMILY: disclosure
      ============================================================ -->
