@@ -930,7 +930,7 @@ func TestRender_FormatXML_Broken(t *testing.T) {
 	assert.Contains(t, out, "&lt;broken", "broken XML escaped in output")
 }
 
-func TestRender_TaskNotification_LabelValuePairs(t *testing.T) {
+func TestRender_TaskNotification_CompletedCard(t *testing.T) {
 	s := session.Session{
 		Turns: []session.Turn{{Index: 1, Blocks: []session.Block{
 			&session.TaskNotification{
@@ -947,13 +947,51 @@ func TestRender_TaskNotification_LabelValuePairs(t *testing.T) {
 	}
 	out := render(t, s, renderer.Options{Name: "test"})
 
-	assert.Contains(t, out, `class="block meta"`, "rendered as meta block")
-	assert.Contains(t, out, "task_notification", "label shown")
-	assert.Contains(t, out, "abc123", "task-id shown")
-	assert.Contains(t, out, "completed", "status shown")
+	assert.Contains(t, out, `class="block tool-result"`, "rendered as tool-result block")
+	assert.Contains(t, out, `class="task-notif"`, "task-notif card present")
+	assert.Contains(t, out, `class="tn-badge completed"`, "completed badge class")
 	assert.Contains(t, out, "Agent finished", "summary shown")
-	assert.Contains(t, out, "All done", "result shown")
+	assert.Contains(t, out, `class="tn-result"`, "result section present")
+	assert.Contains(t, out, "<p>All done</p>", "result rendered as markdown")
+	assert.Contains(t, out, "abc123", "task-id in footer")
+	assert.Contains(t, out, "/tmp/out.txt", "output file in footer")
 	assert.Contains(t, out, "5.0k tokens", "usage tokens shown")
+}
+
+func TestRender_TaskNotification_FailedCard(t *testing.T) {
+	s := session.Session{
+		Turns: []session.Turn{{Index: 1, Blocks: []session.Block{
+			&session.TaskNotification{
+				TaskID:  "def456",
+				Status:  "failed",
+				Summary: "Task crashed",
+				Result:  "Error: something went wrong",
+				LineNum: 1,
+			},
+		}}},
+	}
+	out := render(t, s, renderer.Options{Name: "test"})
+
+	assert.Contains(t, out, `class="tn-badge failed"`, "failed badge class")
+	assert.Contains(t, out, "Task crashed", "summary shown")
+	assert.Contains(t, out, "something went wrong", "error result shown")
+}
+
+func TestRender_TaskNotification_NoResult_OmitsSection(t *testing.T) {
+	s := session.Session{
+		Turns: []session.Turn{{Index: 1, Blocks: []session.Block{
+			&session.TaskNotification{
+				TaskID:  "ghi789",
+				Status:  "running",
+				Summary: "Still working",
+				LineNum: 1,
+			},
+		}}},
+	}
+	out := render(t, s, renderer.Options{Name: "test"})
+
+	assert.Contains(t, out, `class="tn-badge running"`, "running badge class")
+	assert.NotContains(t, out, `class="tn-result"`, "no result section when result is empty")
 }
 
 func TestRender_TeammateMessage_MarkdownBody(t *testing.T) {

@@ -103,6 +103,7 @@
   --danger-border:  oklch(0.85 0.07 25);
   --warning-bg:     oklch(0.94 0.05 75);
   --warning-fg:     oklch(0.42 0.14 75);
+  --warning-solid:  oklch(0.55 0.14 75);
 
   /* ============================================================
      SEMANTIC TOKENS (light mode default)
