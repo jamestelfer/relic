@@ -74,3 +74,148 @@
 .icon--mcp       { background: var(--lapis-700); font-size: 9px; font-weight: 700; }
 .icon--ask       { background: var(--teal-600); }
 .icon--user-bash { background: var(--role-user-rule); }
+
+/* =============================================================
+   Custom card bodies (Layer 3 — per-block compositions).
+   Each is specific to one block type and lives outside the
+   shared content-type vocabulary (.ct-prose / .ct-code /
+   .ct-terminal). Palette tokens only — no generic scale-token
+   references (font/color/radius/shadow/leading/tracking).
+   ============================================================= */
+
+/* image block ------------------------------------------------- */
+.image-preview {
+  display: block;
+  max-width: 100%;
+  max-height: 480px;
+  object-fit: contain;
+  background: var(--bg-sunk);
+  cursor: zoom-in;
+}
+.card-chrome .image-hint {
+  margin-left: auto;
+  color: var(--fg-subtle);
+  text-transform: none;
+}
+
+/* session result --------------------------------------------- */
+.session-result-body {
+  display: flex;
+  gap: 18px;
+  align-items: center;
+  padding: 16px 20px;
+}
+.session-result-body .sr-icon {
+  width: 36px; height: 36px;
+  border-radius: 8px;
+  display: grid; place-items: center;
+  font-size: 18px;
+  flex-shrink: 0;
+  background: var(--success-bg);
+  color: var(--success-fg);
+}
+.session-result-body.is-error .sr-icon { background: var(--error-bg); color: var(--error-fg); }
+.session-result-body .sr-body { flex: 1; min-width: 0; }
+.session-result-body .sr-label {
+  font-weight: 700;
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--success-fg);
+  margin-bottom: 6px;
+}
+.session-result-body.is-error .sr-label { color: var(--error-600); }
+.session-result-body .sr-stats {
+  display: flex; gap: 24px; flex-wrap: wrap;
+  font-size: 12px;
+}
+.session-result-body .sr-stat { display: flex; flex-direction: column; gap: 2px; }
+.session-result-body .sr-stat-label {
+  font-size: 10.5px;
+  color: var(--fg-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.session-result-body .sr-stat-val { font-weight: 600; font-size: 14px; color: var(--fg); }
+
+/* WebSearch / WebFetch --------------------------------------- */
+.websearch-body { display: grid; gap: 6px; padding: 12px 16px; }
+.websearch-body .ws-query { display: flex; gap: 12px; align-items: baseline; font-size: 13px; }
+.websearch-body .ws-label {
+  font-size: 10.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--fg-muted);
+  min-width: 56px;
+}
+.websearch-body .ws-text { color: var(--fg); flex: 1; min-width: 0; word-break: break-word; }
+
+/* TodoWrite -------------------------------------------------- */
+.todo-list { display: grid; gap: 8px; padding: 12px 16px; font-size: 14px; }
+.todo-item { display: flex; align-items: center; gap: 10px; color: var(--fg); }
+.todo-check {
+  width: 14px; height: 14px;
+  border: 1.5px solid var(--border-strong);
+  border-radius: 3px;
+  flex-shrink: 0;
+}
+.todo-item.completed .todo-check { background: var(--success-solid); border-color: var(--success-solid); }
+.todo-item.completed .todo-text { color: var(--fg-muted); text-decoration: line-through; }
+.todo-item.in_progress .todo-check { border-color: var(--lapis-500); background: var(--lapis-50); }
+.todo-text { flex: 1; min-width: 0; }
+.todo-priority {
+  font-size: 10.5px;
+  padding: 1px 7px;
+  border-radius: 99px;
+  background: var(--bg-sunk);
+  color: var(--fg-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.todo-priority.high { background: var(--error-bg); color: var(--error-fg); }
+
+/* AskUserQuestion -------------------------------------------- */
+.ask-list { display: grid; gap: 12px; padding: 12px 16px; }
+.ask-item .ask-header {
+  font-size: 10.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--fg-muted);
+  margin-bottom: 4px;
+}
+.ask-item .ask-question { color: var(--fg); font-size: 14px; margin-bottom: 8px; }
+.ask-options { display: flex; gap: 6px; flex-wrap: wrap; }
+.ask-option {
+  padding: 2px 10px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  font-size: 12px;
+  color: var(--fg);
+  background: var(--bg-paper);
+}
+
+/* Task delegation -------------------------------------------- */
+.task-delegation { padding: 12px 16px 0; }
+.task-meta { display: flex; gap: 10px; align-items: center; margin-bottom: 10px; }
+.task-badge {
+  padding: 1px 8px;
+  border-radius: 3px;
+  background: var(--ink-800);
+  color: var(--fg-on-dark);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.task-type { color: var(--fg-muted); font-size: 12px; }
+.task-prompt { color: var(--fg); font-size: 14px; line-height: 1.55; }
+/* Nested clamp inside a task body escapes the .card-body padding. */
+.task-delegation > .card-body.clamp { margin: 0 -16px; border-top: 1px solid var(--border); }
+
+/* MCP server header ------------------------------------------ */
+.mcp-server {
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border);
+  font-size: 12px;
+  color: var(--fg-muted);
+}
+.mcp-server strong { color: var(--fg); font-weight: 600; }

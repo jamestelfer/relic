@@ -185,6 +185,518 @@
   </details>
 </section>
 
+<!-- ============================================================
+     CARD FAMILY — LIGHT SPECIALIZATIONS  (Phase 3)
+     ============================================================ -->
+
+<!-- ── 3. toolCall — Read (file-op icon) ────────────────────── -->
+<section class="entry">
+  <h2>toolCall — Read</h2>
+  <p class="lede">Standard card with file-op icon tint, name, and arg. Body is chroma file content.</p>
+  <div class="rendered">
+    <article class="block tool">
+      <div class="role"><span class="tag">tool_use</span></div>
+      <div class="card">
+        <div class="card-chrome">
+          <span class="icon icon--file-op">R</span>
+          <span class="name">Read</span>
+          <span class="arg">internal/parser/parser.go</span>
+        </div>
+        <div class="card-body ct-code clamp" style="--clamp-h: 9em;">
+          <div class="clamp-body"><pre class="chroma"><span class="kn">package</span> <span class="nx">parser</span>
+
+<span class="kn">import</span> (
+    <span class="s">"encoding/json/v2"</span>
+    <span class="s">"io"</span>
+)
+
+<span class="c1">// Parse decodes a JSONL stream into a sequence of typed blocks.</span>
+<span class="kd">func</span> <span class="nf">Parse</span>(<span class="nx">r</span> <span class="kt">io.Reader</span>) ([]<span class="nx">Block</span>, <span class="kt">error</span>) {
+    <span class="k">return</span> <span class="nx">decodeAll</span>(<span class="nx">r</span>)
+}</pre></div>
+          <button class="clamp-toggle" type="button"><span class="label">Show more</span></button>
+        </div>
+      </div>
+    </article>
+  </div>
+  <details class="source"><summary>HTML source</summary>
+    <pre>&lt;article class=&quot;block tool&quot;&gt;
+  &lt;div class=&quot;role&quot;&gt;&lt;span class=&quot;tag&quot;&gt;tool_use&lt;/span&gt;&lt;/div&gt;
+  &lt;div class=&quot;card&quot;&gt;
+    &lt;div class=&quot;card-chrome&quot;&gt;
+      &lt;span class=&quot;icon icon--file-op&quot;&gt;R&lt;/span&gt;
+      &lt;span class=&quot;name&quot;&gt;Read&lt;/span&gt;
+      &lt;span class=&quot;arg&quot;&gt;internal/parser/parser.go&lt;/span&gt;
+    &lt;/div&gt;
+    &lt;div class=&quot;card-body ct-code clamp&quot;&gt;…&lt;/div&gt;
+  &lt;/div&gt;
+&lt;/article&gt;</pre>
+  </details>
+</section>
+
+<!-- ── 4. toolCall — Edit (file-edit icon, diff body) ───────── -->
+<section class="entry">
+  <h2>toolCall — Edit</h2>
+  <p class="lede">File-edit tint. The body is a Chroma diff with paired old/new lines.</p>
+  <div class="rendered">
+    <article class="block tool">
+      <div class="role"><span class="tag">tool_use</span></div>
+      <div class="card">
+        <div class="card-chrome">
+          <span class="icon icon--file-edit">E</span>
+          <span class="name">Edit</span>
+          <span class="arg">internal/renderer/renderer.templ</span>
+        </div>
+        <div class="card-body ct-code">
+          <pre class="chroma"><span class="gd">- &lt;div class="clamp"&gt;</span>
+<span class="gi">+ &lt;div class="card-body ct-code clamp"&gt;</span>
+<span class="gd">-   &lt;div class="clamp-body"&gt;</span>
+<span class="gi">+   &lt;div class="clamp-body"&gt;</span>
+      &lt;pre class="chroma"&gt;…&lt;/pre&gt;</pre>
+        </div>
+      </div>
+    </article>
+  </div>
+  <details class="source"><summary>HTML source</summary>
+    <pre>&lt;article class=&quot;block tool&quot;&gt;
+  &lt;div class=&quot;role&quot;&gt;&lt;span class=&quot;tag&quot;&gt;tool_use&lt;/span&gt;&lt;/div&gt;
+  &lt;div class=&quot;card&quot;&gt;
+    &lt;div class=&quot;card-chrome&quot;&gt;
+      &lt;span class=&quot;icon icon--file-edit&quot;&gt;E&lt;/span&gt;
+      &lt;span class=&quot;name&quot;&gt;Edit&lt;/span&gt;
+      &lt;span class=&quot;arg&quot;&gt;…path…&lt;/span&gt;
+    &lt;/div&gt;
+    &lt;div class=&quot;card-body ct-code&quot;&gt;&lt;pre class=&quot;chroma&quot;&gt;…diff…&lt;/pre&gt;&lt;/div&gt;
+  &lt;/div&gt;
+&lt;/article&gt;</pre>
+  </details>
+</section>
+
+<!-- ── 5. toolCall — Grep (search icon) ──────────────────────── -->
+<section class="entry">
+  <h2>toolCall — Grep / Glob</h2>
+  <p class="lede">Search tools share an icon tint. Body is a simple chroma listing of match locations.</p>
+  <div class="rendered">
+    <article class="block tool">
+      <div class="role"><span class="tag">tool_use</span></div>
+      <div class="card">
+        <div class="card-chrome">
+          <span class="icon icon--search">⚲</span>
+          <span class="name">Grep</span>
+          <span class="arg">pattern: "classifyUserMessage" · path: internal/session</span>
+        </div>
+        <div class="card-body ct-code">
+          <pre class="chroma">internal/session/classify.go:42:func classifyUserMessage(msg *Message) Block {
+internal/session/classify.go:88:    // fallthrough to default text classification
+internal/session/classify_test.go:17:func TestClassifyUserMessage(t *testing.T) {</pre>
+        </div>
+      </div>
+    </article>
+  </div>
+  <details class="source"><summary>HTML source</summary>
+    <pre>&lt;span class=&quot;icon icon--search&quot;&gt;⚲&lt;/span&gt;
+&lt;span class=&quot;name&quot;&gt;Grep&lt;/span&gt;</pre>
+  </details>
+</section>
+
+<!-- ── 6. toolBody — WebSearch (custom body) ────────────────── -->
+<section class="entry">
+  <h2>toolCall — WebSearch / WebFetch</h2>
+  <p class="lede">Web tools share an icon tint. The body is custom-structured — label/value rows, not chroma or prose.</p>
+  <div class="rendered">
+    <article class="block tool">
+      <div class="role"><span class="tag">tool_use</span></div>
+      <div class="card">
+        <div class="card-chrome">
+          <span class="icon icon--web">⊕</span>
+          <span class="name">WebSearch</span>
+        </div>
+        <div class="card-body">
+          <div class="websearch-body">
+            <div class="ws-query"><span class="ws-label">query</span><span class="ws-text">go 1.26 encoding/json/v2 release notes</span></div>
+            <div class="ws-query"><span class="ws-label">domains</span><span class="ws-text">go.dev, github.com/golang/go</span></div>
+          </div>
+        </div>
+      </div>
+    </article>
+  </div>
+  <details class="source"><summary>HTML source</summary>
+    <pre>&lt;div class=&quot;card-body&quot;&gt;
+  &lt;div class=&quot;websearch-body&quot;&gt;
+    &lt;div class=&quot;ws-query&quot;&gt;
+      &lt;span class=&quot;ws-label&quot;&gt;query&lt;/span&gt;
+      &lt;span class=&quot;ws-text&quot;&gt;…&lt;/span&gt;
+    &lt;/div&gt;
+  &lt;/div&gt;
+&lt;/div&gt;</pre>
+  </details>
+</section>
+
+<!-- ── 7. toolBody — TodoWrite ──────────────────────────────── -->
+<section class="entry">
+  <h2>toolCall — TodoWrite</h2>
+  <p class="lede">Custom todo-list body with checkboxes. Status modifiers (<code>completed</code>, <code>in_progress</code>) restyle the row.</p>
+  <div class="rendered">
+    <article class="block tool">
+      <div class="role"><span class="tag">tool_use</span></div>
+      <div class="card">
+        <div class="card-chrome">
+          <span class="icon icon--todo">✓</span>
+          <span class="name">TodoWrite</span>
+        </div>
+        <div class="card-body">
+          <div class="todo-list">
+            <div class="todo-item completed"><div class="todo-check"></div><span class="todo-text">Extract primitive layer from component.css</span></div>
+            <div class="todo-item in_progress"><div class="todo-check"></div><span class="todo-text">Build components.html exemplars</span><span class="todo-priority high">high</span></div>
+            <div class="todo-item"><div class="todo-check"></div><span class="todo-text">Rewrite SKILL.md from the catalogue</span></div>
+          </div>
+        </div>
+      </div>
+    </article>
+  </div>
+  <details class="source"><summary>HTML source</summary>
+    <pre>&lt;div class=&quot;todo-list&quot;&gt;
+  &lt;div class=&quot;todo-item completed&quot;&gt;
+    &lt;div class=&quot;todo-check&quot;&gt;&lt;/div&gt;
+    &lt;span class=&quot;todo-text&quot;&gt;…&lt;/span&gt;
+  &lt;/div&gt;
+&lt;/div&gt;</pre>
+  </details>
+</section>
+
+<!-- ── 8. toolBody — AskUserQuestion ────────────────────────── -->
+<section class="entry">
+  <h2>toolCall — AskUserQuestion</h2>
+  <p class="lede">Custom ask-list body. Each item carries a header, the question, and a row of option chips.</p>
+  <div class="rendered">
+    <article class="block tool">
+      <div class="role"><span class="tag">tool_use</span></div>
+      <div class="card">
+        <div class="card-chrome">
+          <span class="icon icon--ask">?</span>
+          <span class="name">AskUserQuestion</span>
+        </div>
+        <div class="card-body">
+          <div class="ask-list">
+            <div class="ask-item">
+              <div class="ask-header">Output format</div>
+              <div class="ask-question">Where should the rendered HTML be written?</div>
+              <div class="ask-options">
+                <span class="ask-option">stdout</span>
+                <span class="ask-option">file</span>
+                <span class="ask-option">gist</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </article>
+  </div>
+  <details class="source"><summary>HTML source</summary>
+    <pre>&lt;div class=&quot;ask-list&quot;&gt;
+  &lt;div class=&quot;ask-item&quot;&gt;
+    &lt;div class=&quot;ask-header&quot;&gt;…&lt;/div&gt;
+    &lt;div class=&quot;ask-question&quot;&gt;…&lt;/div&gt;
+    &lt;div class=&quot;ask-options&quot;&gt;&lt;span class=&quot;ask-option&quot;&gt;…&lt;/span&gt;&lt;/div&gt;
+  &lt;/div&gt;
+&lt;/div&gt;</pre>
+  </details>
+</section>
+
+<!-- ── 9. toolBody — Task (delegation + nested clamp) ───────── -->
+<section class="entry">
+  <h2>toolCall — Task</h2>
+  <p class="lede">Subagent delegation: badge + description above, then a nested clamp wrapping the prompt prose. The nested clamp escapes the task body's padding so the toggle strip is edge-to-edge.</p>
+  <div class="rendered">
+    <article class="block tool">
+      <div class="role"><span class="tag">tool_use</span></div>
+      <div class="card">
+        <div class="card-chrome">
+          <span class="icon icon--task">▣</span>
+          <span class="name">Task</span>
+        </div>
+        <div class="card-body">
+          <div class="task-delegation">
+            <div class="task-meta">
+              <span class="task-badge">general-purpose</span>
+              <span class="task-type">Investigate parser fallback path</span>
+            </div>
+            <div class="card-body ct-prose clamp" style="--clamp-h: 6em;">
+              <div class="clamp-body">
+                <p>Inspect <code>internal/parser/fallback.go</code> and report on how malformed JSON lines are recovered. Include line numbers for every error path and an inventory of every callsite that depends on the fallback's silent-skip behaviour.</p>
+                <p>Cross-reference against <code>parser_test.go</code> coverage and list any code path that is exercised in production but not in tests.</p>
+              </div>
+              <button class="clamp-toggle" type="button"><span class="label">Show more</span></button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </article>
+  </div>
+  <details class="source"><summary>HTML source</summary>
+    <pre>&lt;div class=&quot;card-body&quot;&gt;
+  &lt;div class=&quot;task-delegation&quot;&gt;
+    &lt;div class=&quot;task-meta&quot;&gt;
+      &lt;span class=&quot;task-badge&quot;&gt;general-purpose&lt;/span&gt;
+      &lt;span class=&quot;task-type&quot;&gt;…description…&lt;/span&gt;
+    &lt;/div&gt;
+    &lt;div class=&quot;card-body ct-prose clamp&quot;&gt;
+      &lt;div class=&quot;clamp-body&quot;&gt;…prompt prose…&lt;/div&gt;
+      &lt;button class=&quot;clamp-toggle&quot;&gt;…&lt;/button&gt;
+    &lt;/div&gt;
+  &lt;/div&gt;
+&lt;/div&gt;</pre>
+  </details>
+</section>
+
+<!-- ── 10. toolBody — Plan (clamp prose) ────────────────────── -->
+<section class="entry">
+  <h2>toolCall — exit_plan_mode (Plan)</h2>
+  <p class="lede">Markdown plan delivered with a clamp. Plan icon tint distinguishes it from other lapis-family tools.</p>
+  <div class="rendered">
+    <article class="block tool">
+      <div class="role"><span class="tag">tool_use</span></div>
+      <div class="card">
+        <div class="card-chrome">
+          <span class="icon icon--plan">◧</span>
+          <span class="name">exit_plan_mode</span>
+        </div>
+        <div class="card-body ct-prose clamp" style="--clamp-h: 9em;">
+          <div class="clamp-body">
+            <h3>Plan</h3>
+            <ol>
+              <li>Read every <code>.cs-body</code> and <code>.rc-body</code> rule and extract the dominant prose pattern.</li>
+              <li>Define <code>.ct-prose</code> once in <code>primitives.css</code>.</li>
+              <li>Delete all five context-specific rule blocks; rely on the primitive class on each body.</li>
+              <li>Regenerate <code>render.html</code> and diff against the previous baseline; any visual drift is a bug in step 1.</li>
+            </ol>
+          </div>
+          <button class="clamp-toggle" type="button"><span class="label">Show more</span></button>
+        </div>
+      </div>
+    </article>
+  </div>
+  <details class="source"><summary>HTML source</summary>
+    <pre>&lt;div class=&quot;card-body ct-prose clamp&quot;&gt;
+  &lt;div class=&quot;clamp-body&quot;&gt;…rendered markdown…&lt;/div&gt;
+  &lt;button class=&quot;clamp-toggle&quot;&gt;…&lt;/button&gt;
+&lt;/div&gt;</pre>
+  </details>
+</section>
+
+<!-- ── 11. toolBody — MCP (clamp chroma) ────────────────────── -->
+<section class="entry">
+  <h2>toolCall — MCP tool</h2>
+  <p class="lede">MCP server header above a clamped JSON body. The header is a thin metadata strip; the chroma <code>&lt;pre&gt;</code> handles its own padding.</p>
+  <div class="rendered">
+    <article class="block tool">
+      <div class="role"><span class="tag">tool_use</span></div>
+      <div class="card">
+        <div class="card-chrome">
+          <span class="icon icon--mcp">MCP</span>
+          <span class="name">context7__resolve-library-id</span>
+        </div>
+        <div class="mcp-server">MCP server: <strong>context7</strong> · tool: <strong>resolve-library-id</strong></div>
+        <div class="card-body ct-code clamp" style="--clamp-h: 8em;">
+          <div class="clamp-body"><pre class="chroma">{
+  <span class="nt">"libraryName"</span>: <span class="s2">"templ"</span>,
+  <span class="nt">"options"</span>: {
+    <span class="nt">"includeExamples"</span>: <span class="kc">true</span>,
+    <span class="nt">"maxResults"</span>: <span class="mi">5</span>
+  }
+}</pre></div>
+          <button class="clamp-toggle" type="button"><span class="label">Show more</span></button>
+        </div>
+      </div>
+    </article>
+  </div>
+  <details class="source"><summary>HTML source</summary>
+    <pre>&lt;div class=&quot;card&quot;&gt;
+  &lt;div class=&quot;card-chrome&quot;&gt;…&lt;/div&gt;
+  &lt;div class=&quot;mcp-server&quot;&gt;MCP server: …&lt;/div&gt;
+  &lt;div class=&quot;card-body ct-code clamp&quot;&gt;…&lt;/div&gt;
+&lt;/div&gt;</pre>
+  </details>
+</section>
+
+<!-- ── 12. toolResult (non-terminal) — chrome stays visible ──── -->
+<section class="entry">
+  <h2>toolResult — non-terminal (result-card path)</h2>
+  <p class="lede">Non-terminal tool result: a light card with a chrome bar identifying the source tool and a clamped chroma body for the captured output. The Phase 2 structural fix — clamp on <code>.card-body</code>, chrome outside the clamped region — applies uniformly here; expanding the toggle never reveals more chrome because the chrome was never masked.</p>
+  <div class="rendered">
+    <article class="block tool-result">
+      <div class="role"><span class="tag">tool_result</span></div>
+      <div class="card">
+        <div class="card-chrome">
+          <span class="icon icon--file-op">R</span>
+          <span class="label">Read · 412 lines</span>
+        </div>
+        <div class="card-body ct-code clamp" style="--clamp-h: 10em;">
+          <div class="clamp-body"><pre class="chroma">  1  <span class="kn">package</span> <span class="nx">renderer</span>
+  2
+  3  <span class="kn">import</span> (
+  4      <span class="s">"embed"</span>
+  5      <span class="s">"html/template"</span>
+  6  )
+  7
+  8  <span class="c1">//go:embed assets/*.css</span>
+  9  <span class="kd">var</span> <span class="nx">assetsFS</span> <span class="nx">embed.FS</span>
+ 10
+ 11  <span class="kd">func</span> <span class="nf">LoadAssets</span>() <span class="kt">[]byte</span> {
+ 12      <span class="k">return</span> <span class="nx">readAll</span>(<span class="nx">assetsFS</span>)
+ 13  }</pre></div>
+          <button class="clamp-toggle" type="button"><span class="label">Show more</span></button>
+        </div>
+      </div>
+    </article>
+  </div>
+  <details class="source"><summary>HTML source</summary>
+    <pre>&lt;article class=&quot;block tool-result&quot;&gt;
+  &lt;div class=&quot;role&quot;&gt;&lt;span class=&quot;tag&quot;&gt;tool_result&lt;/span&gt;&lt;/div&gt;
+  &lt;div class=&quot;card&quot;&gt;
+    &lt;div class=&quot;card-chrome&quot;&gt;
+      &lt;span class=&quot;icon icon--file-op&quot;&gt;R&lt;/span&gt;
+      &lt;span class=&quot;label&quot;&gt;Read · 412 lines&lt;/span&gt;
+    &lt;/div&gt;
+    &lt;div class=&quot;card-body ct-code clamp&quot;&gt;…&lt;/div&gt;
+  &lt;/div&gt;
+&lt;/article&gt;</pre>
+  </details>
+</section>
+
+<!-- ── 13. userBashInput ────────────────────────────────────── -->
+<section class="entry">
+  <h2>userBashInput</h2>
+  <p class="lede">A user-typed bash command. The <code>icon--user-bash</code> tint marks it as user-originated; otherwise the structure is identical to a tool-call card with a chroma body.</p>
+  <div class="rendered">
+    <article class="block user">
+      <div class="role"><span class="tag">user_bash</span></div>
+      <div class="card">
+        <div class="card-chrome">
+          <span class="icon icon--user-bash">$</span>
+          <span class="name">user bash</span>
+        </div>
+        <div class="card-body ct-code clamp" style="--clamp-h: 6em;">
+          <div class="clamp-body"><pre class="chroma"><span class="nb">grep</span> -rn <span class="s2">"classifyUserMessage"</span> internal/session/
+<span class="nb">wc</span> -l internal/session/*.go</pre></div>
+          <button class="clamp-toggle" type="button"><span class="label">Show more</span></button>
+        </div>
+      </div>
+    </article>
+  </div>
+  <details class="source"><summary>HTML source</summary>
+    <pre>&lt;article class=&quot;block user&quot;&gt;
+  &lt;div class=&quot;role&quot;&gt;&lt;span class=&quot;tag&quot;&gt;user_bash&lt;/span&gt;&lt;/div&gt;
+  &lt;div class=&quot;card&quot;&gt;
+    &lt;div class=&quot;card-chrome&quot;&gt;
+      &lt;span class=&quot;icon icon--user-bash&quot;&gt;$&lt;/span&gt;
+      &lt;span class=&quot;name&quot;&gt;user bash&lt;/span&gt;
+    &lt;/div&gt;
+    &lt;div class=&quot;card-body ct-code clamp&quot;&gt;…&lt;/div&gt;
+  &lt;/div&gt;
+&lt;/article&gt;</pre>
+  </details>
+</section>
+
+<!-- ── 14. image ────────────────────────────────────────────── -->
+<section class="entry">
+  <h2>image</h2>
+  <p class="lede">Chrome carries the image filename/dimensions and an inline hint; the body is a direct <code>&lt;img&gt;</code> element — no <code>.card-body</code> wrapper, no clamp.</p>
+  <div class="rendered">
+    <article class="block image">
+      <div class="role"><span class="tag">image</span></div>
+      <div class="card">
+        <div class="card-chrome">
+          <span class="label">screenshot.png</span>
+          <span class="arg">1440 × 900</span>
+          <span class="image-hint">click to expand</span>
+        </div>
+        <img class="image-preview" alt="Placeholder screenshot" src="data:image/svg+xml;utf8,&lt;svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 720 240'&gt;&lt;rect width='720' height='240' fill='%23E8ECF3'/&gt;&lt;text x='50%25' y='50%25' fill='%235C657A' font-family='monospace' font-size='14' text-anchor='middle' dominant-baseline='middle'&gt;screenshot.png — 1440×900&lt;/text&gt;&lt;/svg&gt;">
+      </div>
+    </article>
+  </div>
+  <details class="source"><summary>HTML source</summary>
+    <pre>&lt;article class=&quot;block image&quot;&gt;
+  &lt;div class=&quot;role&quot;&gt;&lt;span class=&quot;tag&quot;&gt;image&lt;/span&gt;&lt;/div&gt;
+  &lt;div class=&quot;card&quot;&gt;
+    &lt;div class=&quot;card-chrome&quot;&gt;
+      &lt;span class=&quot;label&quot;&gt;screenshot.png&lt;/span&gt;
+      &lt;span class=&quot;arg&quot;&gt;1440 × 900&lt;/span&gt;
+      &lt;span class=&quot;image-hint&quot;&gt;click to expand&lt;/span&gt;
+    &lt;/div&gt;
+    &lt;img class=&quot;image-preview&quot; …&gt;
+  &lt;/div&gt;
+&lt;/article&gt;</pre>
+  </details>
+</section>
+
+<!-- ── 15. taskNotification ─────────────────────────────────── -->
+<section class="entry">
+  <h2>taskNotification</h2>
+  <p class="lede">Subagent / agent-team / task notification. Light card with <code>.window-dots</code> in the chrome (default dot colour) and a prose body. No clamp.</p>
+  <div class="rendered">
+    <article class="block tool-result">
+      <div class="role"><span class="tag">notification</span></div>
+      <div class="card">
+        <div class="card-chrome">
+          <span class="window-dots"><span></span><span></span><span></span></span>
+          <span class="label">subagent · general-purpose</span>
+        </div>
+        <div class="card-body ct-prose">
+          <p>Investigation complete. The fallback path silently skips three error types: <code>io.ErrUnexpectedEOF</code>, truncated UTF-8 sequences, and malformed envelope keys. None are surfaced to the caller.</p>
+          <p>Two callsites depend on this silent-skip behaviour (<code>renderer.LoadSession</code>, <code>cli.Preview</code>). A third callsite (<code>gist.PublishFromFile</code>) was changed in commit <code>a3f9c1</code> to require explicit error handling and is therefore not affected.</p>
+        </div>
+      </div>
+    </article>
+  </div>
+  <details class="source"><summary>HTML source</summary>
+    <pre>&lt;article class=&quot;block tool-result&quot;&gt;
+  &lt;div class=&quot;role&quot;&gt;&lt;span class=&quot;tag&quot;&gt;notification&lt;/span&gt;&lt;/div&gt;
+  &lt;div class=&quot;card&quot;&gt;
+    &lt;div class=&quot;card-chrome&quot;&gt;
+      &lt;span class=&quot;window-dots&quot;&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;/span&gt;
+      &lt;span class=&quot;label&quot;&gt;subagent · general-purpose&lt;/span&gt;
+    &lt;/div&gt;
+    &lt;div class=&quot;card-body ct-prose&quot;&gt;…rendered markdown…&lt;/div&gt;
+  &lt;/div&gt;
+&lt;/article&gt;</pre>
+  </details>
+</section>
+
+<!-- ── 16. sessionResult ────────────────────────────────────── -->
+<section class="entry">
+  <h2>sessionResult</h2>
+  <p class="lede">A card with no chrome — a custom session-result body sits directly inside <code>.card</code>. With no preceding chrome, the first body section drops its top border.</p>
+  <div class="rendered">
+    <article class="block session-result">
+      <div class="card">
+        <div class="session-result-body">
+          <div class="sr-icon">✓</div>
+          <div class="sr-body">
+            <div class="sr-label">Session complete</div>
+            <div class="sr-stats">
+              <div class="sr-stat"><span class="sr-stat-label">Turns</span><span class="sr-stat-val">14</span></div>
+              <div class="sr-stat"><span class="sr-stat-label">Tool calls</span><span class="sr-stat-val">42</span></div>
+              <div class="sr-stat"><span class="sr-stat-label">Duration</span><span class="sr-stat-val">12m 04s</span></div>
+              <div class="sr-stat"><span class="sr-stat-label">Tokens</span><span class="sr-stat-val">186k</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </article>
+  </div>
+  <details class="source"><summary>HTML source</summary>
+    <pre>&lt;article class=&quot;block session-result&quot;&gt;
+  &lt;div class=&quot;card&quot;&gt;
+    &lt;div class=&quot;session-result-body&quot;&gt;
+      &lt;div class=&quot;sr-icon&quot;&gt;✓&lt;/div&gt;
+      &lt;div class=&quot;sr-body&quot;&gt;…label + stats…&lt;/div&gt;
+    &lt;/div&gt;
+  &lt;/div&gt;
+&lt;/article&gt;</pre>
+  </details>
+</section>
+
 <!-- ── 2. Card (dark) — exemplar ───────────────────────────── -->
 <section class="entry">
   <h2>Exemplar — card (dark)</h2>
