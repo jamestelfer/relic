@@ -749,6 +749,143 @@ internal/session/classify_test.go:17:func TestClassifyUserMessage(t *testing.T) 
 </section>
 
 <!-- ============================================================
+     CARD FAMILY — DARK SPECIALIZATIONS  (Phase 4)
+     ============================================================ -->
+
+<!-- ── toolResult (terminal-shell / bash path) ──────────────── -->
+<section class="entry">
+  <h2>toolResult — terminal-shell (bash)</h2>
+  <p class="lede">The output of a Bash tool call. Identical structure to the Phase 2 dark exemplar; the <code>.is-error</code> modifier on the block re-tints the chrome and dot row when the command exited non-zero.</p>
+  <div class="rendered">
+
+    <article class="block tool-result">
+      <div class="role"><span class="tag">tool_result</span></div>
+      <div class="card card--dark">
+        <div class="card-chrome">
+          <span class="window-dots"><span></span><span></span><span></span></span>
+          <span class="label">bash · exit 0</span>
+        </div>
+        <div class="card-body ct-terminal clamp" style="--clamp-h: 10em;">
+          <div class="clamp-body"><pre><span class="term-fg36">$</span> just verify
+<span class="term-fg32">==&gt;</span> Running formatter
+<span class="term-fg90">    gofmt -l . | wc -l = 0</span>
+<span class="term-fg32">==&gt;</span> Running linter
+<span class="term-fg90">    golangci-lint run ./...</span>
+<span class="term-fg32">==&gt;</span> Running tests
+<span class="term-fg90">    ok  internal/parser    0.03s</span>
+<span class="term-fg90">    ok  internal/session   0.07s</span>
+<span class="term-fg90">    ok  internal/renderer  0.12s</span>
+<span class="term-fg90">    ok  internal/highlight 0.02s</span>
+<span class="term-fg32">PASS</span>  all green</pre></div>
+          <button class="clamp-toggle" type="button"><span class="label">Show more</span></button>
+        </div>
+      </div>
+    </article>
+
+    <p style="margin: 20px 0 6px; font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.04em; text-transform: uppercase; color: var(--fg-muted);">Error variant — <code>.is-error</code> on the block</p>
+
+    <article class="block tool-result is-error">
+      <div class="role"><span class="tag">tool_result</span></div>
+      <div class="card card--dark">
+        <div class="card-chrome">
+          <span class="window-dots"><span></span><span></span><span></span></span>
+          <span class="label">bash · exit 1</span>
+        </div>
+        <div class="card-body ct-terminal">
+          <pre><span class="term-fg36">$</span> go test ./internal/parser/...
+<span class="term-fg31">--- FAIL: TestFallback (0.01s)</span>
+<span class="term-fg90">    fallback_test.go:42: expected error for truncated UTF-8, got nil</span>
+<span class="term-fg31">FAIL</span>
+<span class="term-fg31">exit status 1</span></pre>
+        </div>
+      </div>
+    </article>
+
+  </div>
+  <details class="source"><summary>HTML source</summary>
+    <pre>&lt;article class=&quot;block tool-result&quot;&gt;
+  &lt;div class=&quot;role&quot;&gt;&lt;span class=&quot;tag&quot;&gt;tool_result&lt;/span&gt;&lt;/div&gt;
+  &lt;div class=&quot;card card--dark&quot;&gt;
+    &lt;div class=&quot;card-chrome&quot;&gt;
+      &lt;span class=&quot;window-dots&quot;&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;/span&gt;
+      &lt;span class=&quot;label&quot;&gt;bash · exit 0&lt;/span&gt;
+    &lt;/div&gt;
+    &lt;div class=&quot;card-body ct-terminal clamp&quot;&gt;
+      &lt;div class=&quot;clamp-body&quot;&gt;&lt;pre&gt;…ANSI output…&lt;/pre&gt;&lt;/div&gt;
+      &lt;button class=&quot;clamp-toggle&quot;&gt;…&lt;/button&gt;
+    &lt;/div&gt;
+  &lt;/div&gt;
+&lt;/article&gt;
+
+&lt;!-- error variant: add .is-error to the block --&gt;
+&lt;article class=&quot;block tool-result is-error&quot;&gt;…&lt;/article&gt;</pre>
+  </details>
+</section>
+
+<!-- ── userBashResult ──────────────────────────────────── -->
+<section class="entry">
+  <h2>userBashResult</h2>
+  <p class="lede">Output of a user-typed bash command. Same dark-card structure as the bash tool-result; the role tag distinguishes user vs assistant origin. The clamp lives on <code>.card-body</code>, so the chrome bar (with window-dots and label) stays visible whether the body is clamped, expanded, or short.</p>
+  <div class="rendered">
+
+    <article class="block user">
+      <div class="role"><span class="tag">user_bash_result</span></div>
+      <div class="card card--dark">
+        <div class="card-chrome">
+          <span class="window-dots"><span></span><span></span><span></span></span>
+          <span class="label">user bash · exit 0</span>
+        </div>
+        <div class="card-body ct-terminal clamp" style="--clamp-h: 8em;">
+          <div class="clamp-body"><pre><span class="term-fg36">$</span> grep -rn classifyUserMessage internal/session/
+<span class="term-fg90">internal/session/classify.go:42:func classifyUserMessage(msg *Message) Block {</span>
+<span class="term-fg90">internal/session/classify.go:88:    // fallthrough to default text classification</span>
+<span class="term-fg90">internal/session/classify_test.go:17:func TestClassifyUserMessage(t *testing.T) {</span>
+<span class="term-fg36">$</span> wc -l internal/session/*.go
+<span class="term-fg90">  248 internal/session/blocks.go</span>
+<span class="term-fg90">  187 internal/session/classify.go</span>
+<span class="term-fg90">  102 internal/session/turn.go</span>
+<span class="term-fg90">  537 total</span></pre></div>
+          <button class="clamp-toggle" type="button"><span class="label">Show more</span></button>
+        </div>
+      </div>
+    </article>
+
+    <p style="margin: 20px 0 6px; font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.04em; text-transform: uppercase; color: var(--fg-muted);">Short-content variant — toggle hidden by <code>.is-fit</code></p>
+
+    <article class="block user">
+      <div class="role"><span class="tag">user_bash_result</span></div>
+      <div class="card card--dark">
+        <div class="card-chrome">
+          <span class="window-dots"><span></span><span></span><span></span></span>
+          <span class="label">user bash · exit 0</span>
+        </div>
+        <div class="card-body ct-terminal clamp" style="--clamp-h: 8em;">
+          <div class="clamp-body"><pre><span class="term-fg36">$</span> pwd
+<span class="term-fg90">/home/jamestelfer/src/relic</span></pre></div>
+          <button class="clamp-toggle" type="button"><span class="label">Show more</span></button>
+        </div>
+      </div>
+    </article>
+
+  </div>
+  <details class="source"><summary>HTML source</summary>
+    <pre>&lt;article class=&quot;block user&quot;&gt;
+  &lt;div class=&quot;role&quot;&gt;&lt;span class=&quot;tag&quot;&gt;user_bash_result&lt;/span&gt;&lt;/div&gt;
+  &lt;div class=&quot;card card--dark&quot;&gt;
+    &lt;div class=&quot;card-chrome&quot;&gt;
+      &lt;span class=&quot;window-dots&quot;&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;/span&gt;
+      &lt;span class=&quot;label&quot;&gt;user bash · exit 0&lt;/span&gt;
+    &lt;/div&gt;
+    &lt;div class=&quot;card-body ct-terminal clamp&quot;&gt;
+      &lt;div class=&quot;clamp-body&quot;&gt;&lt;pre&gt;…ANSI output…&lt;/pre&gt;&lt;/div&gt;
+      &lt;button class=&quot;clamp-toggle&quot;&gt;…&lt;/button&gt;
+    &lt;/div&gt;
+  &lt;/div&gt;
+&lt;/article&gt;</pre>
+  </details>
+</section>
+
+<!-- ============================================================
      FAMILY: conversation
      ============================================================ -->
 <h2 class="family-head">Conversation</h2>
