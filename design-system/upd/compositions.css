@@ -211,6 +211,21 @@
 /* Nested clamp inside a task body escapes the .card-body padding. */
 .task-delegation > .card-body.clamp { margin: 0 -16px; border-top: 1px solid var(--border); }
 
+/* AskUserQuestion — tool_result body (user's answers) ------- */
+.ask-result {
+  display: flex; flex-direction: column; gap: 10px;
+  padding: 12px 16px;
+}
+.ask-result-item {
+  display: flex; flex-direction: column; gap: 4px;
+  padding: 10px 12px;
+  border-radius: 4px;
+  background: var(--bg-sunk);
+}
+.ask-result-item .ask-header { font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--fg-muted); }
+.ask-result-item .ask-question { color: var(--fg); font-size: 14px; }
+.ask-result-item .ask-answer { color: var(--fg); font-size: 13px; font-weight: 600; }
+
 /* MCP server header ------------------------------------------ */
 .mcp-server {
   padding: 10px 14px;
@@ -302,4 +317,73 @@
   font-size: 13px;
   color: var(--fg);
   white-space: pre-wrap;
+}
+
+/* =============================================================
+   Callout + meta-bar compositions (Phase 7)
+   ============================================================= */
+
+/* callout — cmd output (sunk panel containing a <pre>) -------- */
+.callout--cmd-output {
+  display: block;
+  padding: 10px 14px;
+  background: var(--bg-sunk);
+  border-color: var(--border);
+}
+.callout--cmd-output pre {
+  margin: 0;
+  font-family: "JetBrains Mono", "SF Mono", "Menlo", "Consolas", ui-monospace, monospace;
+  font-size: 12px;
+  line-height: 1.55;
+  color: var(--fg-muted);
+  white-space: pre-wrap;
+}
+
+/* meta-bar variants ------------------------------------------ */
+.meta-bar--interrupt { color: var(--error-fg); }
+.meta-bar--interrupt .icon { color: var(--error-500); }
+.meta-bar--system    { color: var(--fg-muted); }
+.meta-bar--teammate  { color: var(--role-user-rule); }
+.meta-bar--teammate .icon { color: var(--role-user-rule); }
+
+/* Body section attached below a meta-bar header. The .card-body
+   primitive supplies padding and border-top; the clamp variant
+   strips them, so add a hairline separator between the strip
+   and the clamped content. */
+.meta-bar + .card-body.clamp { border-top: 1px solid var(--border); margin-top: 8px; }
+.meta-bar + .card-body       { margin-top: 6px; }
+
+/* compactionBoundary — a thin rule between turns. Not a content
+   container; renders as a horizontal divider with a centered
+   eyebrow label. */
+.compaction-boundary {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 12px 0;
+  font-family: "JetBrains Mono", "SF Mono", "Menlo", "Consolas", ui-monospace, monospace;
+  font-size: 10.5px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--fg-subtle);
+}
+.compaction-boundary::before,
+.compaction-boundary::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: var(--border);
+}
+
+/* system (meta) — inline <pre> block below the meta-bar ------ */
+.system-meta-body {
+  padding: 8px 12px;
+  background: var(--bg-sunk);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  font-family: "JetBrains Mono", "SF Mono", "Menlo", "Consolas", ui-monospace, monospace;
+  font-size: 12px;
+  color: var(--fg-muted);
+  white-space: pre-wrap;
+  margin-top: 6px;
 }

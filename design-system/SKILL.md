@@ -30,7 +30,7 @@ Code goes through Chroma; tool_result goes through an ANSI-to-HTML converter.
 
 ## Tokens
 
-Always import `colors_and_type.css`. Key tokens:
+Always import `tokens.css`. Key tokens:
 
 - `--font-display` Instrument Serif · `--font-ui` Geist · `--font-mono` JetBrains Mono
 - `--lapis-600` (#1B3A8C) brand · `--cobalt-500` (#2E5BFF) highlight
@@ -38,73 +38,109 @@ Always import `colors_and_type.css`. Key tokens:
 - `--ink-50…950` cool bluish-gray neutrals
 - `--role-user-*` (teal) · `--role-tool-*` (lapis) · `--role-assistant-*` (cobalt) · `--role-thinking-*` (violet)
 
-## Component vocabulary
+## CSS architecture — four authored layers
 
-All components live in `preview/render.html` (full session) and `preview/components.html` (spec sheet).
+Relic styles are organised into four authored layers plus two verbatim pipeline stylesheets. Six files total, no subdirectory:
 
-### Conversation tier (full visual weight)
-- `.block.conversation.user` — white card, teal left rule, Geist UI body ~16px
-- `.block.conversation.assistant` — white card, cobalt left rule, reading body 70ch
+| Layer | File | Purpose |
+|---|---|---|
+| 0 | `tokens.css` | Design tokens. Only file that declares raw scale values. |
+| 1 | `primitives.css` | Structural building blocks. No block-specific selectors. |
+| 2 | `scaffold.css` | `article.block` wrapper, `.role` strip, turn layout. |
+| 3 | `compositions.css` | Per-role colours, icon tints, block-specific overrides. |
+| — | `highlight.css` | Verbatim Chroma palette. Do not edit. |
+| — | `terminal.css` | Verbatim terminal-to-html palette. Do not edit. |
 
-### Process tier (internal reasoning)
-- `.block.thinking` — `<details class="thinking">` with violet bg, italic preview, collapses by default
-- `.block.redacted-thinking` — `.redacted-note` dashed box, non-expandable
+`compositions.css` reaches palette tokens (`--ink-*`, `--lapis-*`, `--success-*`, `--role-*-*`, `--bg-*`, `--fg-*`, `--border*`) and primitive classes only. It does **not** redeclare generic scale tokens (`--font-*`, `--color-*`, `--radius-*`, `--shadow-*`, `--leading-*`, `--tracking-*`) — those are reached through the primitives that already use them.
 
-### Action tier — tool_use
-- `.block.tool` → `.tool-card[data-tool="NAME"]` — head with icon/name/arg, optional body
-  - **Bash** `$` icon, ink-700; body: Chroma-highlighted bash or empty
-  - **Read** `R` icon, lapis-600; body: empty (content arrives in tool_result)
-  - **Write** `W` icon, lapis-600; body: `<pre class="code">` Chroma-highlighted file content
-  - **Edit / MultiEdit** `E` icon, lapis-700; body: `.diff-body` with `.diff-line.add/.del/.ctx`
-  - **Grep / Glob** `G` icon, citron-600 (dark text); body: empty
-  - **LS** `LS` icon, ink-500; body: empty
-  - **WebSearch** `↗` icon, ink-600; body: `.websearch-body` with `.ws-query` rows (label + text)
-  - **WebFetch** `↗` icon, ink-600; body: `.websearch-body` with url + prompt rows
-  - **Task** `▶▶` icon, ink-800; body: `.task-delegation` (`.task-badge` sub-agent label + `.task-prompt`)
-  - **TodoWrite** `✓` icon, green; body: `.todo-list` with `.todo-item.completed/.in-progress` + `.todo-priority.high/.medium/.low`
-  - **exit_plan_mode** `▶` icon, lapis-700; body: `.plan-body` Markdown plan
-  - **MCP** `MCP` icon, lapis-700; `.mcp-server` breadcrumb + `.mcp-json` JSON body with `.jk .js .jn .jb`
-  - **Unknown** `⚙` icon; body: raw JSON
+The four authored layers are flat in the directory — no subdirectory. The v1 dark-surface stylesheet does not exist in v2; its rules are absorbed into the `.card` + `.card-chrome` + `.window-dots` + `.ct-terminal` primitive vocabulary under the `.card--dark` modifier.
 
-### Action tier — tool_result
-- `.block.tool-result` → `.term` — dark terminal with `.chrome` (traffic-light dots + label) + `<pre>` with ANSI classes `.ok .err .warn .dim .path .prompt`
-- **is_error**: red chrome (`background:#1A0000`), first dot `#FF5F57`, label in `#FF8080`
-- **Multimodal**: `.term` followed by `.multimodal-images > .mm-image-wrap > img`
+## Primitive vocabulary (Layer 1)
 
-### Action tier — other
-- `.block.slash-cmd` → `.slash-card` — monospace command invocation (`.slash` `/` + `.cmd` + `.args`)
-- `.block.cmd-output` → `.cmd-output-body` — preformatted muted text
-- `.block.image-block` → `.image-card` with `.image-head` (meta + hint) + `.image-preview` (click-to-expand via `.expanded`)
+The catalogue of every primitive lives in `design-system/upd/components.html`. That file is the source of truth — when in doubt, copy structure from there, not from this skill.
 
-### Meta tier (lowest visual presence)
-- `.block.meta` — dashed left rule, `.meta-bar` with icon + label + `.detail`
-- `.meta-separator` — dashed rule line with centered text label
-- `<details class="compact-summary">` — `.cs-label` + `.cs-meta` summary; `.cs-body` Markdown content
-- `.doc-placeholder` — PDF/doc icon badge + title + note
-- `<details class="unknown-block">` — `.ub-tag` + `.ub-type` summary; `.mcp-json` body
+### Surface
 
-### Error blocks (meta/action tier)
-- `.block.api-error` → `.api-error-card` (icon square + `.etype` + `.msg`)
-- `.block.error` → `.err-callout` (parse errors, JSONL failures)
+- `.card` — elevated paper surface. Every non-conversation block that needs an enclosing surface uses this.
+- `.card--dark` — colour-scheme-pinning modifier on `.card`. Sets `color-scheme: dark` and locks the surface, border, chrome, and window-dot tokens to their dark values regardless of page theme. Used by every terminal-shell block. The structure is identical to a light card; only the colour scheme is pinned. Bash and terminal results compose as `.card.card--dark`.
+- `.card-chrome` — sunk flex header bar. Carries the eyebrow voice (mono, uppercase, tracked). Optional — many cards have no chrome.
+- `.card-body` — content section. Has its own padding and a top-border separator. The first `.card-body` in a card (no preceding chrome) drops its top border automatically.
+- `.window-dots` — three-dot decoration. Lives inside `.card-chrome`. Dot colour is `--dot-color`; the dark-card override supplies the dark variant.
 
-### Banners and primitives
-- `.session-result.success/.error` — outcome banner, `.sr-icon` + `.sr-label` + `.sr-stats`
-- `.find` — citron pill (`.find::before` dot + uppercase label) — use sparingly for matches/hits
-- `.pair-id` — mono badge linking tool_use ↔ tool_result
+### Clamp
 
-### Clamp (progressive disclosure)
-Wrap any long `<pre>` or `.preview` in `.clamp > .clamp-body + <button class="clamp-toggle">`.  
-JS toggles `.is-open` on the `.clamp` element; CSS transitions `max-height` and fades the mask.
+- `.card-body.clamp` — collapsibility modifier on the body section. Always on the body, **never** wraps the card from outside.
+- Structure: `div.card-body.clamp > div.clamp-body + button.clamp-toggle`. The toggle is always in the DOM; JS adds `.is-fit` when the content fits and the toggle disappears.
+- One JS selector covers every clamp in the system: `btn.closest(".card-body.clamp")`. Light and dark cards share the same clamp structure.
+- Clamp and disclosure are orthogonal — never put `.card-body.clamp` inside a `<details class="disclosure">`.
 
-## Token layering
+### Disclosure
 
-- **Palette tokens** (`--ink-*`, `--lapis-*`, `--teal-*`, etc.) — raw color values, never change between modes
-- **Semantic tokens** (`--bg`, `--fg`, `--role-*-rule`, etc.) — purpose-driven, use `light-dark()` when mode-dependent
-- **Component-scoped variables** (`--rule-color`) — set on a component root, overridden by modifiers
-- **Direct palette in components** is acceptable for: per-tool icon branding, one-off decorative colors, `color-mix()` expressions
+- `.disclosure` — modifier on a `<details>` that supplies marker suppression, mechanics, and the right-aligned chevron rotation. The chevron is a `::after` pseudo-element on `summary`; **never** add a chevron span (`sm-chevron`, `cs-chevron`, `ub-chevron`, `thinking-chevron` are all retired).
+- Disclosure card pattern: `details.card.disclosure > summary.card-chrome + .card-body`.
+
+### Content types (applied alongside `.card-body`)
+
+- `.ct-prose` — markdown body. Paragraphs, headings, lists, tables, inline `code`. The single definition is the only prose ruleset in the system.
+- `.ct-code` — Chroma syntax-highlighted output. The `<pre class="chroma">` supplies its own padding; the body is a transparent host.
+- `.ct-terminal` — terminal-to-html output. Peer of `.ct-code`. Establishes the context the verbatim `terminal.css` palette expects. **Every `.ct-terminal` body lives inside a `.card--dark` card** — that is what supplies `color-scheme: dark` to the palette.
+- **Custom structured** — todo lists, ask question/answer rows, websearch queries, task delegations, session results. No shared content-type class; each is a Layer 3 composition.
+
+### Flat surfaces
+
+- `.meta-bar` — thin ruled strip. Not a content container. Variants: `.meta-bar--interrupt`, `.meta-bar--system`, `.meta-bar--teammate`. May be followed by a `.card-body` (or `.card-body.clamp`) for the rare meta blocks that carry content (`teammateMessage`, `systemXML`).
+- `.callout` — flat non-elevated panel. Modifiers: `.callout--sunk` (dashed, muted), `.callout--error` (coloured), `.callout--cmd-output` (sunk + monospace `<pre>` host).
+- `.compaction-boundary` — horizontal divider rule with a centred eyebrow label between turns.
+
+## The five structural families
+
+Every block type belongs to exactly one family. Exemplars and specialisations live in `components.html` in family order: card (light), card (dark), conversation, disclosure, callout, meta-bar.
+
+| Family | Skeleton | Members |
+|---|---|---|
+| Card (light) | `article.block.<role>` → `div.card` → `.card-chrome?` + `.card-body[.clamp]?` | `toolCall`, all `toolBody` variants, non-terminal `toolResult`, `userBashInput`, `image`, `taskNotification`, `sessionResult`, `toolResult (ask enrichment)` |
+| Card (dark) | `article.block.<role>` → `div.card.card--dark` → `.card-chrome` + `.card-body.clamp.ct-terminal` | terminal-shell `toolResult`, `userBashResult` |
+| Conversation | `article.block.conversation.<role>` (is the card) → `.role` + `.card-body[.clamp]?.ct-prose` | `userText`, `assistantText` |
+| Disclosure | `article.block.<role>` → `details.card.disclosure` → `summary.card-chrome` + `.card-body` | `thinking`, `compactionSummary`, `rawBlock`, `slashMerged` |
+| Callout | `article.block.<role>` → `.callout[.<modifier>]?` | `redactedThinking`, `error`, `apiError`, `system (cmd_output)` |
+| Meta-bar | `article.block.meta` → `.meta-bar[.<variant>]?` + optional body | `hookInjection`, `requestInterrupted`, `teammateMessage`, `systemXML`, `system (meta)`, `compactionBoundary` |
+
+## Tool icons — semantic classes only
+
+Tool icons use semantic classes on the `.icon` element. Tools that share a tint share a class:
+
+| Class | Tools |
+|---|---|
+| `icon--shell` | Bash |
+| `icon--user-bash` | userBashInput |
+| `icon--file-op` | Read, Write |
+| `icon--file-edit` | Edit, MultiEdit |
+| `icon--search` | Grep, Glob |
+| `icon--list` | LS |
+| `icon--web` | WebSearch, WebFetch |
+| `icon--task` | Task |
+| `icon--todo` | TodoWrite |
+| `icon--plan` | exit_plan_mode |
+| `icon--mcp` | MCP tools |
+| `icon--ask` | AskUserQuestion |
+
+## Conversation has its own pattern
+
+The user and assistant blocks are an intentional exception. `article.block.conversation.<role>` **is** the card surface — there is no inner `.card` div. The role tag sits inside the card as an in-card header. When the body is clamped, a composition rule (`.block.conversation > .card-body.clamp`) lets it escape the card's inset padding so the toggle strip is edge-to-edge; `.block.conversation` has `overflow: hidden` so the card's rounded corners clip the clamp.
+
+## Slash commands
+
+`slashMerged` is the **sole** slash-command representative. A slash command is a `details.card.disclosure` whose summary carries the slash/cmd/args triplet (`.sm-cmd > .slash + .cmd + .args`) plus a `.sm-out-peek` of the first output line; the body is `.sm-out-body` with the full output.
 
 ## Don'ts
 
-- No autumn tones (no orange, brown, amber backgrounds)
-- No emoji as iconography — use single letters or initials in tinted squares
-- Don't use citron as a background or a body color — it is a *find* signal
+- Tool icons use semantic classes (`icon--shell`, `icon--file-op`, …), never attribute selectors.
+- The dark surface is always `.card.card--dark`. There is no separate dark-surface class.
+- The clamp is a modifier on `.card-body` only. It never wraps a card from outside.
+- No `:has()` selectors used to compensate for clamp/chrome interaction. The clamp lives on `.card-body`, so the chrome is structurally outside the clamped region.
+- No clamp inside a disclosure. Disclosure and clamp are orthogonal.
+- No per-composition chevron spans inside a `.disclosure` summary — the chevron is supplied by `.disclosure > summary::after`.
+- No autumn tones (no orange, brown, amber backgrounds).
+- No emoji as iconography — use single letters or initials in tinted squares.
+- Don't use citron as a background or a body color — it is a *find* signal.
+- Don't reach generic scale tokens (`--font-*`, `--color-*`, `--radius-*`, `--shadow-*`, `--leading-*`, `--tracking-*`) from `compositions.css`. Use them through primitive classes that already carry them.

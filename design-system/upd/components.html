@@ -564,6 +564,36 @@ internal/session/classify_test.go:17:func TestClassifyUserMessage(t *testing.T) 
   </details>
 </section>
 
+<!-- ── toolResult — ask enrichment ───────────────────── -->
+<section class="entry">
+  <h2>toolResult — ask enrichment</h2>
+  <p class="lede">The user's answers to an <code>AskUserQuestion</code> tool. A card with no chrome and a custom ask-result body — one item per question, each with the question text and the selected answer.</p>
+  <div class="rendered">
+    <article class="block tool-result">
+      <div class="role"><span class="tag">tool_result</span></div>
+      <div class="card">
+        <div class="ask-result">
+          <div class="ask-result-item">
+            <div class="ask-header">Output format</div>
+            <div class="ask-question">Where should the rendered HTML be written?</div>
+            <div class="ask-answer">gist</div>
+          </div>
+        </div>
+      </div>
+    </article>
+  </div>
+  <details class="source"><summary>HTML source</summary>
+    <pre>&lt;article class=&quot;block tool-result&quot;&gt;
+  &lt;div class=&quot;role&quot;&gt;&lt;span class=&quot;tag&quot;&gt;tool_result&lt;/span&gt;&lt;/div&gt;
+  &lt;div class=&quot;card&quot;&gt;
+    &lt;div class=&quot;ask-result&quot;&gt;
+      &lt;div class=&quot;ask-result-item&quot;&gt;…header / question / answer…&lt;/div&gt;
+    &lt;/div&gt;
+  &lt;/div&gt;
+&lt;/article&gt;</pre>
+  </details>
+</section>
+
 <!-- ── 13. userBashInput ────────────────────────────────────── -->
 <section class="entry">
   <h2>userBashInput</h2>
@@ -1003,7 +1033,7 @@ internal/session/classify_test.go:17:func TestClassifyUserMessage(t *testing.T) 
           <span class="cs-meta">8 turns · 4,210 tokens → 612 tokens · 2026-05-24 13:48</span>
         </summary>
         <div class="card-body ct-prose">
-          <p>The conversation explored the renderer pipeline, the parser fallback path, and the design-system v2 layer model. Key decisions: <code>terminal_chrome.css</code> is absorbed into <code>.card.card--dark</code>; the clamp moves onto <code>.card-body</code>; the legacy flat slash-command block is retired in favour of <code>slashMerged</code>.</p>
+          <p>The conversation explored the renderer pipeline, the parser fallback path, and the design-system v2 layer model. Key decisions: the v1 dark surface stylesheet is absorbed into <code>.card.card--dark</code>; the clamp moves onto <code>.card-body</code>; the legacy flat slash-command block is retired in favour of <code>slashMerged</code>.</p>
           <p>Open items: regenerate <code>render.html</code> and diff against baseline; verify dark-mode ANSI palette resolves correctly inside <code>.card--dark</code> in both page themes.</p>
         </div>
       </details>
@@ -1128,6 +1158,79 @@ pushed to origin/wiki</div>
   </details>
 </section>
 
+<!-- ── redactedThinking ───────────────────────────────── -->
+<section class="entry">
+  <h2>redactedThinking</h2>
+  <p class="lede">Thinking content that was redacted upstream. Sunk dashed callout — no card, no body to show.</p>
+  <div class="rendered">
+    <article class="block thinking">
+      <div class="role"><span class="tag">thinking</span></div>
+      <div class="callout callout--sunk">
+        <strong>Reasoning redacted</strong>
+        <span>The model returned a redacted-thinking block. No content is available.</span>
+      </div>
+    </article>
+  </div>
+  <details class="source"><summary>HTML source</summary>
+    <pre>&lt;article class=&quot;block thinking&quot;&gt;
+  &lt;div class=&quot;role&quot;&gt;&lt;span class=&quot;tag&quot;&gt;thinking&lt;/span&gt;&lt;/div&gt;
+  &lt;div class=&quot;callout callout--sunk&quot;&gt;
+    &lt;strong&gt;Reasoning redacted&lt;/strong&gt;
+    &lt;span&gt;…&lt;/span&gt;
+  &lt;/div&gt;
+&lt;/article&gt;</pre>
+  </details>
+</section>
+
+<!-- ── apiError ───────────────────────────────────────── -->
+<section class="entry">
+  <h2>apiError</h2>
+  <p class="lede">An API-level failure (rate limit, network error, model fault). Same coloured callout treatment as a parse error, distinguished only by the role tag and the body text.</p>
+  <div class="rendered">
+    <article class="block error">
+      <div class="role"><span class="tag">api_error</span></div>
+      <div class="callout callout--error">
+        <strong>Anthropic API error</strong>
+        <span>429 Rate limit exceeded — retrying in 4s. Request id: <code>req_01HXG3…</code>.</span>
+      </div>
+    </article>
+  </div>
+  <details class="source"><summary>HTML source</summary>
+    <pre>&lt;article class=&quot;block error&quot;&gt;
+  &lt;div class=&quot;role&quot;&gt;&lt;span class=&quot;tag&quot;&gt;api_error&lt;/span&gt;&lt;/div&gt;
+  &lt;div class=&quot;callout callout--error&quot;&gt;
+    &lt;strong&gt;Anthropic API error&lt;/strong&gt;
+    &lt;span&gt;…&lt;/span&gt;
+  &lt;/div&gt;
+&lt;/article&gt;</pre>
+  </details>
+</section>
+
+<!-- ── system (cmd_output) ──────────────────────────────── -->
+<section class="entry">
+  <h2>system — cmd_output</h2>
+  <p class="lede">Output captured from a local system command (not the assistant's bash tool). Sunk callout with a <code>&lt;pre&gt;</code> for the captured text.</p>
+  <div class="rendered">
+    <article class="block system">
+      <div class="role"><span class="tag">system</span></div>
+      <div class="callout callout--cmd-output">
+        <pre>$ git status --short
+ M design-system/upd/components.html
+ M design-system/upd/compositions.css
+?? design-system/upd/transcript.html</pre>
+      </div>
+    </article>
+  </div>
+  <details class="source"><summary>HTML source</summary>
+    <pre>&lt;article class=&quot;block system&quot;&gt;
+  &lt;div class=&quot;role&quot;&gt;&lt;span class=&quot;tag&quot;&gt;system&lt;/span&gt;&lt;/div&gt;
+  &lt;div class=&quot;callout callout--cmd-output&quot;&gt;
+    &lt;pre&gt;…captured command output…&lt;/pre&gt;
+  &lt;/div&gt;
+&lt;/article&gt;</pre>
+  </details>
+</section>
+
 <!-- ============================================================
      FAMILY: meta-bar
      ============================================================ -->
@@ -1158,6 +1261,128 @@ pushed to origin/wiki</div>
     &lt;span class=&quot;detail&quot;&gt;PreToolUse — Bash&lt;/span&gt;
   &lt;/div&gt;
 &lt;/article&gt;</pre>
+  </details>
+</section>
+
+<!-- ── requestInterrupted ──────────────────────────────── -->
+<section class="entry">
+  <h2>requestInterrupted</h2>
+  <p class="lede">The user (or harness) cancelled an in-flight request. Error-tinted meta-bar variant; no body.</p>
+  <div class="rendered">
+    <article class="block meta">
+      <div class="meta-bar meta-bar--interrupt">
+        <span class="icon">●</span>
+        <span>interrupted</span>
+        <span class="detail">user cancelled at 2026-05-24 14:11</span>
+      </div>
+    </article>
+  </div>
+  <details class="source"><summary>HTML source</summary>
+    <pre>&lt;article class=&quot;block meta&quot;&gt;
+  &lt;div class=&quot;meta-bar meta-bar--interrupt&quot;&gt;
+    &lt;span class=&quot;icon&quot;&gt;●&lt;/span&gt;
+    &lt;span&gt;interrupted&lt;/span&gt;
+    &lt;span class=&quot;detail&quot;&gt;…&lt;/span&gt;
+  &lt;/div&gt;
+&lt;/article&gt;</pre>
+  </details>
+</section>
+
+<!-- ── teammateMessage ───────────────────────────────────── -->
+<section class="entry">
+  <h2>teammateMessage</h2>
+  <p class="lede">A message from another agent in a multi-agent session. Meta-bar header above a clamped prose body — the only meta-bar member with a content payload.</p>
+  <div class="rendered">
+    <article class="block meta">
+      <div class="meta-bar meta-bar--teammate">
+        <span class="icon">◈</span>
+        <span>teammate</span>
+        <span class="detail">researcher · 2026-05-24 14:09</span>
+      </div>
+      <div class="card-body ct-prose clamp" style="--clamp-h: 7em;">
+        <div class="clamp-body">
+          <p>Found three callsites that depend on the parser's silent-skip behaviour. Two are in <code>renderer.LoadSession</code>; the third was changed in commit <code>a3f9c1</code> to require explicit error handling.</p>
+          <p>Recommend surfacing the skipped errors via a new <code>parser.Stats</code> return value rather than changing the existing callsite contract.</p>
+        </div>
+        <button class="clamp-toggle" type="button"><span class="label">Show more</span></button>
+      </div>
+    </article>
+  </div>
+  <details class="source"><summary>HTML source</summary>
+    <pre>&lt;article class=&quot;block meta&quot;&gt;
+  &lt;div class=&quot;meta-bar meta-bar--teammate&quot;&gt;…&lt;/div&gt;
+  &lt;div class=&quot;card-body ct-prose clamp&quot;&gt;
+    &lt;div class=&quot;clamp-body&quot;&gt;…markdown…&lt;/div&gt;
+    &lt;button class=&quot;clamp-toggle&quot;&gt;…&lt;/button&gt;
+  &lt;/div&gt;
+&lt;/article&gt;</pre>
+  </details>
+</section>
+
+<!-- ── systemXML ───────────────────────────────────────── -->
+<section class="entry">
+  <h2>systemXML</h2>
+  <p class="lede">XML system instruction or context payload. Meta-bar header above a clamped chroma body.</p>
+  <div class="rendered">
+    <article class="block meta">
+      <div class="meta-bar meta-bar--system">
+        <span class="icon">●</span>
+        <span>system</span>
+        <span class="detail">&lt;system-reminder&gt;</span>
+      </div>
+      <div class="card-body ct-code clamp" style="--clamp-h: 6em;">
+        <div class="clamp-body"><pre class="chroma"><span class="nt">&lt;system-reminder&gt;</span>
+  <span class="nt">&lt;rule&gt;</span>Never modify files in <span class="s">.wiki-sync/</span> directly.<span class="nt">&lt;/rule&gt;</span>
+  <span class="nt">&lt;rule&gt;</span>Run <span class="s">just verify</span> before claiming work is done.<span class="nt">&lt;/rule&gt;</span>
+<span class="nt">&lt;/system-reminder&gt;</span></pre></div>
+        <button class="clamp-toggle" type="button"><span class="label">Show more</span></button>
+      </div>
+    </article>
+  </div>
+  <details class="source"><summary>HTML source</summary>
+    <pre>&lt;article class=&quot;block meta&quot;&gt;
+  &lt;div class=&quot;meta-bar meta-bar--system&quot;&gt;…&lt;/div&gt;
+  &lt;div class=&quot;card-body ct-code clamp&quot;&gt;
+    &lt;div class=&quot;clamp-body&quot;&gt;&lt;pre class=&quot;chroma&quot;&gt;…&lt;/pre&gt;&lt;/div&gt;
+    &lt;button class=&quot;clamp-toggle&quot;&gt;…&lt;/button&gt;
+  &lt;/div&gt;
+&lt;/article&gt;</pre>
+  </details>
+</section>
+
+<!-- ── system (meta) ────────────────────────────────────── -->
+<section class="entry">
+  <h2>system — meta</h2>
+  <p class="lede">A system metadata event (model swap, context-window adjustment). Meta-bar header above a small monospace block; no clamp, no card.</p>
+  <div class="rendered">
+    <article class="block meta">
+      <div class="meta-bar meta-bar--system">
+        <span class="icon">●</span>
+        <span>system</span>
+        <span class="detail">model change</span>
+      </div>
+      <pre class="system-meta-body">previous: claude-sonnet-4-6
+next:     claude-sonnet-4-7
+reason:   user-requested via /model</pre>
+    </article>
+  </div>
+  <details class="source"><summary>HTML source</summary>
+    <pre>&lt;article class=&quot;block meta&quot;&gt;
+  &lt;div class=&quot;meta-bar meta-bar--system&quot;&gt;…&lt;/div&gt;
+  &lt;pre class=&quot;system-meta-body&quot;&gt;…key=value lines…&lt;/pre&gt;
+&lt;/article&gt;</pre>
+  </details>
+</section>
+
+<!-- ── compactionBoundary ──────────────────────────────── -->
+<section class="entry">
+  <h2>compactionBoundary</h2>
+  <p class="lede">A horizontal rule with a centred label separating pre- and post-compaction turns. Not a content container.</p>
+  <div class="rendered">
+    <div class="compaction-boundary">compacted at turn 8</div>
+  </div>
+  <details class="source"><summary>HTML source</summary>
+    <pre>&lt;div class=&quot;compaction-boundary&quot;&gt;…label…&lt;/div&gt;</pre>
   </details>
 </section>
 
