@@ -1,0 +1,323 @@
+/* =============================================================
+   Layer 1 — Structural primitives.
+   Named shapes the component system composes from. No block-
+   specific selectors live here. All visual identity is carried
+   forward from the existing component.css; this file simply
+   gives the recurring shapes single, composable names.
+   ============================================================= */
+
+/* ---------- .card — elevated surface ------------------------- */
+.card {
+  background: var(--bg-paper);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  box-shadow: var(--shadow-1);
+}
+
+/* ---------- .card--dark — colour-scheme-pinning modifier -----
+   Forces the card to render in dark colours regardless of page
+   theme. The structure is identical to a light card; only the
+   colour scheme is pinned. This is the context the verbatim
+   terminal.css palette (which uses light-dark()) keys off when
+   ANSI output is rendered inside a .ct-terminal body. */
+.card.card--dark {
+  color-scheme: dark;
+  background: var(--bg-terminal);
+  color: var(--fg-on-dark);
+  border-color: #1F2740;
+}
+
+/* ---------- .card-chrome — sunk header bar ------------------- */
+.card-chrome {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 14px;
+  background: var(--bg-sunk);
+  border-bottom: 1px solid var(--border);
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+  color: var(--fg-muted);
+}
+.card-chrome .name   { font-weight: 600; color: var(--fg); text-transform: none; }
+.card-chrome .label  { font-family: var(--font-mono); }
+.card-chrome .arg {
+  color: var(--fg-muted);
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-transform: none;
+}
+.card-chrome .icon {
+  width: 22px; height: 22px;
+  border-radius: 4px;
+  background: var(--ink-500);
+  color: var(--fg-on-dark);
+  display: grid; place-items: center;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+/* ---------- .card-body — content section --------------------- */
+.card-body {
+  padding: 12px 16px;
+  border-top: 1px solid var(--border);
+}
+.card-body--lg { padding: 16px 20px; }
+/* When a card-body is the first child of a card (no chrome
+   preceding it), the top border is redundant with the card
+   border itself. */
+.card > .card-body:first-child { border-top: 0; }
+
+/* ---------- .card-body.clamp — collapsible body modifier ----
+   The toggle button is always present in the DOM; JS adds
+   .is-fit when content fits within --clamp-h, which hides the
+   toggle. The clamp lives on .card-body only — never on the
+   card surface — so the card-chrome is structurally outside
+   the gradient mask and height cap.
+
+   .clamp-body and .clamp-toggle are siblings in normal flow:
+   the mask fades content to transparent at the bottom of
+   .clamp-body, revealing the card's body background, and the
+   toggle sits below as an edge-to-edge strip with a hairline
+   separator. The card-body itself drops its default padding
+   (the clamp-body supplies it) and its border-top (the chrome
+   above carries the separator). */
+.card-body.clamp { position: relative; padding: 0; border-top: 0; }
+.card-body.clamp .clamp-body {
+  max-height: var(--clamp-h, 12em);
+  overflow: hidden;
+  padding: 12px 16px;
+  -webkit-mask-image: linear-gradient(to bottom, #000 calc(100% - 36px), transparent);
+          mask-image: linear-gradient(to bottom, #000 calc(100% - 36px), transparent);
+}
+.card-body.clamp.is-open .clamp-body,
+.card-body.clamp.is-fit  .clamp-body {
+  max-height: none;
+  -webkit-mask-image: none;
+          mask-image: none;
+}
+.card-body.clamp .clamp-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  margin: 0;
+  padding: 8px 14px;
+  background: transparent;
+  border: 0;
+  border-top: 1px solid var(--border);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+  color: var(--fg-muted);
+  cursor: pointer;
+}
+.card-body.clamp .clamp-toggle:hover { color: var(--fg); }
+.card-body.clamp .clamp-toggle::before {
+  content: "";
+  width: 8px; height: 8px;
+  border-right: 1.5px solid currentcolor;
+  border-bottom: 1.5px solid currentcolor;
+  transform: rotate(45deg) translate(-1px, -1px);
+  transition: transform 0.2s;
+}
+.card-body.clamp.is-open .clamp-toggle::before {
+  transform: rotate(-135deg) translate(-1px, -1px);
+}
+.card-body.clamp .clamp-toggle .count { color: var(--fg); font-weight: 600; }
+.card-body.clamp .clamp-toggle .label { flex: 1; text-align: left; }
+.card-body.clamp.is-fit .clamp-toggle { display: none; }
+
+/* When a clamped body wraps chroma/terminal content, the inner
+   <pre> supplies its own padding — strip the .clamp-body
+   padding to avoid double-padding. */
+.card-body.clamp.ct-code .clamp-body,
+.card-body.clamp.ct-terminal .clamp-body { padding: 0; }
+
+/* ---------- .disclosure — collapsible details/summary --------
+   Mechanics only — right-side chevron, marker suppression, and
+   open rotation. The chevron is supplied by the primitive via
+   a pseudo-element; compositions never add their own. */
+.disclosure > summary {
+  list-style: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.disclosure > summary::-webkit-details-marker { display: none; }
+.disclosure > summary::after {
+  content: "";
+  margin-left: auto;
+  flex-shrink: 0;
+  width: 9px;
+  height: 9px;
+  border-right: 1.5px solid currentcolor;
+  border-bottom: 1.5px solid currentcolor;
+  color: var(--fg-muted);
+  transform: rotate(45deg) translate(-1px, -1px);
+  transition: transform 0.2s, color 0.2s;
+}
+.disclosure[open] > summary::after {
+  transform: rotate(-135deg) translate(-1px, -1px);
+}
+.disclosure:hover > summary::after { color: var(--fg); }
+
+/* ---------- .window-dots — three-dot window decoration ------- */
+.window-dots { display: flex; gap: 5px; }
+.window-dots span {
+  width: 9px; height: 9px;
+  border-radius: 50%;
+  background: var(--dot-color, var(--border-strong));
+}
+
+/* ---------- .meta-bar — thin ruled strip --------------------
+   A non-container header strip for meta-class blocks (hook
+   injection, request interrupt, teammate message, systemXML,
+   etc.). Carries the eyebrow voice but no surrounding card. */
+.meta-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+  color: var(--fg-subtle);
+}
+.meta-bar .icon {
+  width: auto; height: auto;
+  background: transparent;
+  font-size: 12px;
+  color: var(--fg-subtle);
+  display: inline;
+  border-radius: 0;
+}
+.meta-bar .detail {
+  font-weight: 400;
+  text-transform: none;
+  letter-spacing: normal;
+  color: var(--fg-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ---------- .callout — flat, non-elevated panel -------------- */
+.callout {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px 16px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--bg-paper);
+  color: var(--fg);
+  font-family: var(--font-ui);
+  font-size: var(--text-sm);
+  line-height: var(--leading-snug);
+}
+.callout--sunk {
+  background: var(--bg-sunk);
+  border-style: dashed;
+  color: var(--fg-muted);
+}
+.callout--error {
+  background: var(--error-bg);
+  border-color: var(--error-rule);
+  color: var(--error-fg);
+}
+
+/* =============================================================
+   Content-type classes — applied alongside .card-body
+   ============================================================= */
+
+/* ---------- .ct-prose — markdown prose ----------------------- */
+.ct-prose { font-size: 15.5px; line-height: 1.65; color: var(--fg); }
+.ct-prose p { margin: 0 0 0.85em; }
+.ct-prose p:first-child { margin-top: 0; }
+.ct-prose p:last-child  { margin-bottom: 0; }
+.ct-prose strong { font-weight: 600; }
+.ct-prose h1, .ct-prose h2, .ct-prose h3,
+.ct-prose h4, .ct-prose h5, .ct-prose h6 {
+  font-family: var(--font-ui);
+  font-weight: 600;
+  margin: 1rem 0 0.4rem;
+  line-height: var(--leading-snug);
+}
+.ct-prose h1:first-child, .ct-prose h2:first-child, .ct-prose h3:first-child,
+.ct-prose h4:first-child, .ct-prose h5:first-child, .ct-prose h6:first-child {
+  margin-top: 0;
+}
+.ct-prose code {
+  font-family: var(--font-mono);
+  font-size: 0.88em;
+  padding: 1px 5px;
+  background: var(--bg-sunk);
+  border-radius: 3px;
+}
+.ct-prose pre {
+  background: var(--bg-code);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 1rem;
+  overflow-x: auto;
+  margin: 0.75rem 0;
+}
+.ct-prose pre code { background: none; padding: 0; }
+.ct-prose ul, .ct-prose ol { margin: 0.4em 0 0.85em; padding-left: 22px; }
+.ct-prose li { margin: 3px 0; }
+.ct-prose table {
+  border-collapse: collapse;
+  width: 100%;
+  margin: 0.6em 0 0.9em;
+  font-size: 0.95em;
+}
+.ct-prose table th,
+.ct-prose table td {
+  border: 1px solid var(--border);
+  padding: 6px 10px;
+  text-align: left;
+  vertical-align: top;
+}
+.ct-prose table th { background: var(--bg-sunk); font-weight: 600; }
+
+/* ---------- .ct-code — chroma syntax-highlighted output ------
+   The Chroma <pre> supplies its own internal padding; the body
+   is a transparent host. */
+.ct-code { padding: 0; }
+.ct-code .chroma { background: var(--bg-code); }
+.ct-code pre.chroma,
+.ct-code .chroma pre {
+  margin: 0;
+  padding: 14px 16px;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  line-height: 1.6;
+  overflow: auto;
+}
+
+/* ---------- .ct-terminal — ANSI terminal-to-html output ------
+   Peer of .ct-code. Establishes the context terminal.css's
+   light-dark() palette expects (color-scheme: dark, supplied by
+   the surrounding .card--dark). Body is a <pre> containing
+   .term-fg* / .term-bg* spans. */
+.ct-terminal { padding: 0; }
+.ct-terminal pre {
+  margin: 0;
+  padding: 16px 18px;
+  white-space: pre;
+  overflow: auto;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  line-height: 1.65;
+}

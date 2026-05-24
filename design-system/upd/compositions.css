@@ -1,0 +1,76 @@
+/* =============================================================
+   Layer 3 — Compositions.
+   Per-role colour variables, dark-card chrome overrides, and
+   semantic icon tints. This layer composes primitives via
+   their classes; it does not redeclare raw design-token values.
+
+   Allowed token use: structural overrides on the .card--dark
+   modifier (the dark variant composition of card primitives)
+   and palette colour tokens for role/icon tints. Generic raw
+   token re-declarations (font/color/radius/shadow scales) do
+   not appear here — those live in tokens.css and are reached
+   through the primitives.
+   ============================================================= */
+
+/* ---------- Conversation: edge-to-edge clamp ---------------
+   .block.conversation is itself the card surface, with its own
+   inset padding. A clamped body must escape that padding so
+   the toggle strip hugs the card edges and sits flush with the
+   card's bottom corner. The conversation card's own
+   border-radius clips the clamp via overflow: hidden on the
+   conversation surface (set in scaffold.css). */
+.block.conversation > .card-body.clamp {
+  margin: 10px -24px -20px;
+  border-top: 1px solid var(--border);
+}
+
+/* ---------- Per-role rule colour on the block scaffold ------- */
+.block.user        { --rule-color: var(--role-user-rule); }
+.block.user        .role .tag { background: var(--role-user-rule); color: var(--fg-on-dark); }
+.block.assistant   { --rule-color: var(--role-assistant-rule); }
+.block.assistant   .role .tag { background: var(--role-assistant-rule); color: var(--fg-on-dark); }
+.block.tool        { --rule-color: var(--role-tool-rule); }
+.block.tool        .role .tag { background: var(--role-tool-rule); color: var(--fg-on-lapis); }
+.block.tool-result { --rule-color: var(--border-strong); }
+.block.tool-result.is-error { --rule-color: var(--error-rule); }
+.block.tool-result.is-error .role .tag { background: var(--error-500); color: var(--fg-on-dark); }
+.block.thinking    { --rule-color: var(--role-thinking-rule); }
+.block.thinking    .role .tag { background: var(--role-thinking-rule); color: var(--fg-on-dark); }
+
+/* ---------- .card--dark — chrome and window-dots overrides ---
+   The dark-variant composition of the card primitive. Pinned
+   tokens here are intentional and are the dark equivalents of
+   what the light .card-chrome and .window-dots resolve to. */
+.card--dark .card-chrome {
+  background: #050717;
+  border-bottom-color: #1F2740;
+  color: var(--ink-300);
+}
+.card--dark .card-chrome .name  { color: var(--fg-on-dark); }
+.card--dark .card-chrome .arg   { color: var(--ink-300); }
+.card--dark .window-dots { --dot-color: #2C3656; }
+
+/* Error-tinted dark chrome (bash exit-non-zero) ----------- */
+.block.tool-result.is-error .card.card--dark .card-chrome {
+  background: color-mix(in oklch, var(--error-500) 15%, #050717);
+  border-bottom-color: color-mix(in oklch, var(--error-500) 25%, #1F2740);
+}
+.block.tool-result.is-error .card.card--dark .window-dots { --dot-color: var(--error-500); }
+
+/* ---------- Semantic icon tints ------------------------------
+   Replace the v1 per-tool attribute selectors. Tools
+   sharing a tint share a class — no per-tool rule needed. */
+.icon--shell     { background: var(--ink-700); }
+.icon--file-op   { background: var(--lapis-600); }
+.icon--file-edit { background: var(--lapis-700); }
+.icon--web       { background: var(--ink-600); }
+.icon--task      { background: var(--ink-800); font-size: 11px; }
+
+/* Additional tints for full tool coverage. */
+.icon--search    { background: var(--citron-600); color: var(--ink-900); font-size: 10px; }
+.icon--list      { background: var(--ink-500); font-size: 10px; }
+.icon--todo      { background: var(--success-solid); }
+.icon--plan      { background: var(--lapis-700); font-size: 13px; }
+.icon--mcp       { background: var(--lapis-700); font-size: 9px; font-weight: 700; }
+.icon--ask       { background: var(--teal-600); }
+.icon--user-bash { background: var(--role-user-rule); }

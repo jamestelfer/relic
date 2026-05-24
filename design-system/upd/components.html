@@ -1,0 +1,430 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Relic — Components (Design System v2)</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="tokens.css">
+<link rel="stylesheet" href="primitives.css">
+<link rel="stylesheet" href="scaffold.css">
+<link rel="stylesheet" href="compositions.css">
+<link rel="stylesheet" href="highlight.css">
+<link rel="stylesheet" href="terminal.css">
+<style>
+  /* Page chrome for the catalogue itself — not part of the system. */
+  body { padding: 48px 0 120px; }
+  .page { max-width: 980px; margin: 0 auto; padding: 0 32px; }
+  .page > header { margin-bottom: 48px; padding-bottom: 24px; border-bottom: 1px solid var(--rule); }
+  .page > header h1 {
+    font-family: var(--font-display);
+    font-size: 40px;
+    line-height: 1.1;
+    letter-spacing: -0.015em;
+    margin: 0 0 8px;
+    font-weight: 400;
+  }
+  .page > header p { color: var(--fg-muted); margin: 0; max-width: 64ch; }
+  .theme-toggle {
+    margin-top: 16px;
+    background: var(--bg-sunk);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 4px 12px;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: var(--tracking-wide);
+    text-transform: uppercase;
+    color: var(--fg-muted);
+    cursor: pointer;
+  }
+  .entry { margin: 56px 0; }
+  .entry > h2 {
+    font-family: var(--font-ui);
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: var(--tracking-wide);
+    text-transform: uppercase;
+    color: var(--fg-muted);
+    margin: 0 0 6px;
+  }
+  .entry > .lede {
+    font-family: var(--font-display);
+    font-style: italic;
+    font-size: 22px;
+    line-height: 1.3;
+    margin: 0 0 20px;
+    color: var(--fg);
+    max-width: 60ch;
+  }
+  .entry .rendered {
+    padding: 24px;
+    border: 1px dashed var(--border);
+    border-radius: var(--radius-md);
+    background: var(--bg);
+  }
+  .entry details.source {
+    margin-top: 12px;
+    border-top: 1px solid var(--rule);
+  }
+  .entry details.source summary {
+    cursor: pointer;
+    list-style: none;
+    padding: 10px 4px;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: var(--tracking-wide);
+    text-transform: uppercase;
+    color: var(--fg-muted);
+  }
+  .entry details.source summary::-webkit-details-marker { display: none; }
+  .entry details.source pre {
+    margin: 0;
+    padding: 14px 16px;
+    background: var(--bg-code);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    font-family: var(--font-mono);
+    font-size: 12px;
+    line-height: 1.55;
+    color: var(--fg);
+    overflow-x: auto;
+    white-space: pre;
+  }
+  .family-head {
+    margin: 64px 0 16px;
+    font-family: var(--font-display);
+    font-size: 32px;
+    font-weight: 400;
+    letter-spacing: -0.01em;
+    color: var(--fg);
+  }
+  .family-head + p { color: var(--fg-muted); margin: 0 0 24px; max-width: 64ch; }
+</style>
+</head>
+<body>
+<div class="page">
+
+<header>
+  <h1>Relic — Components <span class="display-i">v2</span></h1>
+  <p>Family exemplars for the structured design system. Each entry shows a rendered component and its HTML source. Five families: card, conversation, disclosure, callout, meta-bar. The card family has a light and a dark colour-scheme variant.</p>
+  <button class="theme-toggle" type="button" id="themeToggle" aria-pressed="false">Toggle dark mode</button>
+</header>
+
+<!-- ============================================================
+     FAMILY: card
+     ============================================================ -->
+<h2 class="family-head">Card</h2>
+<p>An elevated paper surface with an optional chrome bar and one or more body sections. The card is the unit of visual enclosure for most non-conversation blocks.</p>
+
+<!-- ── 1. Card (light) — exemplar ──────────────────────────── -->
+<section class="entry">
+  <h2>Exemplar — card (light)</h2>
+  <p class="lede">Canonical light card skeleton: chrome above a clamped chroma body. Chrome is structurally outside the clamp.</p>
+  <div class="rendered">
+
+    <article class="block tool" id="ex-card-light">
+      <div class="role"><span class="tag">tool_use</span></div>
+      <div class="card">
+        <div class="card-chrome">
+          <span class="icon icon--shell">$</span>
+          <span class="name">Bash</span>
+          <span class="arg">build the project from a clean state</span>
+        </div>
+        <div class="card-body ct-code clamp" style="--clamp-h: 9em;">
+          <div class="clamp-body"><pre class="chroma"><span class="line"><span class="cl"><span class="nb">just</span> verify
+<span class="nb">just</span> build
+<span class="nb">just</span> test
+<span class="c1"># expected: all green</span>
+<span class="nb">echo</span> <span class="s2">"done"</span>
+<span class="nb">just</span> verify
+<span class="nb">just</span> build
+<span class="nb">just</span> test
+<span class="c1"># expected: all green</span>
+<span class="nb">echo</span> <span class="s2">"done again"</span></span></span></pre></div>
+          <button class="clamp-toggle" type="button"><span class="label">Show more</span></button>
+        </div>
+      </div>
+    </article>
+
+    <p style="margin: 16px 0 6px; font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.04em; text-transform: uppercase; color: var(--fg-muted);">Short-content variant — toggle hidden by <code>.is-fit</code></p>
+
+    <article class="block tool" id="ex-card-light-fit">
+      <div class="role"><span class="tag">tool_use</span></div>
+      <div class="card">
+        <div class="card-chrome">
+          <span class="icon icon--shell">$</span>
+          <span class="name">Bash</span>
+          <span class="arg">pwd</span>
+        </div>
+        <div class="card-body ct-code clamp" style="--clamp-h: 9em;">
+          <div class="clamp-body"><pre class="chroma"><span class="line"><span class="cl"><span class="nb">pwd</span></span></span></pre></div>
+          <button class="clamp-toggle" type="button"><span class="label">Show more</span></button>
+        </div>
+      </div>
+    </article>
+
+  </div>
+  <details class="source">
+    <summary>HTML source</summary>
+    <pre>&lt;article class=&quot;block tool&quot;&gt;
+  &lt;div class=&quot;role&quot;&gt;&lt;span class=&quot;tag&quot;&gt;tool_use&lt;/span&gt;&lt;/div&gt;
+  &lt;div class=&quot;card&quot;&gt;
+    &lt;div class=&quot;card-chrome&quot;&gt;
+      &lt;span class=&quot;icon icon--shell&quot;&gt;$&lt;/span&gt;
+      &lt;span class=&quot;name&quot;&gt;Bash&lt;/span&gt;
+      &lt;span class=&quot;arg&quot;&gt;build the project from a clean state&lt;/span&gt;
+    &lt;/div&gt;
+    &lt;div class=&quot;card-body ct-code clamp&quot;&gt;
+      &lt;div class=&quot;clamp-body&quot;&gt;&lt;pre class=&quot;chroma&quot;&gt;…&lt;/pre&gt;&lt;/div&gt;
+      &lt;button class=&quot;clamp-toggle&quot; type=&quot;button&quot;&gt;
+        &lt;span class=&quot;label&quot;&gt;Show more&lt;/span&gt;
+      &lt;/button&gt;
+    &lt;/div&gt;
+  &lt;/div&gt;
+&lt;/article&gt;</pre>
+  </details>
+</section>
+
+<!-- ── 2. Card (dark) — exemplar ───────────────────────────── -->
+<section class="entry">
+  <h2>Exemplar — card (dark)</h2>
+  <p class="lede">Identical structure to the light card. The <code>.card--dark</code> modifier pins <code>color-scheme: dark</code> and the surface tokens, which lets the verbatim <code>terminal.css</code> palette resolve to its dark values regardless of page theme.</p>
+  <div class="rendered">
+
+    <article class="block tool-result" id="ex-card-dark">
+      <div class="role"><span class="tag">tool_result</span></div>
+      <div class="card card--dark">
+        <div class="card-chrome">
+          <span class="window-dots"><span></span><span></span><span></span></span>
+          <span class="label">bash</span>
+        </div>
+        <div class="card-body ct-terminal clamp" style="--clamp-h: 10em;">
+          <div class="clamp-body"><pre><span class="term-fg32">==&gt;</span> Building target <span class="term-fg36">relic</span>
+<span class="term-fg90">    compiling internal/parser</span>
+<span class="term-fg90">    compiling internal/session</span>
+<span class="term-fg90">    compiling internal/renderer</span>
+<span class="term-fg90">    compiling cmd/relic</span>
+<span class="term-fg32">==&gt;</span> Done in <span class="term-fg33">1.2s</span>
+<span class="term-fg32">==&gt;</span> Running tests
+<span class="term-fg90">    ok  internal/parser   0.03s</span>
+<span class="term-fg90">    ok  internal/session  0.07s</span>
+<span class="term-fg90">    ok  internal/renderer 0.12s</span>
+<span class="term-fg32">PASS</span></pre></div>
+          <button class="clamp-toggle" type="button"><span class="label">Show more</span></button>
+        </div>
+      </div>
+    </article>
+
+  </div>
+  <details class="source">
+    <summary>HTML source</summary>
+    <pre>&lt;article class=&quot;block tool-result&quot;&gt;
+  &lt;div class=&quot;role&quot;&gt;&lt;span class=&quot;tag&quot;&gt;tool_result&lt;/span&gt;&lt;/div&gt;
+  &lt;div class=&quot;card card--dark&quot;&gt;
+    &lt;div class=&quot;card-chrome&quot;&gt;
+      &lt;span class=&quot;window-dots&quot;&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;/span&gt;
+      &lt;span class=&quot;label&quot;&gt;bash&lt;/span&gt;
+    &lt;/div&gt;
+    &lt;div class=&quot;card-body ct-terminal clamp&quot;&gt;
+      &lt;div class=&quot;clamp-body&quot;&gt;&lt;pre&gt;…ANSI output with .term-fg* spans…&lt;/pre&gt;&lt;/div&gt;
+      &lt;button class=&quot;clamp-toggle&quot; type=&quot;button&quot;&gt;
+        &lt;span class=&quot;label&quot;&gt;Show more&lt;/span&gt;
+      &lt;/button&gt;
+    &lt;/div&gt;
+  &lt;/div&gt;
+&lt;/article&gt;</pre>
+  </details>
+</section>
+
+<!-- ============================================================
+     FAMILY: conversation
+     ============================================================ -->
+<h2 class="family-head">Conversation</h2>
+<p>The <code>article.block.conversation</code> element is both block wrapper and card surface — no inner <code>.card</code> div. The role tag sits inside the card as an in-card header.</p>
+
+<!-- ── 3. Conversation — exemplar ──────────────────────────── -->
+<section class="entry">
+  <h2>Exemplar — conversation (assistant)</h2>
+  <p class="lede">Block-as-card: paper background, role accent on the left edge, clamped prose body.</p>
+  <div class="rendered">
+
+    <article class="block conversation assistant" id="ex-conversation">
+      <div class="role"><span class="tag">assistant</span><time>2026-05-24 14:08</time></div>
+      <div class="card-body ct-prose clamp" style="--clamp-h: 12em;">
+        <div class="clamp-body">
+          <p>The renderer pipeline has three stages. <strong>parser</strong> decodes Claude Code JSONL into a flat sequence of typed Go structs without interpreting semantics.</p>
+          <p><strong>session</strong> transforms parser output into render-ready blocks. A detection cascade in <code>classifyUserMessage()</code> routes synthetic user messages into specialised block types.</p>
+          <p><strong>renderer</strong> maps each block to a templ component and produces the final self-contained HTML document, inlining CSS, JS, fonts, and images.</p>
+          <p>Supporting packages handle syntax highlighting, gist publishing, interactive selection, and ANSI escapes.</p>
+        </div>
+        <button class="clamp-toggle" type="button"><span class="label">Show more</span></button>
+      </div>
+    </article>
+
+  </div>
+  <details class="source">
+    <summary>HTML source</summary>
+    <pre>&lt;article class=&quot;block conversation assistant&quot;&gt;
+  &lt;div class=&quot;role&quot;&gt;&lt;span class=&quot;tag&quot;&gt;assistant&lt;/span&gt;&lt;time&gt;…&lt;/time&gt;&lt;/div&gt;
+  &lt;div class=&quot;card-body ct-prose clamp&quot;&gt;
+    &lt;div class=&quot;clamp-body&quot;&gt;…markdown prose…&lt;/div&gt;
+    &lt;button class=&quot;clamp-toggle&quot; type=&quot;button&quot;&gt;
+      &lt;span class=&quot;label&quot;&gt;Show more&lt;/span&gt;
+    &lt;/button&gt;
+  &lt;/div&gt;
+&lt;/article&gt;</pre>
+  </details>
+</section>
+
+<!-- ============================================================
+     FAMILY: disclosure
+     ============================================================ -->
+<h2 class="family-head">Disclosure</h2>
+<p>A <code>&lt;details&gt;</code> card variant. The summary acts as the card-chrome; the body section appears when open. Never combined with clamp — disclosure and clamp are orthogonal.</p>
+
+<!-- ── 4. Disclosure — exemplar ────────────────────────────── -->
+<section class="entry">
+  <h2>Exemplar — disclosure (thinking)</h2>
+  <p class="lede">Card surface as a <code>&lt;details&gt;</code>: summary is the chrome, body is direct prose with no clamp.</p>
+  <div class="rendered">
+
+    <article class="block thinking" id="ex-disclosure">
+      <div class="role"><span class="tag">thinking</span></div>
+      <details class="card disclosure">
+        <summary class="card-chrome">
+          <span class="label">Internal reasoning</span>
+        </summary>
+        <div class="card-body ct-prose">
+          <p>Need to choose between absorbing the dark surface into <code>.card</code> via a colour-scheme modifier, or keeping the legacy terminal surface as a separate primitive.</p>
+          <p>The modifier path deletes the workaround band and lets one clamp selector cover every body. The separate-primitive path duplicates structure.</p>
+          <p>Going with the modifier.</p>
+        </div>
+      </details>
+    </article>
+
+  </div>
+  <details class="source">
+    <summary>HTML source</summary>
+    <pre>&lt;article class=&quot;block thinking&quot;&gt;
+  &lt;div class=&quot;role&quot;&gt;&lt;span class=&quot;tag&quot;&gt;thinking&lt;/span&gt;&lt;/div&gt;
+  &lt;details class=&quot;card disclosure&quot;&gt;
+    &lt;summary class=&quot;card-chrome&quot;&gt;
+      &lt;span class=&quot;label&quot;&gt;Internal reasoning&lt;/span&gt;
+    &lt;/summary&gt;
+    &lt;div class=&quot;card-body ct-prose&quot;&gt;…rendered markdown…&lt;/div&gt;
+  &lt;/details&gt;
+&lt;/article&gt;</pre>
+  </details>
+</section>
+
+<!-- ============================================================
+     FAMILY: callout
+     ============================================================ -->
+<h2 class="family-head">Callout</h2>
+<p>Flat, non-elevated panels. No card, no chrome. Used for short status messages, errors, and sunk annotations.</p>
+
+<!-- ── 5. Callout — exemplar ───────────────────────────────── -->
+<section class="entry">
+  <h2>Exemplar — callout (error)</h2>
+  <p class="lede">Flat error panel. Used for parse errors and other inline failure messages.</p>
+  <div class="rendered">
+
+    <article class="block error" id="ex-callout">
+      <div class="role"><span class="tag">error</span></div>
+      <div class="callout callout--error">
+        <strong>Parse error</strong>
+        <span>Unexpected token at line 42 of <code>session.jsonl</code>.</span>
+      </div>
+    </article>
+
+  </div>
+  <details class="source">
+    <summary>HTML source</summary>
+    <pre>&lt;article class=&quot;block error&quot;&gt;
+  &lt;div class=&quot;role&quot;&gt;&lt;span class=&quot;tag&quot;&gt;error&lt;/span&gt;&lt;/div&gt;
+  &lt;div class=&quot;callout callout--error&quot;&gt;
+    &lt;strong&gt;Parse error&lt;/strong&gt;
+    &lt;span&gt;Unexpected token at line 42 of &lt;code&gt;session.jsonl&lt;/code&gt;.&lt;/span&gt;
+  &lt;/div&gt;
+&lt;/article&gt;</pre>
+  </details>
+</section>
+
+<!-- ============================================================
+     FAMILY: meta-bar
+     ============================================================ -->
+<h2 class="family-head">Meta-bar</h2>
+<p>Thin ruled strips — not content containers. Used for hook injections, request interrupts, and other label-only meta events.</p>
+
+<!-- ── 6. Meta-bar — exemplar ──────────────────────────────── -->
+<section class="entry">
+  <h2>Exemplar — meta-bar (hook injection)</h2>
+  <p class="lede">Single-line strip with an icon and a detail. No card surface; the block left-border carries the visual weight.</p>
+  <div class="rendered">
+
+    <article class="block meta" id="ex-meta">
+      <div class="meta-bar">
+        <span class="icon">⌁</span>
+        <span>hook</span>
+        <span class="detail">PreToolUse — Bash</span>
+      </div>
+    </article>
+
+  </div>
+  <details class="source">
+    <summary>HTML source</summary>
+    <pre>&lt;article class=&quot;block meta&quot;&gt;
+  &lt;div class=&quot;meta-bar&quot;&gt;
+    &lt;span class=&quot;icon&quot;&gt;⌁&lt;/span&gt;
+    &lt;span&gt;hook&lt;/span&gt;
+    &lt;span class=&quot;detail&quot;&gt;PreToolUse — Bash&lt;/span&gt;
+  &lt;/div&gt;
+&lt;/article&gt;</pre>
+  </details>
+</section>
+
+</div>
+
+<script>
+  // Clamp: mark .is-fit when the inner content fits within --clamp-h.
+  // One selector covers every clamp in the system because light and dark
+  // cards share the same .card-body.clamp structure.
+  (function () {
+    const clamps = document.querySelectorAll(".card-body.clamp");
+    for (const clamp of clamps) {
+      const body = clamp.querySelector(":scope > .clamp-body");
+      if (!body) continue;
+      // If the content fits within the max-height there is no overflow;
+      // mark the clamp .is-fit so the toggle hides.
+      // Use scrollHeight vs clientHeight after the mask/max-height applies.
+      requestAnimationFrame(() => {
+        const fits = body.scrollHeight <= body.clientHeight + 1;
+        if (fits) clamp.classList.add("is-fit");
+      });
+    }
+    document.addEventListener("click", (ev) => {
+      const btn = ev.target.closest(".clamp-toggle");
+      if (!btn) return;
+      const clamp = btn.closest(".card-body.clamp");
+      if (!clamp) return;
+      clamp.classList.toggle("is-open");
+      const label = btn.querySelector(".label");
+      if (label) label.textContent = clamp.classList.contains("is-open") ? "Show less" : "Show more";
+    });
+  })();
+
+  // Theme toggle for the catalogue page itself.
+  (function () {
+    const btn = document.getElementById("themeToggle");
+    if (!btn) return;
+    btn.addEventListener("click", () => {
+      const root = document.documentElement;
+      const next = root.style.colorScheme === "dark" ? "light" : "dark";
+      root.style.colorScheme = next;
+      btn.setAttribute("aria-pressed", next === "dark" ? "true" : "false");
+      btn.textContent = next === "dark" ? "Toggle light mode" : "Toggle dark mode";
+    });
+  })();
+</script>
+</body>
+</html>
