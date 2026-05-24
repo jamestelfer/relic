@@ -228,6 +228,9 @@ func highlightJSON(jsonStr string) template.HTML {
 }
 
 func toolResultContentHTML(b *session.ToolResult) template.HTML {
+	if _, ok := b.Enrichment.(*session.AgentEnrichment); ok {
+		return renderMarkdown(b.Content)
+	}
 	if isMCPTool(b.LinkedCallName) {
 		trimmed := strings.TrimSpace(b.Content)
 		if (strings.HasPrefix(trimmed, "{") || strings.HasPrefix(trimmed, "[")) && json.Valid([]byte(trimmed)) {
