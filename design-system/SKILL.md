@@ -100,8 +100,8 @@ Every block type belongs to exactly one family. Exemplars and specialisations li
 |---|---|---|
 | Card (light) | `article.block.<role>` → `div.card` → `.card-chrome?` + `.card-body[.clamp]?` | `toolCall`, all `toolBody` variants, non-terminal `toolResult`, `userBashInput`, `image`, `taskNotification`, `sessionResult`, `toolResult (ask enrichment)` |
 | Card (dark) | `article.block.<role>` → `div.card.card--dark` → `.card-chrome` + `.card-body.clamp.ct-terminal` | terminal-shell `toolResult`, `userBashResult` |
-| Conversation | `article.block.conversation.<role>` (is the card) → `.role` + `.card-body[.clamp]?.ct-prose` | `userText`, `assistantText` |
-| Disclosure | `article.block.<role>` → `details.card.disclosure` → `summary.card-chrome` + `.card-body` | `thinking`, `compactionSummary`, `rawBlock`, `slashMerged` |
+| Conversation | `article.block.conversation.<role>` (is the card) → `.role` + `.card-body[.clamp]?.ct-prose`; `slashMerged` is a specialised conversation-card variant that swaps the plain body for a slash-specific disclosure treatment | `userText`, `assistantText`, `slashMerged` |
+| Disclosure | `article.block.<role>` → `details.card.disclosure` → `summary.card-chrome` + `.card-body` | `thinking`, `compactionSummary`, `rawBlock` |
 | Callout | `article.block.<role>` → `.callout[.<modifier>]?` | `redactedThinking`, `error`, `apiError`, `system (cmd_output)` |
 | Meta-bar | `article.block.meta` → `.meta-bar[.<variant>]?` + optional body | `hookInjection`, `requestInterrupted`, `teammateMessage`, `systemXML`, `system (meta)`, `compactionBoundary` |
 
@@ -130,7 +130,7 @@ The user and assistant blocks are an intentional exception. `article.block.conve
 
 ## Slash commands
 
-`slashMerged` is the **sole** slash-command representative. A slash command is a `details.card.disclosure` whose summary carries the slash/cmd/args triplet (`.sm-cmd > .slash + .cmd + .args`) plus a `.sm-out-peek` of the first output line; the body is `.sm-out-body` with the full output.
+`slashMerged` is the **sole** slash-command representative. It is a specialised **conversation-card** form, not a disclosure-family card: it inherits conversation-card surface ownership and then adds slash-specific disclosure behaviour and styling. Its summary carries the slash/cmd/args triplet (`.sm-cmd > .slash + .cmd + .args`) plus a `.sm-out-peek` of the first output line; the body is `.sm-out-body` with the full output.
 
 ## Don'ts
 

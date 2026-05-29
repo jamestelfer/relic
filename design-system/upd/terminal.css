@@ -1,6 +1,6 @@
 /* Terminal ANSI colour classes emitted by terminal-to-html.
-   Uses light-dark() for theme switching; .term { color-scheme: dark }
-   (set in highlight.css) forces dark palette in terminal blocks. */
+   Uses light-dark() for theme switching; terminal blocks receive
+   color-scheme: dark from the surrounding .card--dark composition. */
 
 /* Standard foreground colours (30–37) */
 .term-fg30 { color: light-dark(var(--ink-800), var(--ink-400)); }

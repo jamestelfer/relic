@@ -6,7 +6,6 @@
 :root { color-scheme: light dark; }
 html[data-theme="dark"] { color-scheme: dark; }
 html[data-theme="light"] { color-scheme: light; }
-.term { color-scheme: dark; }
 
 /* Token rules — light-dark(github, github-dark) */
 .chroma .bp { color: light-dark(#6a737d, currentColor) }
@@ -89,7 +88,6 @@ html[data-theme="light"] { color-scheme: light; }
 
 /* Structural overrides */
 .chroma { background-color: var(--bg-code); }
-.term .chroma { background-color: transparent; }
 pre.chroma {
   font-family: var(--font-mono);
   font-size: 0.875rem;
