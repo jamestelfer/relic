@@ -919,7 +919,7 @@ internal/session/classify_test.go:17:func TestClassifyUserMessage(t *testing.T) 
      FAMILY: conversation
      ============================================================ -->
 <h2 class="family-head">Conversation</h2>
-<p>The <code>article.block.conversation</code> element is both block wrapper and card surface — no inner <code>.card</code> div. The role tag sits inside the card as an in-card header.</p>
+<p>The <code>article.block.conversation</code> element is both block wrapper and card surface — no inner <code>.card</code> div. The role tag sits inside the card as an in-card header. <code>slashMerged</code> is a specialised conversation-card variant: it keeps conversation-surface ownership but swaps the plain body for slash-specific disclosure styling.</p>
 
 <!-- ── 3. Conversation — exemplar ──────────────────────────── -->
 <section class="entry">
@@ -958,14 +958,17 @@ internal/session/classify_test.go:17:func TestClassifyUserMessage(t *testing.T) 
 <!-- ── Conversation — user (specialisation) ────────────────── -->
 <section class="entry">
   <h2>conversation (user)</h2>
-  <p class="lede">Same block-as-card structure as the assistant exemplar; only the role colour differs. The teal left-edge rule and the role tag tint are supplied by the <code>.block.user</code> composition.</p>
+  <p class="lede">Same block-as-card structure as the assistant exemplar; only the role colour differs. Conversation bodies always use the clamp-capable structure so templated output stays consistent; short content collapses to the fit state and hides the toggle.</p>
   <div class="rendered">
 
     <article class="block conversation user">
       <div class="role"><span class="tag">user</span><time>2026-05-24 14:07</time></div>
-      <div class="card-body ct-prose">
-        <p>Walk me through the renderer pipeline. I want to know how a JSONL session file becomes the final self-contained HTML.</p>
-        <p>Specifically: where does the syntax highlighting happen, and how do the ANSI escape sequences in bash output get translated?</p>
+      <div class="card-body ct-prose clamp" style="--clamp-h: 12em;">
+        <div class="clamp-body">
+          <p>Walk me through the renderer pipeline. I want to know how a JSONL session file becomes the final self-contained HTML.</p>
+          <p>Specifically: where does the syntax highlighting happen, and how do the ANSI escape sequences in bash output get translated?</p>
+        </div>
+        <button class="clamp-toggle" type="button"><span class="label">Show more</span></button>
       </div>
     </article>
 
@@ -973,7 +976,58 @@ internal/session/classify_test.go:17:func TestClassifyUserMessage(t *testing.T) 
   <details class="source"><summary>HTML source</summary>
     <pre>&lt;article class=&quot;block conversation user&quot;&gt;
   &lt;div class=&quot;role&quot;&gt;&lt;span class=&quot;tag&quot;&gt;user&lt;/span&gt;&lt;time&gt;…&lt;/time&gt;&lt;/div&gt;
-  &lt;div class=&quot;card-body ct-prose&quot;&gt;…markdown prose…&lt;/div&gt;
+  &lt;div class=&quot;card-body ct-prose clamp&quot;&gt;
+    &lt;div class=&quot;clamp-body&quot;&gt;…markdown prose…&lt;/div&gt;
+    &lt;button class=&quot;clamp-toggle&quot; type=&quot;button&quot;&gt;
+      &lt;span class=&quot;label&quot;&gt;Show more&lt;/span&gt;
+    &lt;/button&gt;
+  &lt;/div&gt;
+&lt;/article&gt;</pre>
+  </details>
+</section>
+
+<!-- ── slashMerged — conversation-card specialisation ───────── -->
+<section class="entry">
+  <h2>slashMerged</h2>
+  <p class="lede">The sole slash-command form in v2. It is a specialised conversation card: the <code>article.block.conversation</code> element owns the surface, while an inner <code>&lt;details class="slash-merged"&gt;</code> supplies slash-specific disclosure behaviour and styling.</p>
+  <div class="rendered">
+
+    <article class="block conversation slash-cmd">
+      <details class="slash-merged">
+        <summary>
+          <span class="sm-mid">
+            <span class="sm-cmd">
+              <span class="slash">/</span><span class="cmd">wiki-sync</span><span class="args"> design-system-v2</span>
+            </span>
+            <span class="sm-out-peek">→ syncing 3 changed files and pushing wiki updates</span>
+          </span>
+          <span class="sm-chevron"></span>
+        </summary>
+        <div class="sm-out-body">syncing 3 changed files → wiki/design-system-v2.progress-1.md
+syncing wiki/design-system-v2.plan-1.md
+syncing wiki/design-system-v2.rnd.md
+committed: design-system-v2 — phase progress update
+pushed to origin/wiki</div>
+      </details>
+    </article>
+
+  </div>
+  <details class="source"><summary>HTML source</summary>
+    <pre>&lt;article class=&quot;block conversation slash-cmd&quot;&gt;
+  &lt;details class=&quot;slash-merged&quot;&gt;
+    &lt;summary&gt;
+      &lt;span class=&quot;sm-mid&quot;&gt;
+        &lt;span class=&quot;sm-cmd&quot;&gt;
+          &lt;span class=&quot;slash&quot;&gt;/&lt;/span&gt;
+          &lt;span class=&quot;cmd&quot;&gt;wiki-sync&lt;/span&gt;
+          &lt;span class=&quot;args&quot;&gt; …&lt;/span&gt;
+        &lt;/span&gt;
+        &lt;span class=&quot;sm-out-peek&quot;&gt;…first-line output peek…&lt;/span&gt;
+      &lt;/span&gt;
+      &lt;span class=&quot;sm-chevron&quot;&gt;&lt;/span&gt;
+    &lt;/summary&gt;
+    &lt;div class=&quot;sm-out-body&quot;&gt;…full command output…&lt;/div&gt;
+  &lt;/details&gt;
 &lt;/article&gt;</pre>
   </details>
 </section>
@@ -1082,44 +1136,6 @@ internal/session/classify_test.go:17:func TestClassifyUserMessage(t *testing.T) 
       &lt;span class=&quot;cs-meta&quot;&gt;…envelope type · size…&lt;/span&gt;
     &lt;/summary&gt;
     &lt;div class=&quot;card-body ct-code&quot;&gt;&lt;pre class=&quot;chroma&quot;&gt;…raw JSON…&lt;/pre&gt;&lt;/div&gt;
-  &lt;/details&gt;
-&lt;/article&gt;</pre>
-  </details>
-</section>
-
-<!-- ── slashMerged ────────────────────────────────────── -->
-<section class="entry">
-  <h2>slashMerged</h2>
-  <p class="lede">The sole representative of slash commands in v2. A disclosure card whose summary carries the slash/cmd/args triplet plus a peek of the command's output; the body shows the full output. No separate flat slash block exists.</p>
-  <div class="rendered">
-    <article class="block slash">
-      <details class="card disclosure">
-        <summary class="card-chrome">
-          <span class="sm-cmd">
-            <span class="slash">/</span><span class="cmd">wiki-sync</span><span class="args">design-system-v2</span>
-          </span>
-          <span class="sm-out-peek">syncing 3 changed files → wiki/design-system-v2.…</span>
-        </summary>
-        <div class="sm-out-body">syncing 3 changed files → wiki/design-system-v2.progress-1.md
-syncing wiki/design-system-v2.plan-1.md
-syncing wiki/design-system-v2.rnd.md
-committed: design-system-v2 — phase progress update
-pushed to origin/wiki</div>
-      </details>
-    </article>
-  </div>
-  <details class="source"><summary>HTML source</summary>
-    <pre>&lt;article class=&quot;block slash&quot;&gt;
-  &lt;details class=&quot;card disclosure&quot;&gt;
-    &lt;summary class=&quot;card-chrome&quot;&gt;
-      &lt;span class=&quot;sm-cmd&quot;&gt;
-        &lt;span class=&quot;slash&quot;&gt;/&lt;/span&gt;
-        &lt;span class=&quot;cmd&quot;&gt;wiki-sync&lt;/span&gt;
-        &lt;span class=&quot;args&quot;&gt;…&lt;/span&gt;
-      &lt;/span&gt;
-      &lt;span class=&quot;sm-out-peek&quot;&gt;…first-line output peek…&lt;/span&gt;
-    &lt;/summary&gt;
-    &lt;div class=&quot;sm-out-body&quot;&gt;…full command output…&lt;/div&gt;
   &lt;/details&gt;
 &lt;/article&gt;</pre>
   </details>

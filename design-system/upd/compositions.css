@@ -289,11 +289,70 @@
   white-space: nowrap;
 }
 
-/* slashMerged ------------------------------------------------- */
+/* slashMerged -------------------------------------------------
+   Slash commands are a specialised conversation-card form. The
+   article.block.conversation owns the card surface; the inner
+   details.slash-merged provides slash-specific disclosure UI. */
+.block.slash-cmd { --rule-color: var(--border-strong); }
+.block.conversation.slash-cmd {
+  background: transparent;
+  border-color: transparent;
+  border-left-color: transparent;
+  box-shadow: none;
+  padding: 0;
+  overflow: visible;
+}
+.block.conversation.slash-cmd .slash-merged {
+  display: block;
+  margin: 0;
+  border: 1px solid transparent;
+  border-left: 3px solid transparent;
+  border-radius: var(--radius-md);
+  background: transparent;
+  transition: border-color 0.12s;
+}
+.block.conversation.slash-cmd .slash-merged:not([open]):hover {
+  border-color: var(--border-strong);
+}
+.block.conversation.slash-cmd .slash-merged[open] {
+  border-color: var(--border);
+  border-left-color: var(--border-strong);
+}
+.block.conversation.slash-cmd .slash-merged summary {
+  list-style: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px 10px 24px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  letter-spacing: 0.03em;
+  color: var(--fg-muted);
+  user-select: none;
+  background: transparent;
+}
+.block.conversation.slash-cmd .slash-merged summary::-webkit-details-marker { display: none; }
+.block.conversation.slash-cmd .slash-merged[open] summary {
+  border-bottom: 1px solid var(--border);
+}
+.sm-mid {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  overflow: hidden;
+}
 .sm-cmd {
+  flex: 1;
+  min-width: 80px;
   display: inline-flex;
   align-items: baseline;
   gap: 4px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   text-transform: none;
   letter-spacing: normal;
 }
@@ -301,21 +360,39 @@
 .sm-cmd .cmd   { color: var(--fg); font-weight: 600; }
 .sm-cmd .args  { color: var(--fg-muted); }
 .sm-out-peek {
-  flex: 1;
+  flex: 0 1 32ch;
   min-width: 0;
   text-transform: none;
   letter-spacing: normal;
-  color: var(--fg-muted);
+  color: var(--fg-subtle);
   font-weight: 400;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  font-size: 11.5px;
 }
-.disclosure[open] > summary .sm-out-peek { display: none; }
+.slash-merged[open] summary .sm-out-peek { display: none; }
+.sm-chevron {
+  flex-shrink: 0;
+  width: 8px;
+  height: 8px;
+  border-right: 2px solid var(--fg-muted);
+  border-bottom: 2px solid var(--fg-muted);
+  transform: rotate(45deg) translate(-1px, -2px);
+  transition: transform 0.15s, border-color 0.12s;
+  margin-right: 2px;
+}
+.slash-merged[open] .sm-chevron {
+  transform: rotate(-135deg) translate(-1px, 2px);
+}
+.slash-merged summary:hover .sm-chevron { border-color: var(--fg); }
 .sm-out-body {
-  padding: 12px 16px;
-  font-size: 13px;
-  color: var(--fg);
+  padding: 10px 18px 14px 24px;
+  background: transparent;
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+  line-height: 1.6;
+  color: var(--fg-muted);
   white-space: pre-wrap;
 }
 
