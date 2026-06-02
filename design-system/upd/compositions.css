@@ -36,6 +36,8 @@
 .block.tool-result.is-error .role .tag { background: var(--error-500); color: var(--fg-on-dark); }
 .block.thinking    { --rule-color: var(--role-thinking-rule); }
 .block.thinking    .role .tag { background: var(--role-thinking-rule); color: var(--fg-on-dark); }
+.block.error       { --rule-color: var(--error-rule); }
+.block.error       .role .tag { background: var(--error-500); color: var(--fg-on-dark); }
 
 /* ---------- .card--dark — chrome and window-dots overrides ---
    The dark-variant composition of the card primitive. Pinned

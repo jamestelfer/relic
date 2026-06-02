@@ -233,7 +233,7 @@
 }
 .callout--error {
   background: var(--error-bg);
-  border-color: var(--error-rule);
+  border-color: var(--error-bg);
   color: var(--error-fg);
 }
 
