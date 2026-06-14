@@ -1,7 +1,10 @@
+[tool_alias]
+binstaller = "github:binary-install/binstaller"
+
 [tools]
 go = "1.26.0"
 "golangci-lint" = "2.11.4"
 goreleaser = "2.16.0"
 just = "1.49.0"
 # generates the release-attached install.sh in the release workflow
-"github:binary-install/binstaller" = "0.12.0"
+binstaller = { version = "0.12.0", exe = "binst" }
