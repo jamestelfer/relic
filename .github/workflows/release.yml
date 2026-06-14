@@ -1,0 +1,19 @@
+name: release
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+  id-token: write
+  attestations: write
+
+jobs:
+  release:
+    uses: chinmina/.github/.github/workflows/goreleaser-release.yml@verified-actions
+    with:
+      token-source: octo-sts
+      disable-binstaller: false
+      disable-homebrew: false
+    secrets: inherit
