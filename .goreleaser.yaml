@@ -54,6 +54,10 @@ homebrew_casks:
     homepage: "https://github.com/jamestelfer/relic"
     description: "Convert Claude Code session logs into shareable, self-contained HTML."
     license: "Apache-2.0"
+    # release.prerelease: auto only marks the RELEASE as prerelease; it does not
+    # gate the cask push, so skip_upload: auto is what keeps an RC/prerelease tag
+    # from publishing the cask.
+    skip_upload: auto
     # The release binaries are not notarized; strip the quarantine bit on macOS
     # so the cask runs without a Gatekeeper prompt.
     hooks:
