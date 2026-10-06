@@ -8,9 +8,9 @@ require (
 	github.com/a-h/templ v0.3.1020
 	github.com/alecthomas/chroma/v2 v2.27.0
 	github.com/buildkite/terminal-to-html/v3 v3.17.1
-	github.com/charmbracelet/huh v1.0.0
-	github.com/charmbracelet/lipgloss v1.1.0
-	github.com/charmbracelet/log v1.0.0
+	github.com/charmbracelet/huh/v2 v2.0.3
+	github.com/charmbracelet/lipgloss/v2 v2.0.6
+	github.com/charmbracelet/log/v2 v2.0.1
 	github.com/gkampitakis/go-snaps v0.5.23
 	github.com/microcosm-cc/bluemonday v1.0.27
 	github.com/rs/zerolog v1.35.1
@@ -18,7 +18,7 @@ require (
 	github.com/spf13/viper v1.21.0
 	github.com/stretchr/testify v1.12.1
 	github.com/urfave/cli/v3 v3.13.0
-	github.com/yuin/goldmark v1.8.6
+	github.com/yuin/goldmark/v2 v2.1.6
 	github.com/yuin/goldmark-highlighting/v2 v2.0.0-20230729083705-37449abec8cc
 	github.com/zricethezav/gitleaks/v8 v8.30.1
 	golang.org/x/net v0.59.0
