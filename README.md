@@ -82,6 +82,15 @@ brew install --cask jamestelfer/tap/relic
 </details>
 
 <details>
+<summary><strong>Nix</strong></summary>
+
+```sh
+nix profile install github:jamestelfer/nixpkgs#relic
+```
+
+</details>
+
+<details>
 <summary><strong>Install script</strong></summary>
 
 Each release includes a self-contained installer script (generated with
