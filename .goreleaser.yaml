@@ -72,6 +72,20 @@ homebrew_casks:
         end
       end
 
+nix:
+  - name: relic
+    repository:
+      owner: jamestelfer
+      name: nixpkgs
+      # The release workflow mints a contents:write token for the owner's
+      # nixpkgs repository (octo-sts) and exposes it here.
+      token: "{{ .Env.NIX_GITHUB_TOKEN }}"
+    # skip publishing the recipe on a prerelease, as for the cask.
+    skip_upload: auto
+    homepage: "https://github.com/jamestelfer/relic"
+    description: "Render Claude Code JSONL sessions as self-contained, shareable HTML"
+    license: "asl20"
+
 # Changelog and release notes are owned by release-please, not GoReleaser.
 
 # Note: artifacts are NOT signed by GoReleaser. Keyless build-provenance
