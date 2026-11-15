@@ -1,6 +1,6 @@
 module github.com/jamestelfer/relic
 
-go 1.26.0
+go 1.27
 
 tool github.com/a-h/templ/cmd/templ
 
